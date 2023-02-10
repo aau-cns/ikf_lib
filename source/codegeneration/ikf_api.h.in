@@ -1,0 +1,22 @@
+
+#ifndef ${target_id}_API_H
+#define ${target_id}_API_H
+
+#include <${target}/${target}_export.h>
+
+#ifdef ${target_id}_STATIC_DEFINE
+#  define ${target_id}_API
+#else
+#  ifndef ${target_id}_API
+#    ifdef ${target_id}_EXPORTS
+        /* We are building this library */
+#      define ${target_id}_API __attribute__((visibility("default")))
+#    else
+        /* We are using this library */
+#      define ${target_id}_API __attribute__((visibility("default")))
+#    endif
+#  endif
+
+#endif
+
+#endif
