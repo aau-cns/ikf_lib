@@ -12,9 +12,9 @@
 #ifndef ICOLLABORATIVEINSTANCEHANDLER_HPP
 #define ICOLLABORATIVEINSTANCEHANDLER_HPP
 #include <ikf/ikf_api.h>
-#include <ikf/container/Timestamp.hpp>
-#include <ikf/Sensor/Measurement/MeasData.hpp>
-#include <ikf/Sensor/Estimate/IBelief.hpp>
+#include <ikf/Container/Timestamp.hpp>
+#include <ikf/Measurement/MeasData.hpp>
+#include <ikf/Estimate/IBelief.hpp>
 #include <ikf/Strategies/IInstanceHandler.hpp>
 
 namespace ikf

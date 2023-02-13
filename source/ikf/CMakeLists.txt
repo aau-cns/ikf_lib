@@ -33,41 +33,42 @@ set(include_local_path "${CMAKE_CURRENT_SOURCE_DIR}/include_local/${target}")
 set(source_path  "${CMAKE_CURRENT_SOURCE_DIR}/source")
 
 set(headers
-    ${include_path}/types.hpp
-    ${include_path}/Sensor/SensorFactory.hpp
-    ${include_path}/container/TBuffer.hpp
-    ${include_path}/container/Timestamp.hpp
-    ${include_path}/container/TStampedData.hpp
-    ${include_path}/container/THistoryBuffer.hpp
-    ${include_path}/utils/QuaternionUtils.hpp
-    ${include_path}/Strategies/IMMSF.hpp
-    ${include_path}/Strategies/MMSF_IKF.hpp
-    ${include_path}/Strategies/IIKF_DICO.hpp
+    include/ikf/types.hpp
+    include/ikf/EstimatorStd/KalmanFilterStd.hpp
+    include/ikf/EstimatorStd/IsolatedKalmanFilterStd.hpp
+    include/ikf/EstimatorStd/LinearIKFStd.hpp
+    include/ikf/Container/Timestamp.hpp
+    include/ikf/Container/TStampedData.hpp
+    include/ikf/Container/THistoryBuffer.hpp
+    include/ikf/utils/QuaternionUtils.hpp
+    include/ikf/Strategies/IMMSF.hpp
+    include/ikf/Strategies/MMSF_IKF.hpp
+    include/ikf/Strategies/IIKF_DICO.hpp
     ${include_local_path}/helper.hpp
     ${include_local_path}/utils.hpp
 )
 
 set(sources
-    ${source_path}/Containers/Timestamp.cpp
-    ${source_path}/SensorFactory.cpp
-    ${source_path}/Strategies/IInstanceHandler.cpp
-    ${source_path}/Strategies/IInstanceHandle.cpp
-    ${source_path}/Strategies/IMMSF.cpp
-    ${source_path}/Strategies/IIKF_DICO.cpp
-    ${source_path}/Strategies/MMSF_IKF.cpp
-    ${source_path}/Sensor/Estimate/StateInfo.cpp
-    ${source_path}/Sensor/Estimator/KalmanFilter.cpp
-    source/Sensor/Estimator/NormalizedInnovationSquared.cpp
-    source/Sensor/Estimate/IBelief.cpp
-
-    source/IKF/IFilterInstance.cpp
-    source/IKF/IIsolatedKalmanFilter.cpp
-    source/IKF/IsolatedKalmanFilterHandler.cpp
+    source/Containers/Timestamp.cpp
+    source/Strategies/IInstanceHandler.cpp
+    source/Strategies/IInstanceHandle.cpp
+    source/Strategies/IMMSF.cpp
+    source/Strategies/IIKF_DICO.cpp
+    source/Strategies/MMSF_IKF.cpp
+    source/Estimator/KalmanFilter.cpp
+    source/Estimator/NormalizedInnovationSquared.cpp
+    source/Estimate/IBelief.cpp
+    source/Estimator/IKalmanFilter.cpp
+    source/Estimator/IIsolatedKalmanFilter.cpp
+    source/Estimator/IsolatedKalmanFilterHandler.cpp
     source/utils/eigen_utils.cpp
     source/utils/RandValGenerator.cpp
-    source/IKF/LinearIKF.cpp
-    source/IKF/LinearBelief.cpp
-    source/IKF/SimpleLinearIKF.cpp
+    source/Estimator/LinearIKF.cpp
+    source/Estimator/LinearBelief.cpp
+    source/EstimatorStd/LinearIKFStd.cpp
+    source/EstimatorStd/KalmanFilterStd.cpp
+    source/EstimatorStd/IsolatedKalmanFilterStd.cpp
+    source/EstimatorStd/IKFHandlerStd.cpp
 )
 
 # Group source files

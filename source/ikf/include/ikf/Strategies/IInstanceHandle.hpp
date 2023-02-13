@@ -14,10 +14,10 @@
 #include <ikf/ikf_api.h>
 #include <ikf/Strategies/eMMSFTypes.hpp>
 #include <ikf/Strategies/IMMSF.hpp>
-#include <ikf/Sensor/Estimator/ProcessMeasResult_t.hpp>
-#include <ikf/container/Timestamp.hpp>
-#include <ikf/Sensor/Measurement/MeasData.hpp>
-#include <ikf/Sensor/Estimate/IBelief.hpp>
+#include <ikf/Estimator/ProcessMeasResult_t.hpp>
+#include <ikf/Container/Timestamp.hpp>
+#include <ikf/Measurement/MeasData.hpp>
+#include <ikf/Estimate/IBelief.hpp>
 
 namespace ikf
 {

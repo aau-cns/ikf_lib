@@ -10,8 +10,8 @@
 *  All rights reserved. See the LICENSE file for details.
 ******************************************************************************/
 #include <gmock/gmock.h>
-#include <ikf/container/TTimeHorizonBuffer.hpp>
-#include <ikf/container/Timestamp.hpp>
+#include <ikf/Container/TTimeHorizonBuffer.hpp>
+#include <ikf/Container/Timestamp.hpp>
 
 class IKF_TTHimeHorizonBuffer_test : public testing::Test
 {

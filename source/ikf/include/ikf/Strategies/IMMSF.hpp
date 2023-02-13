@@ -18,9 +18,9 @@ Inertial Navigation", Proceedings of the IEEE International Conference on Roboti
 #include <ikf/ikf_api.h>
 #include <eigen3/Eigen/Eigen>
 #include <memory>
-#include <ikf/container/TTimeHorizonBuffer.hpp>
+#include <ikf/Container/TTimeHorizonBuffer.hpp>
 #include <ikf/utils/RTVerification.hpp>
-#include <ikf/Sensor/Estimate/IBelief.hpp>
+#include <ikf/Estimate/IBelief.hpp>
 
 #include <unordered_map>
 namespace ikf {

@@ -1,6 +1,6 @@
 #include <gmock/gmock.h>
-#include <ikf/container/THistoryBuffer.hpp>
-#include <ikf/container/Timestamp.hpp>
+#include <ikf/Container/THistoryBuffer.hpp>
+#include <ikf/Container/Timestamp.hpp>
 
 class IKF_THistoryBuffer_test : public testing::Test
 {

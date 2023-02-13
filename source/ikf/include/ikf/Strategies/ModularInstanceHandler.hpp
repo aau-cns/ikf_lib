@@ -11,7 +11,7 @@
 ******************************************************************************/
 #ifndef MODULARINSTANCEHANDLER_HPP
 #define MODULARINSTANCEHANDLER_HPP
-#include "mmsf/Sensor/Model/SensorSuite.hpp"
+#include "mmsf/Model/SensorSuite.hpp"
 #include <ikf/Strategies/IInstanceHandler.hpp>
 namespace ikf {
 

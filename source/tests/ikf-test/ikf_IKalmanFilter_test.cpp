@@ -10,12 +10,12 @@
 *  All rights reserved. See the LICENSE file for details.
 ******************************************************************************/
 #include <gmock/gmock.h>
-#include <ikf/container/THistoryBuffer.hpp>
-#include <ikf/container/Timestamp.hpp>
+#include <ikf/Container/THistoryBuffer.hpp>
+#include <ikf/Container/Timestamp.hpp>
 #include <boost/math/distributions/chi_squared.hpp>
 #include <boost/math/distributions/inverse_chi_squared.hpp>
 #include <boost/math/distributions/normal.hpp>
-#include <ikf/Sensor/Estimator/NormalizedInnovationSquared.hpp>
+#include <ikf/Estimator/NormalizedInnovationSquared.hpp>
 #include <ikf/utils/eigen_utils.hpp>
 
 double inverse_chi_squared_quantile(double df, double p)

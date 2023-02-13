@@ -20,7 +20,7 @@ Inertial Navigation", Proceedings of the IEEE International Conference on Roboti
 #include <eigen3/Eigen/Eigen>
 #include <unordered_map>
 #include <ikf/Strategies/IMMSF.hpp>
-#include <ikf/container/TTimeHorizonBuffer.hpp>
+#include <ikf/Container/TTimeHorizonBuffer.hpp>
 
 
 
