@@ -27,7 +27,7 @@ public:
     //double const omega = 0.4;
     double const omega_0 = 0.4;
     ptr_IKF->define_system(F, G, Q, H, R, dt);
-    traj.generate_sine(dt, D, omega, omega_0*ID, 1*ID, ID);
+    traj.generate_sine(dt, D, omega, omega_0*ID, (0.1*ID+1), ID);
 
     traj_est = Trajectory(traj.size());
     std::shared_ptr<ikf::LinearBelief> ptr_bel0(new ikf::LinearBelief());
