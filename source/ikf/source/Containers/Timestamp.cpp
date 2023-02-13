@@ -9,7 +9,7 @@
 *  Copyright (C) 2018
 *  All rights reserved. See the LICENSE file for details.
 ******************************************************************************/
-#include <ikf/container/Timestamp.hpp>
+#include <ikf/Container/Timestamp.hpp>
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -25,6 +25,12 @@ namespace ikf
   {
     from_sec(t_);
   }
+
+  Timestamp::Timestamp(const int64_t stamp_ns) {
+    from_stamp_ns(stamp_ns);
+  }
+
+
   Timestamp::~Timestamp() {}
 
   double Timestamp::to_sec() const
@@ -48,6 +54,17 @@ namespace ikf
 
   bool Timestamp::is_zero() const {
     return (sec == 0) && (nsec == 0);
+  }
+
+  int64_t Timestamp::stamp_ns() const {
+    std::int64_t time64 = static_cast<std::int64_t>(sec) * 1000000000ul;
+    time64 = time64 + nsec;
+    return time64;
+  }
+
+  void Timestamp::from_stamp_ns(const int64_t stamp_ns) {
+    sec = stamp_ns / 1000000000ul;
+    nsec = stamp_ns % 1000000000ul;
   }
 
   Timestamped::~Timestamped() {}
