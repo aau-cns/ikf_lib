@@ -27,7 +27,7 @@ public:
     //double const omega = 0.4;
     double const omega_0 = 0.4;
     ptr_IKF->define_system(F, G, Q, H, R, dt);
-    traj.generate_sine(dt, D, omega, omega_0*ID, 1, ID);
+    traj.generate_sine(dt, D, omega, omega_0*ID, 1*ID, ID);
 
     traj_est = Trajectory(traj.size());
     std::shared_ptr<ikf::LinearBelief> ptr_bel0(new ikf::LinearBelief());
@@ -68,7 +68,7 @@ public:
     ikf::Timestamp t_curr(traj.t_arr(idx));
     if (ptr_IKF->predict(u, u_var)) {
       auto p_bel = ptr_IKF->get_belief();
-      std::cout << "* Prop[" << ID <<  "]:t=" << p_bel->timestamp() << ", \nmean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
+      //std::cout << "* Prop[" << ID <<  "]:t=" << p_bel->timestamp() << ", \nmean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
     }
     return true;
   }
@@ -83,7 +83,7 @@ public:
     z << p_noisy_arr(idx);
     if (ptr_IKF->update(z)) {
       auto p_bel = ptr_IKF->get_belief();
-      std::cout << "* Update [" << ID <<  "]:t=" << t_curr << ", mean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
+      //std::cout << "* Update [" << ID <<  "]:t=" << t_curr << ", mean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
     }
 
     for(auto & elem : dict_p_rel_noisy_arr) {
@@ -99,7 +99,7 @@ public:
       z << elem.second(idx);
       if (ptr_IKF->joint_update(H_II, H_JJ, ID_J, R, z)) {
         auto p_bel = ptr_IKF->get_belief();
-        std::cout << "* Update Rel [" << ID << "," << ID_J << "]:t=" << t_curr << ", mean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
+        //std::cout << "* Update Rel [" << ID << "," << ID_J << "]:t=" << t_curr << ", mean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
       }
 
     }

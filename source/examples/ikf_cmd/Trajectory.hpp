@@ -125,7 +125,7 @@ public:
     t_arr.setLinSpaced(N, 0, D);
     p_arr = Eigen::sin(t_arr*omega   + omega_0)*amplitude + offset;
     v_arr = omega*Eigen::cos(t_arr*omega   + omega_0)*amplitude;
-    a_arr = -omega*omega*sin(omega*t_arr  + omega_0)*amplitude;
+    a_arr = -omega*omega*Eigen::sin(omega*t_arr  + omega_0)*amplitude;
 
   }
 
