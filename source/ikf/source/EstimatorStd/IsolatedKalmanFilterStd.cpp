@@ -19,12 +19,22 @@ namespace ikf{
 
 IsolatedKalmanFilterStd::IsolatedKalmanFilterStd(ptr_handler pHandler, const ptr_belief &belief, const size_t ID) : KalmanFilterStd(belief),  m_ID(ID), m_pHandler(pHandler) {}
 
+IsolatedKalmanFilterStd::IsolatedKalmanFilterStd(ptr_handler pHandler, const size_t ID) : KalmanFilterStd(),  m_ID(ID), m_pHandler(pHandler) {}
+
 IsolatedKalmanFilterStd::~IsolatedKalmanFilterStd() {}
 
 size_t IsolatedKalmanFilterStd::ID() const { return m_ID; }
 
 bool IsolatedKalmanFilterStd::propagate(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_b) {
   bool res = KalmanFilterStd::propagate(Phi_II_ab, Q_II_ab, t_b);
+  if (res) {
+    apply_propagation(Phi_II_ab);
+  }
+  return res;
+}
+
+bool IsolatedKalmanFilterStd::propagate(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_b, const Eigen::MatrixXd &G_a, const Eigen::VectorXd &u_a, const Eigen::VectorXd &var_u) {
+  bool res = KalmanFilterStd::propagate(Phi_II_ab, Q_II_ab, t_b, G_a, u_a, var_u);
   if (res) {
     apply_propagation(Phi_II_ab);
   }

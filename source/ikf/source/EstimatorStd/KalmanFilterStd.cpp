@@ -13,6 +13,8 @@
 #include <ikf/Estimator/KalmanFilter.hpp>
 namespace ikf {
 
+KalmanFilterStd::KalmanFilterStd() {}
+
 KalmanFilterStd::KalmanFilterStd(const ptr_belief &belief) {
   m_belief = belief->clone();
 }
@@ -21,6 +23,8 @@ KalmanFilterStd::KalmanFilterStd(const ptr_belief &belief, const Timestamp &t) {
   m_belief = belief->clone();
   m_belief->set_timestamp(t);
 }
+
+void KalmanFilterStd::set_belief(ptr_belief p_bel) { m_belief = p_bel; }
 
 ptr_belief KalmanFilterStd::get_belief() { return m_belief; }
 
@@ -32,6 +36,22 @@ bool KalmanFilterStd::propagate(const Eigen::MatrixXd &Phi_II_ab, const Eigen::M
   {
     m_belief->Sigma(KalmanFilter::covariance_propagation(m_belief->Sigma(), Phi_II_ab, Q_II_ab));
     m_belief->mean(Phi_II_ab * m_belief->mean());
+    m_belief->set_timestamp(t_b);
+    return true;
+  }
+  return false;
+}
+
+bool KalmanFilterStd::propagate(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_b, const Eigen::MatrixXd &G_a, const Eigen::VectorXd &u_a, const Eigen::VectorXd &var_u) {
+  if (KalmanFilter::check_dim(m_belief->Sigma(), Phi_II_ab, Q_II_ab) &&
+      m_belief->timestamp() < t_b)
+  {
+
+    Eigen::VectorXd mean_b = (Phi_II_ab * m_belief->mean() + G_a * u_a);
+    Eigen::MatrixXd Q_d = G_a * var_u * G_a.transpose() + Q_II_ab;
+
+    m_belief->Sigma(KalmanFilter::covariance_propagation(m_belief->Sigma(), Phi_II_ab, Q_d));
+    m_belief->mean(mean_b);
     m_belief->set_timestamp(t_b);
     return true;
   }

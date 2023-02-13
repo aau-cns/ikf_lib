@@ -10,6 +10,8 @@
 *  All rights reserved. See the LICENSE file for details.
 ******************************************************************************/
 #include <ikf/Estimate/IBelief.hpp>
+#include <ikf/Estimator/KalmanFilter.hpp>
+
 namespace ikf {
 
 IBelief::IBelief() {}
@@ -22,13 +24,36 @@ IBelief::IBelief(Eigen::VectorXd mean, Eigen::MatrixXd Sigma, Timestamp timestam
 
 IBelief::~IBelief() {}
 
-IBelief &IBelief::operator=(const Eigen::VectorXd &param) {
-  m_mean = param;
+Eigen::VectorXd IBelief::mean() {
+  return m_mean;
+}
+
+Eigen::MatrixXd IBelief::Sigma() {
+  return m_Sigma;
+}
+
+void IBelief::mean(const Eigen::VectorXd &vec) {
+  m_mean = vec;
+}
+
+void IBelief::Sigma(const Eigen::MatrixXd &Cov) {
+  m_Sigma = Cov;
+}
+
+bool IBelief::set(const Eigen::VectorXd &mean, const Eigen::MatrixXd &Sigma) {
+  if (!KalmanFilter::check_dim(mean, Sigma)) { return false; }
+  this->mean(mean);
+  this->Sigma(Sigma);
+  return true;
+}
+
+IBelief &IBelief::operator =(const Eigen::VectorXd &param) {
+  this->mean(param);
   return *this;
 }
 
-IBelief &IBelief::operator=(const Eigen::MatrixXd &param) {
-  m_Sigma = param;
+IBelief &IBelief::operator =(const Eigen::MatrixXd &param) {
+  this->Sigma(param);
   return *this;
 }
 

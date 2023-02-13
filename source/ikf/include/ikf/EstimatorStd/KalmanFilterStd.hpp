@@ -21,14 +21,19 @@ namespace ikf {
 ///
 class IKF_API KalmanFilterStd {
 public:
+  KalmanFilterStd();
   KalmanFilterStd(ptr_belief const& belief);
 
   KalmanFilterStd(ptr_belief const& belief, Timestamp const& t);
 
+  void set_belief(ptr_belief p_bel);
   ptr_belief get_belief();
   virtual ~KalmanFilterStd();
 
   virtual bool propagate(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_b);
+
+  virtual bool propagate(Eigen::MatrixXd const& Phi_II_ab, Eigen::MatrixXd const& Q_II_ab,  const Timestamp &t_b, Eigen::MatrixXd const& G_a, Eigen::VectorXd const& u_a, Eigen::VectorXd const& var_u);
+
   virtual bool private_update(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R,
                                  const Eigen::VectorXd &z);
 

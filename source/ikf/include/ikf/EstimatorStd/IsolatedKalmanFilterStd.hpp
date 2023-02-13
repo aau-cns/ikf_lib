@@ -30,9 +30,10 @@ class IKFHandlerStd;
 /// Please note, as simplification, no corection buffer for correction terms as proposed in [2] is used.
 ///
 class IKF_API IsolatedKalmanFilterStd : public KalmanFilterStd {
-  typedef std::shared_ptr<IKFHandlerStd> ptr_handler;
 
 public:
+  typedef std::shared_ptr<IKFHandlerStd> ptr_handler;
+
   ///
   /// \brief IsolatedKalmanFilterStd
   /// \param pHandler shared pointer to the "Instance Handler" to access participants beliefs and to perform corrections.
@@ -40,11 +41,14 @@ public:
   /// \param ID unique ID
   ///
   IsolatedKalmanFilterStd(ptr_handler pHandler, ptr_belief const& belief, size_t const ID);
+  IsolatedKalmanFilterStd(ptr_handler pHandler, size_t const ID);
   virtual ~IsolatedKalmanFilterStd();
   virtual size_t ID() const;
 
   // [1] Algorithm (1), [2] Algorithm (1) (without buffering).
   virtual bool propagate(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_b);
+
+  virtual bool propagate(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_b, const Eigen::MatrixXd &G_a, const Eigen::VectorXd &u_a, const Eigen::VectorXd &var_u);
 
   // [1] Algorithm 2, [2] Algorithm (3) (without buffering).
   virtual bool private_update(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R,
@@ -69,7 +73,7 @@ protected:
   void apply_correction(const Eigen::MatrixXd &Lambda);
 
 
-private:
+protected:
   std::unordered_map<size_t, Eigen::MatrixXd> m_CrossCovFactors;
   size_t m_ID;
   ptr_handler m_pHandler;

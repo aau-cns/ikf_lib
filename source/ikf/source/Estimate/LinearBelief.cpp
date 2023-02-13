@@ -9,47 +9,16 @@
 *  Copyright (C) 2023
 *  All rights reserved. See the LICENSE file for details.
 ******************************************************************************/
-#include <ikf/Estimator/LinearBelief.hpp>
+#include <ikf/Estimate/LinearBelief.hpp>
 #include <ikf/Estimator/KalmanFilter.hpp>
 
 namespace ikf {
 
 LinearBelief::LinearBelief() : IBelief() {}
 
+LinearBelief::LinearBelief(Eigen::VectorXd mean, Eigen::MatrixXd Sigma, Timestamp t) : IBelief(mean, Sigma, t) {}
+
 LinearBelief::~LinearBelief() {}
-
-Eigen::VectorXd LinearBelief::mean() {
-  return m_mean;
-}
-
-Eigen::MatrixXd LinearBelief::Sigma() {
-  return m_Sigma;
-}
-
-void LinearBelief::mean(const Eigen::VectorXd &vec) {
-  m_mean = vec;
-}
-
-void LinearBelief::Sigma(const Eigen::MatrixXd &Cov) {
-  m_Sigma = Cov;
-}
-
-bool LinearBelief::set(const Eigen::VectorXd &mean, const Eigen::MatrixXd &Sigma) {
-  if (!KalmanFilter::check_dim(mean, Sigma)) { return false; }
-  this->mean(mean);
-  this->Sigma(Sigma);
-  return true;
-}
-
-IBelief &LinearBelief::operator =(const Eigen::VectorXd &param) {
-  this->mean(param);
-  return *this;
-}
-
-IBelief &LinearBelief::operator =(const Eigen::MatrixXd &param) {
-  this->Sigma(param);
-  return *this;
-}
 
 std::shared_ptr<IBelief> LinearBelief::clone() {
   auto p_bel = std::make_shared<LinearBelief>(LinearBelief());

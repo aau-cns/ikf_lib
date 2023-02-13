@@ -34,6 +34,8 @@ set(source_path  "${CMAKE_CURRENT_SOURCE_DIR}/source")
 
 set(headers
     include/ikf/types.hpp
+    include/ikf/Estimate/IBelief.hpp
+    include/ikf/Estimate/LinearBelief.hpp
     include/ikf/EstimatorStd/KalmanFilterStd.hpp
     include/ikf/EstimatorStd/IsolatedKalmanFilterStd.hpp
     include/ikf/EstimatorStd/LinearIKFStd.hpp
@@ -49,22 +51,22 @@ set(headers
 )
 
 set(sources
+ source/utils/eigen_utils.cpp
+ source/utils/RandValGenerator.cpp
     source/Containers/Timestamp.cpp
     source/Strategies/IInstanceHandler.cpp
     source/Strategies/IInstanceHandle.cpp
     source/Strategies/IMMSF.cpp
     source/Strategies/IIKF_DICO.cpp
     source/Strategies/MMSF_IKF.cpp
+    source/Estimate/IBelief.cpp
+    source/Estimate/LinearBelief.cpp
     source/Estimator/KalmanFilter.cpp
     source/Estimator/NormalizedInnovationSquared.cpp
-    source/Estimate/IBelief.cpp
     source/Estimator/IKalmanFilter.cpp
     source/Estimator/IIsolatedKalmanFilter.cpp
     source/Estimator/IsolatedKalmanFilterHandler.cpp
-    source/utils/eigen_utils.cpp
-    source/utils/RandValGenerator.cpp
     source/Estimator/LinearIKF.cpp
-    source/Estimator/LinearBelief.cpp
     source/EstimatorStd/LinearIKFStd.cpp
     source/EstimatorStd/KalmanFilterStd.cpp
     source/EstimatorStd/IsolatedKalmanFilterStd.cpp

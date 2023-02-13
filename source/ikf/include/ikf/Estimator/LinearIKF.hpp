@@ -13,7 +13,7 @@
 #define LINEARIKF_HPP
 #include <ikf/ikf_api.h>
 #include <ikf/Estimator/IIsolatedKalmanFilter.hpp>
-#include <ikf/Estimator/LinearBelief.hpp>
+#include <ikf/Estimate/LinearBelief.hpp>
 namespace ikf {
 
 
