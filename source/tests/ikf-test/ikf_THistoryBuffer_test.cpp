@@ -112,7 +112,7 @@ TEST_F(IKF_THistoryBuffer_test, get_before)
 {
 
     ikf::THistoryBuffer<int> test = get_sorted_buffer(10);
-
+    std::cout << test << std::endl;
 
     ikf::TStampedData<int> tdata;
     int data =0;
@@ -122,6 +122,7 @@ TEST_F(IKF_THistoryBuffer_test, get_before)
     EXPECT_TRUE(test.get_before_t(t, data));
     EXPECT_TRUE(test.get_before_t(t, stamp));
     EXPECT_TRUE(tdata.data == 4);
+    std::cout << "before t=0.5: tdata.stamp=" << tdata.stamp <<  ", tdata.data=" << tdata.data << std::endl;
     EXPECT_TRUE(tdata.stamp == ikf::Timestamp(0.4));
     EXPECT_TRUE(data == 4);
     EXPECT_TRUE(stamp == ikf::Timestamp(0.4));

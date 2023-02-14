@@ -21,7 +21,7 @@ message(STATUS "Test ${target}")
 
 set(sources
     main.cpp
-    #ikf_THistoryBuffer_test.cpp
+    ikf_THistoryBuffer_test.cpp
     #ikf_TTHimeHorizonBuffer.cpp
     #ikf_IKalmanFilter_test.cpp
     #

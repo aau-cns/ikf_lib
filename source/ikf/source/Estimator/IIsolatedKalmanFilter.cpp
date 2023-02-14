@@ -207,7 +207,7 @@ Eigen::MatrixXd IIsolatedKalmanFilter::compute_correction(const Timestamp &t_a, 
   TStampedData<Eigen::MatrixXd> data_ta, data_tb;
 
   bool exist_after_ta = HistCorr.get_after_t(t_a, data_ta);
-  bool exist_at_tb = HistCorr.get_at_t(t_b, data_tb);
+  bool exist_at_tb = HistCorr.get_at_t(t_b, data_tb.data);
 
   Timestamp t_b_found = t_b;
 

@@ -23,6 +23,7 @@ namespace ikf
         TStampedData() {}
         TStampedData(T const& data_, Timestamp const& stamp_):data(data_), stamp(stamp_) {}
         TStampedData(T const& data_, double const t_sec_):data(data_), stamp(Timestamp(t_sec_)) {}
+        TStampedData(T const& data_, std::int64_t const t_ns_):data(data_), stamp(Timestamp(t_ns_)) {}
         T data;
         Timestamp stamp;
 

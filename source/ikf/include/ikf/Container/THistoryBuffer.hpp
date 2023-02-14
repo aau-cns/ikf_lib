@@ -17,6 +17,7 @@
 #include <numeric>
 #include <ostream>
 #include <set>
+#include <map>
 #include <algorithm>
 #include <functional>
 
@@ -31,8 +32,10 @@ namespace ikf
   class IKF_API THistoryBuffer
   {
     public:
+
+
       typedef TStampedData<T> TData;
-      typedef std::set<TStampedData<T>> TContainer;
+      typedef std::map<std::int64_t, T> TContainer;
       void insert(T const& data, Timestamp const t);
       void insert(T const& data, double const t_sec);
       void insert(TData const& data);
@@ -51,15 +54,13 @@ namespace ikf
 
       bool get_oldest_t(Timestamp &t) const;
       bool get_latest_t(Timestamp &t) const;
-      bool get_oldest(TData& elem) const;
       bool get_oldest(T & elem) const;
-      bool get_latest(TData& elem) const;
       bool get_latest(T& elem) const;
 
       THistoryBuffer get_between_t1_t2(Timestamp const& t1, Timestamp const& t2) {
         if (t1 < t2 && size() > 0) {
-          auto itlow = std::lower_bound(buffer_.begin(), buffer_.end(), t1);
-          auto itup = std::upper_bound(buffer_.begin(), buffer_.end(), t2);
+          auto itlow = lower_bound(t1);
+          auto itup = upper_bound(t2);
           THistoryBuffer h;
           h.set(TContainer(itlow, itup));
           return h;
@@ -76,11 +77,10 @@ namespace ikf
       inline T accumulate_between_t1_t2(Timestamp const& t1, Timestamp const& t2, T init, BinaryOperation op ) const {
 
         if (t1 < t2 && size() > 0) {
-          auto __first = std::lower_bound(buffer_.begin(), buffer_.end(), t1);
-          auto __last = std::upper_bound(buffer_.begin(), buffer_.end(), t2);
-
+          auto __first = lower_bound(t1);
+          auto __last = upper_bound(t2);
           for(; __first != __last; ++__first)
-            init = op(init, __first->data);
+            init = op(init, __first->second);
           return init;
         }
         return init;
@@ -91,18 +91,18 @@ namespace ikf
         auto __first = buffer_.begin();
         auto __last =  buffer_.end();
         for(; __first != __last; ++__first)
-          init = op(init, __first->data);
+          init = op(init, __first->second);
         return init;
       }
 
       template<typename Operation >
       inline void foreach_between_t1_t2(Timestamp const& t1, Timestamp const& t2, Operation op ) {
         if (t1 < t2 && size() > 0) {
-          auto __first = std::lower_bound(buffer_.begin(), buffer_.end(), t1);
-          auto __last = std::upper_bound(buffer_.begin(), buffer_.end(), t2);
+          auto __first = lower_bound(t1);
+          auto __last = upper_bound(t2);
 
           for(; __first != __last; ++__first)
-            op(__first->data);
+            op(__first->second);
         }
       }
 
@@ -111,16 +111,15 @@ namespace ikf
         auto __first = buffer_.begin();
         auto __last =  buffer_.end();
         for(; __first != __last; ++__first)
-            op(__first->data);
+            op(__first->second);
 
       }
 
       bool get_at_t(Timestamp const& t, T& elem) const;
-      bool get_at_t(Timestamp const& t, TData& elem) const;
       bool get_at_t(double const t_sec, T& elem) const;
       bool get_before_t(Timestamp const& t, T& elem) const;
       bool get_before_t( Timestamp const& t, Timestamp& elem) const;
-      bool get_before_t( Timestamp const& t, TData& elem) const;
+      bool get_before_t(Timestamp const& t, TData &elem) const;
       bool get_after_t(Timestamp const& t, T& elem) const;
       bool get_after_t(Timestamp const& t, Timestamp& elem) const;
       bool get_after_t(Timestamp const& t, TData& elem) const;
@@ -135,7 +134,7 @@ namespace ikf
           out << "THistoryBuffer: len=" << obj.size() << std::endl;
           for (auto const& elem : obj.buffer_)
           {
-              out << "* t=" << elem.stamp << ", data=" << elem.data << "\n";
+              out << "* t=" << elem.first << ", data=" << elem.second << "\n";
           }
           return out;
       }
@@ -143,30 +142,38 @@ namespace ikf
       friend std::ostream;
       TContainer buffer_;
     private:
-      typename TContainer::iterator insert_sorted(TData const& elem){
-        typename TContainer::iterator it_found = buffer_.find(elem);
-        if (it_found != buffer_.end()){
-           buffer_.erase(it_found);  // replacing in to possible in std::set
-        }
-        typename TContainer::iterator it = std::upper_bound( buffer_.begin(), buffer_.end(), elem );
-        return buffer_.insert(it, elem);
+       void insert_sorted(Timestamp const& t, T const& elem){
+          buffer_[t.stamp_ns()] = elem;
+       }
+
+       // https://stackoverflow.com/a/72835502
+       typename TContainer::const_iterator upper_bound(Timestamp const& t) const {
+          return std::upper_bound(buffer_.begin(), buffer_.end(), t.stamp_ns(), [](const std::int64_t &value, const std::pair<std::int64_t, T> iter) {
+            return value < iter.first;
+          });
+       }
+
+       typename TContainer::const_iterator lower_bound(Timestamp const& t) const {
+          return std::lower_bound(buffer_.begin(), buffer_.end(), t.stamp_ns(), [](const std::pair<std::int64_t, T> &iter, const std::int64_t &value) {
+            return iter.first < value;
+          });
        }
 
   };
 
   template<typename T>
   void THistoryBuffer<T>::insert(const T &data, const Timestamp t) {
-      insert(TData(data, t));
+      insert_sorted(t, data);
   }
 
   template<typename T>
   void THistoryBuffer<T>::insert(const T &data, const double t_sec){
-      insert(TData(data, t_sec));
+      insert_sorted(Timestamp(t_sec), data);
   }
 
   template<typename T>
   void THistoryBuffer<T>::insert(const TData &data){
-      insert_sorted(data);
+      insert_sorted(data.stamp, data.data);
   }
 
   template<typename T>
@@ -186,13 +193,13 @@ namespace ikf
 
   template<typename T>
   bool THistoryBuffer<T>::exist_at_t(const Timestamp &t) const {
-      auto it = std::find( buffer_.begin(), buffer_.end(), t );
+      auto it = buffer_.find(t.stamp_ns());
       return (it != buffer_.end());
   }
 
   template<typename T>
   bool THistoryBuffer<T>::exist_after_t(const Timestamp &t) const {
-      auto it = std::upper_bound(buffer_.begin(), buffer_.end(), t);
+      auto it = upper_bound(t);
       if (it != buffer_.end()) {
           return true;
       }
@@ -202,7 +209,7 @@ namespace ikf
   template<typename T>
   bool THistoryBuffer<T>::get_oldest_t(Timestamp &t) const{
       if (!buffer_.empty()) {
-        t = (buffer_.begin())->stamp;
+        t = Timestamp((buffer_.begin())->first);
         return true;
       }
       return false;
@@ -211,16 +218,7 @@ namespace ikf
   template<typename T>
   bool THistoryBuffer<T>::get_latest_t(Timestamp &t) const{
       if (!buffer_.empty()) {
-        t = (buffer_.rbegin())->stamp;
-        return true;
-      }
-      return false;
-  }
-
-  template<typename T>
-  bool THistoryBuffer<T>::get_oldest(TData &elem) const{
-      if (!buffer_.empty()) {
-        elem = (*buffer_.begin());
+        t = Timestamp((buffer_.rbegin())->first);
         return true;
       }
       return false;
@@ -229,25 +227,17 @@ namespace ikf
   template<typename T>
   bool THistoryBuffer<T>::get_oldest(T &elem) const {
       if (!buffer_.empty()) {
-          elem = (buffer_.begin())->data;
+          elem = (buffer_.begin())->second;
           return true;
       }
       return false;
   }
 
-  template<typename T>
-  bool THistoryBuffer<T>::get_latest(TData &elem) const{
-      if (!buffer_.empty()) {
-          elem = (*buffer_.rbegin());
-          return true;
-      }
-      return false;
-  }
 
   template<typename T>
   bool THistoryBuffer<T>::get_latest(T &elem) const{
       if (!buffer_.empty()) {
-          elem = (buffer_.rbegin())->data;
+          elem = (buffer_.rbegin())->second;
           return true;
       }
       return false;
@@ -255,19 +245,9 @@ namespace ikf
 
   template<typename T>
   bool THistoryBuffer<T>::get_at_t(const Timestamp &t, T &elem) const {
-      auto it = std::find( buffer_.begin(), buffer_.end(), t );
+      auto it = buffer_.find(t.stamp_ns());
       if (it != buffer_.end()) {
-          elem = it->data;
-          return true;
-      }
-      return false;
-  }
-
-  template<typename T>
-  bool THistoryBuffer<T>::get_at_t(const Timestamp &t, TData &elem) const {
-      auto it = std::find( buffer_.begin(), buffer_.end(), t );
-      if (it != buffer_.end()) {
-          elem = *it;
+          elem = it->second;
           return true;
       }
       return false;
@@ -275,26 +255,23 @@ namespace ikf
 
   template<typename T>
   bool THistoryBuffer<T>::get_at_t(const double t_sec, T &elem) const {
-      auto it = std::find( buffer_.begin(), buffer_.end(), t_sec );
-      if (it != buffer_.end()) {
-          elem = it->data;
-          return true;
-      }
-      return false;
+      return get_at_t(Timestamp(t_sec), elem);
   }
 
   template<typename T>
   bool THistoryBuffer<T>::get_before_t(const Timestamp &t, T &elem) const {
-      auto it = std::lower_bound(buffer_.begin(), buffer_.end(), t);
+      auto it = lower_bound(t);
       if (it != buffer_.end()) {
           if (it != buffer_.begin()){
-              elem = (--it)->data;
+              auto it_before = --it;
+              elem = it_before->second;
               return true;
           }
       }
       else if(buffer_.size()){
+          auto it_before = --it;
           // corner case: when t is outside the timespan, return last elem.
-          elem = (--it)->data;
+          elem = it_before->second;
           return true;
       }
       return false;
@@ -302,16 +279,18 @@ namespace ikf
 
   template<typename T>
   bool THistoryBuffer<T>::get_before_t(const Timestamp &t, Timestamp &elem) const {
-      auto it = std::lower_bound(buffer_.begin(), buffer_.end(), t);
+      auto it = lower_bound(t);
       if (it != buffer_.end()) {
           if (it != buffer_.begin()){
-              elem = (--it)->stamp;
+              auto it_before = --it;
+              elem = it_before->first;
               return true;
           }
       }
       else if(buffer_.size()){
+          auto it_before = --it;
         // corner case: when t is outside the timespan, return last elem.
-        elem = (--it)->stamp;
+        elem = it_before->first;
         return true;
       }
       return false;
@@ -319,26 +298,31 @@ namespace ikf
 
   template<typename T>
   bool THistoryBuffer<T>::get_before_t(const Timestamp &t, TData &elem) const {
-      auto it = std::lower_bound(buffer_.begin(), buffer_.end(), t);
+      auto it = lower_bound(t);
       if (it != buffer_.end()) {
-          if (it != buffer_.begin()){
-              elem = *(--it);
+        if (it != buffer_.begin()){
+              auto it_before = --it;
+              elem.data = it_before->second;
+              elem.stamp = Timestamp(it_before->first);
               return true;
-          }
+        }
       }
       else if(buffer_.size()){
-          // corner case: when t is outside the timespan, return last elem.
-          elem = *(--it);
-          return true;
+        auto it_before = --it;
+        // corner case: when t is outside the timespan, return last elem.
+        elem.data = it_before->second;
+        elem.stamp = Timestamp(it_before->first);
+        return true;
       }
       return false;
   }
 
+
   template<typename T>
   bool THistoryBuffer<T>::get_after_t(const Timestamp &t, T &elem) const{
-      auto it = std::upper_bound(buffer_.begin(), buffer_.end(), t);
+      auto it = upper_bound(t);
       if (it != buffer_.end()) {
-          elem = it->data;
+          elem = it->second;
           return true;
       }
       return false;
@@ -346,19 +330,20 @@ namespace ikf
 
   template<typename T>
   bool THistoryBuffer<T>::get_after_t(const Timestamp &t, Timestamp &elem) const {
-      auto it = std::upper_bound(buffer_.begin(), buffer_.end(), t);
+      auto it = upper_bound(t);
       if (it != buffer_.end()) {
-          elem = it->stamp;
+          elem = it->first;
           return true;
       }
       return false;
   }
 
   template<typename T>
-  bool THistoryBuffer<T>::get_after_t(const Timestamp &t, TData &elem) const{
-      auto it = std::upper_bound(buffer_.begin(), buffer_.end(), t);
+  bool THistoryBuffer<T>::get_after_t(const Timestamp &t, TData &elem) const {
+      auto it = upper_bound(t);
       if (it != buffer_.end()) {
-          elem = *it;
+          elem.data = it->second;
+          elem.stamp = Timestamp(it->first);
           return true;
       }
       return false;
@@ -366,23 +351,17 @@ namespace ikf
 
   template<typename T>
   void THistoryBuffer<T>::remove_at_t(const Timestamp &t) {
-      auto it = std::find( buffer_.begin(), buffer_.end(), t );
-      if (it != buffer_.end()) {
-          buffer_.erase(it);
-      }
+      buffer_.erase(t.stamp_ns());
   }
 
   template<typename T>
   void THistoryBuffer<T>::remove_at_t(const double t) {
-      auto it = std::find( buffer_.begin(), buffer_.end(), t);
-      if (it != buffer_.end()) {
-          buffer_.erase(it);
-      }
+      remove_at_t(Timestamp(t));
   }
 
   template<typename T>
   void THistoryBuffer<T>::remove_before_t(const Timestamp &t) {
-      auto it = std::lower_bound(buffer_.begin(), buffer_.end(), t);
+      auto it = lower_bound(t);
       if (it != buffer_.end()) {
           buffer_.erase(buffer_.begin(), it);
       }
@@ -395,7 +374,7 @@ namespace ikf
 
   template<typename T>
   void THistoryBuffer<T>::remove_after_t(const Timestamp &t) {
-      auto it = std::upper_bound(buffer_.begin(), buffer_.end(), t);
+      auto it = upper_bound(t);
       if (it != buffer_.end()) {
           buffer_.erase(it, buffer_.end());
       }
