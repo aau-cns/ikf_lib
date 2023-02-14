@@ -5,4 +5,4 @@ if(NOT OPTION_BUILD_EXAMPLES)
 endif()
 
 # Example applications
-add_subdirectory(ikf_cmd)
+add_subdirectory(ikf_simple_cmd)

@@ -48,6 +48,7 @@ public:
   virtual void set_horizon(double const t_hor);
   virtual void check_horizon();
 
+protected:
   // KF:
   virtual  bool apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
   // EKF: if linearizing about bel_II_apri
@@ -59,7 +60,7 @@ public:
   // EKF: if linearizing about bel_II_apri
   virtual bool apply_private_observation(ptr_belief& bel_II_apri, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t);
 
-protected:
+
   TTimeHorizonBuffer<ptr_belief> HistBelief;
   TTimeHorizonBuffer<MeasData> HistMeas;
   double max_time_horizon_sec;

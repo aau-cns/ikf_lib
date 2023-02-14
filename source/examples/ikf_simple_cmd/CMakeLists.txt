@@ -11,7 +11,7 @@
 #
 
 # Target name
-set(target ikf_cmd)
+set(target ikf_simple_cmd)
 
 # Exit here if required dependencies are not met
 message(STATUS "Example ${target}")
@@ -22,9 +22,9 @@ message(STATUS "Example ${target}")
 #
 
 set(headers
- LinearIKF.hpp
- SimInstance.hpp
- Trajectory.hpp
+ include/LinearIKF.hpp
+ include/SimInstance.hpp
+ include/Trajectory.hpp
 )
 
 set(sources
@@ -64,6 +64,7 @@ set_target_properties(${target}
 
 target_include_directories(${target}
     PRIVATE
+    include/
     ${DEFAULT_INCLUDE_DIRECTORIES}
     ${PROJECT_BINARY_DIR}/source/include
 )
