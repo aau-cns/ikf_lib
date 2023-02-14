@@ -66,9 +66,9 @@ public:
     u_var << std_dev_a * std_dev_a;
     u << a_noisy_arr(idx);
     ikf::Timestamp t_curr(traj.t_arr(idx));
-    if (ptr_IKF->predict(u, u_var)) {
+    if (ptr_IKF->predict(u, u_var)  && print_belief) {
       auto p_bel = ptr_IKF->get_belief();
-      //std::cout << "* Prop[" << ID <<  "]:t=" << p_bel->timestamp() << ", \nmean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
+      std::cout << "* Prop[" << ID <<  "]:t=" << p_bel->timestamp() << ", \nmean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
     }
     return true;
   }
@@ -80,31 +80,37 @@ public:
 
     ikf::Timestamp t_curr(traj.t_arr(idx));
 
-    z << p_noisy_arr(idx);
-    if (ptr_IKF->update(z)) {
-      auto p_bel = ptr_IKF->get_belief();
-      //std::cout << "* Update [" << ID <<  "]:t=" << t_curr << ", mean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
-    }
-
-    for(auto & elem : dict_p_rel_noisy_arr) {
-      size_t ID_J = elem.first;
-      Eigen::MatrixXd R (dim_z,dim_z);  // measurement covariance
-
-      Eigen::MatrixXd H_II(dim_z, dim_x); // Output matrix
-      Eigen::MatrixXd H_JJ(dim_z, dim_x); // Output matrix
-      R << std_dev_p_rel * std_dev_p_rel;
-      H_II << -1, 0;
-      H_JJ << 1, 0;
-
-      z << elem.second(idx);
-      if (ptr_IKF->joint_update(H_II, H_JJ, ID_J, R, z)) {
+    if (perform_private)
+    {
+      z << p_noisy_arr(idx);
+      if (ptr_IKF->update(z)  && print_belief) {
         auto p_bel = ptr_IKF->get_belief();
-        //std::cout << "* Update Rel [" << ID << "," << ID_J << "]:t=" << t_curr << ", mean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
+        std::cout << "* Update [" << ID <<  "]:t=" << t_curr << ", mean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
       }
-
     }
-    auto p_bel = ptr_IKF->get_belief();
 
+    if (perform_joint)
+    {
+      for(auto & elem : dict_p_rel_noisy_arr) {
+        size_t ID_J = elem.first;
+        Eigen::MatrixXd R (dim_z,dim_z);  // measurement covariance
+
+        Eigen::MatrixXd H_II(dim_z, dim_x); // Output matrix
+        Eigen::MatrixXd H_JJ(dim_z, dim_x); // Output matrix
+        R << std_dev_p_rel * std_dev_p_rel;
+        H_II << -1, 0;
+        H_JJ << 1, 0;
+
+        z << elem.second(idx);
+        if (ptr_IKF->joint_update(H_II, H_JJ, ID_J, R, z) && print_belief) {
+          auto p_bel = ptr_IKF->get_belief();
+          std::cout << "* Update Rel [" << ID << "," << ID_J << "]:t=" << t_curr << ", mean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
+        }
+
+      }
+    }
+
+    auto p_bel = ptr_IKF->get_belief();
     Eigen::VectorXd mean_apos = p_bel->mean();
     traj_est.p_arr(idx) = mean_apos(0);
     traj_est.v_arr(idx) = mean_apos(1);
@@ -116,6 +122,9 @@ public:
 
 public:
   size_t ID = 0;
+  bool perform_private = true;
+  bool perform_joint = true;
+  bool print_belief = false;
   double const dt;
   double const std_dev_p = 0.05;
   double const std_dev_a = 0.05;

@@ -33,8 +33,9 @@ int main(int /*argc*/, char** /*argv[]*/)
   std::cout << "* \t N = " << num_instances << std::endl;
   std::cout << "noisy control input 'a' with std_dev_a for prediction" << std::endl;
   std::cout << "noisy position measurement 'p' with std_dev_p for private state correction" << std::endl;
-  std::cout << "noisy relative position measurement 'p_i_j' with std_dev_p_rel for isolated joint state correction between filter 1 and 2 using the Isolated Kalman Filter." << std::endl;
-  std::cout << "see: https://www.kalmanfilter.net/modeling.html (Example continued: constant acceleration moving body)" << std::endl;
+  std::cout << " -> noisy position measurement is just obtained by filter instance 0" << std::endl;
+  std::cout << "noisy relative position measurement 'p_i_j' with std_dev_p_rel for isolated joint state correction between filter i and j using the Isolated Kalman Filter." << std::endl;
+  std::cout << "for system model see: https://www.kalmanfilter.net/modeling.html (Example continued: constant acceleration moving body)" << std::endl;
 
 
   std::shared_ptr<ikf::IKFHandlerStd> ptr_Handler(new ikf::IKFHandlerStd());
@@ -99,11 +100,10 @@ int main(int /*argc*/, char** /*argv[]*/)
     size_t ID = i;
     dict_instance[i] = ptr_Instance(new SimInstance(F, G, Q, H_private, R_private, ID, dt, D, omega, std_dev_p, std_dev_a, std_dev_p_rel, ptr_Handler));
     ptr_Handler->add(dict_instance[i]->ptr_IKF);
+    if (i > 0) {
+      dict_instance[i]->perform_private = false;
+    }
   }
-  //SimInstance inst1(F, G, Q, H_private, R_private, 1, dt, D, omega, std_dev_p, std_dev_a, std_dev_p_rel, ptr_Handler);
-  //SimInstance inst2(F, G, Q, H_private, R_private, 2, dt, D, omega, std_dev_p, std_dev_a, std_dev_p_rel, ptr_Handler);
-  //ptr_Handler->add(inst1.ptr_IKF);
-  //ptr_Handler->add(inst2.ptr_IKF);
 
   for(int i=0; i < num_instances; i++) {
     size_t ID_I = i;
