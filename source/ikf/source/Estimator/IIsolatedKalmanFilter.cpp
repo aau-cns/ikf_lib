@@ -17,17 +17,15 @@
 
 namespace ikf {
 
-IIsolatedKalmanFilter::IIsolatedKalmanFilter(std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler, const std::string &name, const size_t ID, const bool handle_delayed_meas, const double horizon_sec) : IKalmanFilter(horizon_sec, handle_delayed_meas), ptr_Handler(ptr_Handler), HistCorr(horizon_sec), m_name(name), m_ID(ID) {
+IIsolatedKalmanFilter::IIsolatedKalmanFilter(std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler, const size_t ID, const bool handle_delayed_meas, const double horizon_sec) : IKalmanFilter(horizon_sec, handle_delayed_meas), ptr_Handler(ptr_Handler), HistCorr(horizon_sec), m_ID(ID) {
 
 }
 
 ProcessMeasResult_t IIsolatedKalmanFilter::process_measurement(const MeasData &m) {
   // propagation and private -> to filter instance
   // joint -> use ptr_Handler and two filter instances: The CIH must provide others belief and ccf
-
   ProcessMeasResult_t res;
   res.rejected = true;
-
 
   if (m.obs_type == eObservationType::LOCAL_JOINT) {
     res = local_joint_measurement(m);

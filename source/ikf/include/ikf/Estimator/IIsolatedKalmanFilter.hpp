@@ -27,7 +27,7 @@ class IsolatedKalmanFilterHandler;
 ///
 class IKF_API IIsolatedKalmanFilter: public IKalmanFilter {
 public:
-  IIsolatedKalmanFilter(std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler, std::string const &name, size_t const ID,
+  IIsolatedKalmanFilter(std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler, size_t const ID,
                         bool const handle_delayed_meas=true , double const horizon_sec=1.0);
   virtual ~IIsolatedKalmanFilter() {}
 
@@ -36,8 +36,12 @@ public:
   virtual bool enabled() const { return m_enabled; }
   virtual void enabled(bool const val) { m_enabled = val; }
   void reset();
+
+  ///////////////////////////////////////////////////////////////////////////////////
   /// pure virtual method
   virtual ProcessMeasResult_t local_joint_measurement(MeasData const& m) = 0;
+  /// pure virtual method
+  ///////////////////////////////////////////////////////////////////////////////////
   virtual ProcessMeasResult_t process_measurement(MeasData const& m);
 
   virtual void initialize(ptr_belief bel_init, Timestamp const& t);

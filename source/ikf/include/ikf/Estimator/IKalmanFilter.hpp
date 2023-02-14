@@ -19,22 +19,32 @@
 
 namespace ikf {
 
-
+///
+/// \brief The IKalmanFilter class
+/// Supporting delayed/ out-of-order/sequence measurements. In order to reprocess measurements, they need to be
+/// stored as "MeasData" in a fixed time horizon buffer "HistMeas".
 class IKF_API IKalmanFilter {
 public:
   IKalmanFilter(double const horizon_sec_=1.0, bool const handle_delayed_meas=true);
-
-  bool handle_delayed_meas() const;
-  void handle_delayed_meas(bool const val);
-
+  IKalmanFilter(ptr_belief bel_0, double const horizon_sec_=1.0, bool const handle_delayed_meas=true);
+  ///////////////////////////////////////////////////////////////////////////////////
   /// pure virtual method
   virtual ProcessMeasResult_t progapation_measurement(MeasData const& m) = 0;
   virtual ProcessMeasResult_t local_private_measurement(MeasData const& m) = 0;
-
-  virtual void initialize(ptr_belief bel_init, Timestamp const& t);
+  /// pure virtual method
+  ///////////////////////////////////////////////////////////////////////////////////
+  ///
   virtual ProcessMeasResult_t process_measurement(MeasData const& m);
+  ///
+  ///////////////////////////////////////////////////////////////////////////////////
+
+  bool handle_delayed_meas() const;
+  void handle_delayed_meas(bool const val);
+  virtual void initialize(ptr_belief bel_init);
+  virtual void initialize(ptr_belief bel_init, Timestamp const& t);
   virtual bool redo_updates_after_t(Timestamp const& t);
   Timestamp current_t() const;
+  ptr_belief current_belief() const;
   bool exist_belief_at_t(Timestamp const& t) const;
   ptr_belief get_belief_at_t(Timestamp const& t) const;
   bool get_belief_at_t(Timestamp const& t, ptr_belief& bel);
@@ -49,6 +59,8 @@ public:
   virtual void check_horizon();
 
 protected:
+  virtual bool propagate_from_to(const Timestamp &t_a, const Timestamp &t_b);
+
   // KF:
   virtual  bool apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
   // EKF: if linearizing about bel_II_apri
@@ -58,13 +70,14 @@ protected:
   // KF:
   virtual bool apply_private_observation(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t);
   // EKF: if linearizing about bel_II_apri
-  virtual bool apply_private_observation(ptr_belief& bel_II_apri, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t);
+  virtual bool apply_private_observation(ptr_belief& bel_II_apri, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &r);
 
 
   TTimeHorizonBuffer<ptr_belief> HistBelief;
   TTimeHorizonBuffer<MeasData> HistMeas;
+  TTimeHorizonBuffer<MeasData> HistMeasPropagation;
   double max_time_horizon_sec;
-  bool m_handle_delayed_meas = true;  // specifies, it the instance maintains a history of past measurements or not
+  bool m_handle_delayed_meas = true;  // specifies, if the instance maintains a history of past measurements or not
 
 }; // class IKalmanFilter
 
