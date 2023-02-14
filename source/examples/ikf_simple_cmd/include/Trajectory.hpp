@@ -44,15 +44,15 @@ public:
     std::cout << "a_arr=" << a_arr.transpose() << std::endl;
   }
 
-  void plot_trajectory(size_t const num_fig=0) {
+  void plot_trajectory(size_t const num_fig=0, std::string const& desc = "Trajectory") {
     using namespace matplot;
     auto f1 = figure(true);
-    f1->name("Trajectory" + std::to_string(num_fig));
+    f1->name(desc + std::to_string(num_fig));
     f1->number_title(true);
     f1->draw();
     f1->font("Arial");
     f1->font_size(12);
-    f1->title("Fig" + std::to_string(num_fig));
+    f1->title(desc + std::to_string(num_fig));
 
     tiledlayout(3, 1);
     std::vector<double> x = ikf::utils::to_vector(t_arr);

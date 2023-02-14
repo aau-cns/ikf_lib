@@ -20,17 +20,22 @@ void wait_for_key() {
 
 int main(int /*argc*/, char** /*argv[]*/)
 {
-  int num_instances = 4;
+  int const N = 4; // number of filter instances
+
+
+  int const num_instances = std::max(N, 1); // at least 1 is needed!
   // Calculate and print fibonacci number
   std::cout << "ikf_cmd example: 1D constant acceleration moving body (harmonic motion)" << std::endl;
   std::cout << "* \t p = sin(t*omega   + omega_0)*amplitude + offset" << std::endl;
   std::cout << "* \t v = omega* cost(t*omega  + omega_0)*amplitude" << std::endl;
   std::cout << "* \t a = -omega*omega*sin(omega*t_arr  + omega_0)*amplitude" << std::endl;
-  std::cout << "* \t omega_0 = 0.4*ID" << std::endl;
+  std::cout << "* \t omega_0 = PI/8*ID" << std::endl;
   std::cout << "* \t amplitude = 1+0.1*ID" << std::endl;
-  std::cout << "* \t offset = ID" << std::endl;
+  std::cout << "* \t offset = 0" << std::endl;
   std::cout << "* \t ID = number of filter instance [0,N-1]" << std::endl;
   std::cout << "* \t N = " << num_instances << std::endl;
+  std::cout << "* \t Sigma(0) = eye(2)*0.5 " << num_instances << std::endl;
+  std::cout << "* \t mean(0) = randn(Sigma(0)) " << num_instances << std::endl;
   std::cout << "noisy control input 'a' with std_dev_a for prediction" << std::endl;
   std::cout << "noisy position measurement 'p' with std_dev_p for private state correction" << std::endl;
   std::cout << " -> noisy position measurement is just obtained by filter instance 0" << std::endl;
@@ -39,17 +44,13 @@ int main(int /*argc*/, char** /*argv[]*/)
 
 
   std::shared_ptr<ikf::IKFHandlerStd> ptr_Handler(new ikf::IKFHandlerStd());
-
-  // https://github.com/hmartiro/kalman-cpp/blob/master/kalman-test.cpp
-  // https://www.kalmanfilter.net/modeling.html (Example continued: constant acceleration moving body)
-
-  int dim_x = 2; // Number of states
-  int dim_z = 1; // Number of measurements
-  int dim_u = 1; // Number of inputs
+  int const dim_x = 2; // Number of states
+  int const dim_z = 1; // Number of measurements
+  int const dim_u = 1; // Number of inputs
 
   double const dt = 1.0/100; // Time step
-  double const D = 2;
-  double const omega = M_PI;
+  double const D = 5;
+  double const omega = M_PI/2;
   double const std_dev_p = 0.05;
   double const std_dev_a = 0.05;
   double const std_dev_p_rel = 0.05;
@@ -105,10 +106,12 @@ int main(int /*argc*/, char** /*argv[]*/)
     }
   }
 
-  for(int i=0; i < num_instances; i++) {
-    size_t ID_I = i;
-    size_t ID_J = (i + 1) % num_instances;
-    dict_instance[ID_I]->generate_rel_meas(dict_instance[ID_J]->traj, dict_instance[ID_J]->ID);
+  if (num_instances > 1) {
+    for(int i=0; i < num_instances; i++) {
+      size_t ID_I = i;
+      size_t ID_J = (i + 1) % num_instances;
+      dict_instance[ID_I]->generate_rel_meas(dict_instance[ID_J]->traj, dict_instance[ID_J]->ID);
+    }
   }
 
 
@@ -124,9 +127,12 @@ int main(int /*argc*/, char** /*argv[]*/)
     }
   }
 
+
   for(int i=0; i < num_instances; i++) {
-    dict_instance[i]->traj.plot_trajectory(i);
-    dict_instance[i]->traj_est.plot_trajectory(i+100);
+    dict_instance[i]->traj.plot_trajectory(i, "True");
+    dict_instance[i]->traj_est.plot_trajectory(i, "Estimated");
+    dict_instance[i]->compute_error();
+    dict_instance[i]->traj_err.plot_trajectory(i, "Error");
   }
 
   wait_for_key();

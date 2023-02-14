@@ -24,23 +24,25 @@ public:
               double const std_dev_p, double const std_dev_a, double const std_dev_p_rel,
               std::shared_ptr<ikf::IKFHandlerStd> ptr_Handler) : ID(ID), dt(dt), std_dev_p(std_dev_p), std_dev_a(std_dev_a), std_dev_p_rel(std_dev_p_rel), ptr_IKF(new LinearIKF(ptr_Handler, ID)) {
 
-    //double const omega = 0.4;
-    double const omega_0 = 0.4;
+    double const omega_0 = M_PI/8;
     ptr_IKF->define_system(F, G, Q, H, R, dt);
-    traj.generate_sine(dt, D, omega, omega_0*ID, (0.1*ID+1), ID);
+    traj.generate_sine(dt, D, omega, omega_0*ID, (0.1*ID+1), 0);
 
     traj_est = Trajectory(traj.size());
+    traj_err = Trajectory(traj.size());
     std::shared_ptr<ikf::LinearBelief> ptr_bel0(new ikf::LinearBelief());
 
     Eigen::VectorXd m_0(2,1);
     m_0 << traj.p_arr(0), traj.v_arr(0);
 
-    auto gen = ikf::MultivariateNormal<double>(m_0.matrix(), Eigen::Matrix2d::Identity());
 
+    auto Sigma_0 = Eigen::Matrix2d::Identity()*0.5;
+
+    auto gen = ikf::MultivariateNormal<double>(m_0.matrix(), Sigma_0);
     auto init_mean = gen.samples(1);
     m_0 << init_mean(0,0), init_mean(1,0);
     ptr_bel0->mean(m_0);
-    ptr_bel0->Sigma(Eigen::Matrix2d::Identity());
+    ptr_bel0->Sigma(Sigma_0);
     ptr_bel0->set_timestamp(ikf::Timestamp(0.0));
     ptr_IKF->set_belief(ptr_bel0);
 
@@ -52,7 +54,31 @@ public:
     traj_est.v_arr(0) = m_0(1);
     traj_est.a_arr(0) = a_noisy_arr(0);
     traj_est.t_arr(0) = traj.t_arr(0);
+
+
   }
+
+  void compute_error() {
+    double  rmse_p = 0, rmse_v = 0;
+
+    for (int t = 0; t < traj.t_arr.size(); t++)
+    {
+      traj_err.p_arr(t) =  traj.p_arr(t) - traj_est.p_arr(t);
+      traj_err.v_arr(t) =  traj.v_arr(t) - traj_est.v_arr(t);
+      traj_err.a_arr(t) =  traj.a_arr(t) - traj_est.a_arr(t);
+      traj_err.t_arr(t) = traj.t_arr(t);
+
+      rmse_p += traj_err.p_arr(t)*traj_err.p_arr(t);
+      rmse_v += traj_err.v_arr(t)*traj_err.v_arr(t);
+    }
+    rmse_p /= traj.t_arr.size();
+    rmse_v /= traj.t_arr.size();
+
+    rmse_p = std::sqrt(rmse_p);
+    rmse_v = std::sqrt(rmse_v);
+    std::cout << "* RMSE[" << ID <<  "]: p=" << rmse_p << ", v= " << rmse_v << std::endl;
+  }
+
 
   void generate_rel_meas(Trajectory const& traj2, size_t const ID_2) {
     dict_p_rel_noisy_arr.emplace(ID_2, traj.generate_noisy_rel_pos(traj2, std_dev_p_rel));
@@ -132,6 +158,7 @@ public:
   std::shared_ptr<LinearIKF> ptr_IKF;
   Trajectory traj;
   Trajectory traj_est;
+  Trajectory traj_err;
   Eigen::ArrayXd p_noisy_arr;
   Eigen::ArrayXd a_noisy_arr;
   std::map<size_t, Eigen::ArrayXd> dict_p_rel_noisy_arr;
