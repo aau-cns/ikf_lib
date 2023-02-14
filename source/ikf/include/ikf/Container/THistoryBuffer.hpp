@@ -23,8 +23,6 @@
 
 namespace ikf
 {
-  // TODO: check if std::map is faster than set!
-
   /**
    * @brief The THistoryBuffer class to store data with associated timestamps
    */
@@ -32,25 +30,26 @@ namespace ikf
   class IKF_API THistoryBuffer
   {
     public:
-
-
       typedef TStampedData<T> TData;
       typedef std::map<std::int64_t, T> TContainer;
+
       void insert(T const& data, Timestamp const t);
       void insert(T const& data, double const t_sec);
       void insert(TData const& data);
       size_t size() const;
+      bool at(size_t const idx, TData const& data);
       void clear();
-
-
 
       void set(TContainer const& buffer){
         buffer_ = buffer;
       }
 
+      bool index_at_t(Timestamp const&t, size_t &idx) const;
+
       bool exist_at_t(double const t) const;
       bool exist_at_t(Timestamp const&t) const;
       bool exist_after_t(Timestamp const&t) const;
+      bool exist_before_t(Timestamp const&t) const;
 
       bool get_oldest_t(Timestamp &t) const;
       bool get_latest_t(Timestamp &t) const;
@@ -73,7 +72,7 @@ namespace ikf
       ///           accumulation value a (initialized to init) and the value of the current element b.
       ///           The signature of the function should be equivalent to the following: T fun(const T &a, const T &b)
       ///
-      template<typename BinaryOperation > // Ret fun(const Type1 &a, const Type2 &b)
+      template<typename BinaryOperation> // Ret fun(const Type1 &a, const Type2 &b)
       inline T accumulate_between_t1_t2(Timestamp const& t1, Timestamp const& t2, T init, BinaryOperation op ) const {
 
         if (t1 < t2 && size() > 0) {
@@ -86,7 +85,7 @@ namespace ikf
         return init;
       }
 
-      template<typename BinaryOperation > // Ret fun(const Type1 &a, const Type2 &b)
+      template<typename BinaryOperation> // Ret fun(const Type1 &a, const Type2 &b)
       inline T accumulate(T init, BinaryOperation op ) {
         auto __first = buffer_.begin();
         auto __last =  buffer_.end();
@@ -95,7 +94,7 @@ namespace ikf
         return init;
       }
 
-      template<typename Operation >
+      template<typename Operation>
       inline void foreach_between_t1_t2(Timestamp const& t1, Timestamp const& t2, Operation op ) {
         if (t1 < t2 && size() > 0) {
           auto __first = lower_bound(t1);
@@ -106,7 +105,7 @@ namespace ikf
         }
       }
 
-      template<typename Operation >
+      template<typename Operation>
       inline void foreach(Operation op ) {
         auto __first = buffer_.begin();
         auto __last =  buffer_.end();
@@ -182,8 +181,29 @@ namespace ikf
   }
 
   template<typename T>
+  bool THistoryBuffer<T>::at(const size_t idx, const TData &data) {
+      if (idx < buffer_.size()) {
+          auto iter = buffer_.begin();
+          std::advance(iter, idx);
+          data.data = iter->second;
+          data.stamp = Timestamp(iter->first);
+          return true;
+      }
+      return false;
+  }
+
+  template<typename T>
   void THistoryBuffer<T>::clear() {
       buffer_.clear();
+  }
+
+  template<typename T>
+  bool THistoryBuffer<T>::index_at_t(const Timestamp &t, size_t &idx) const {
+      if(exist_at_t(t)) {
+          auto it = buffer_.find(t.stamp_ns());
+          idx = std::distance(buffer_.begin(), it);
+      }
+      return false;
   }
 
   template<typename T>
@@ -201,6 +221,18 @@ namespace ikf
   bool THistoryBuffer<T>::exist_after_t(const Timestamp &t) const {
       auto it = upper_bound(t);
       if (it != buffer_.end()) {
+          return true;
+      }
+      return false;
+  }
+
+  template<typename T>
+  bool THistoryBuffer<T>::exist_before_t(const Timestamp &t) const {
+      auto it = lower_bound(t);
+      if (it != buffer_.end()) {
+          if (it->first == t.stamp_ns()) {
+              return it != buffer_.begin();
+          }
           return true;
       }
       return false;
