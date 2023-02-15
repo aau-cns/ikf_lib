@@ -40,7 +40,7 @@ namespace ikf
       bool empty() const {
         return buffer_.empty();
       }
-      bool at(size_t const idx, TData const& data);
+      bool at(size_t const idx, TData& data);
       void clear();
 
       void set(TContainer const& buffer){
@@ -184,7 +184,7 @@ namespace ikf
   }
 
   template<typename T>
-  bool THistoryBuffer<T>::at(const size_t idx, const TData &data) {
+  bool THistoryBuffer<T>::at(const size_t idx, TData &data) {
       if (idx < buffer_.size()) {
           auto iter = buffer_.begin();
           std::advance(iter, idx);

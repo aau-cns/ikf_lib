@@ -18,15 +18,15 @@
 
 namespace ikf
 {
-  template<typename T>
-  class IKF_API TTimeHorizonBuffer: public THistoryBuffer<T>
+  template<typename T, class TBuffer=THistoryBuffer<T>>
+  class IKF_API TTimeHorizonBuffer: public TBuffer
   {
     public:
       TTimeHorizonBuffer(double const horizon) : max_horizon_(std::abs(horizon)) {}
       ~TTimeHorizonBuffer() = default;
 
-      TTimeHorizonBuffer<T> clone() {
-        TTimeHorizonBuffer buf = TTimeHorizonBuffer<T>(max_horizon_);
+      TTimeHorizonBuffer<T, TBuffer> clone() {
+        TTimeHorizonBuffer<T, TBuffer> buf = TTimeHorizonBuffer<T, TBuffer>(max_horizon_);
         buf.set(this->buffer_);
         return buf;
       }

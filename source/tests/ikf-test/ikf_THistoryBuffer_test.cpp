@@ -15,49 +15,62 @@ ikf::THistoryBuffer<int> get_sorted_buffer(int const n=10) {
   return hist;
 }
 
+template <typename T>
+void ctor_init_test() {
+  ikf::THistoryBuffer<T> test;
+
+  EXPECT_TRUE(test.size() == 0);
+  EXPECT_TRUE(test.empty());
+  EXPECT_FALSE(test.exist_at_t(ikf::Timestamp(0.2)));
+
+  ikf::TStampedData<T> res;
+  EXPECT_FALSE(test.at(1,res));
+
+  test.insert(1, 0.1);
+  test.insert(2, ikf::Timestamp(0.2));
+  EXPECT_TRUE(test.exist_at_t(ikf::Timestamp(0.2)));
+  test.insert(3, ikf::Timestamp(0.15));
+  test.insert(4, ikf::Timestamp(0.4));
+  test.insert(5, ikf::Timestamp(0.5));
+  test.insert(6, ikf::Timestamp(0.45));
+  EXPECT_TRUE(test.size() == 6);
+
+  std::cout << test << std::endl;
+
+  T elem = 0;
+  EXPECT_TRUE(test.get_latest(elem));
+  std::cout << "latest: " << elem << std::endl;
+  EXPECT_TRUE(test.get_oldest(elem));
+  std::cout << "oldest: " << elem << std::endl;
+
+  EXPECT_FALSE(test.get_at_t(0.2222, elem));
+  EXPECT_TRUE(test.get_at_t(0.2, elem));
+  EXPECT_TRUE(elem == 2);
+  std::cout << "at 0.2 sec: " << elem << std::endl;
+
+  EXPECT_TRUE(test.get_at_t(ikf::Timestamp(0.45), elem));
+  EXPECT_TRUE(elem == 6);
+  std::cout << "at 0.45 sec: " << elem << std::endl;
+
+  EXPECT_TRUE(test.get_before_t(ikf::Timestamp(0.45), elem));
+  EXPECT_TRUE(elem == 4);
+  std::cout << "before 0.45 sec: " << elem << std::endl;
+
+  EXPECT_TRUE(test.get_after_t(ikf::Timestamp(0.45), elem));
+  EXPECT_TRUE(elem == 5);
+  std::cout << "after 0.45 sec: " << elem << std::endl;
+
+
+  EXPECT_FALSE(test.get_before_t(ikf::Timestamp(0.1), elem));
+  EXPECT_FALSE(test.get_after_t(ikf::Timestamp(0.5), elem));
+}
+
 TEST_F(IKF_THistoryBuffer_test, ctor_init)
 {
 
-    ikf::THistoryBuffer<int> test;
-
-    EXPECT_TRUE(test.size() == 0);
-
-    test.insert(1, 0.1);
-    test.insert(2, ikf::Timestamp(0.2));
-    test.insert(3, ikf::Timestamp(0.15));
-    test.insert(4, ikf::Timestamp(0.4));
-    test.insert(5, ikf::Timestamp(0.5));
-    test.insert(6, ikf::Timestamp(0.45));
-    EXPECT_TRUE(test.size() == 6);
-
-    std::cout << test << std::endl;
-
-    int elem = 0;
-    EXPECT_TRUE(test.get_latest(elem));
-    std::cout << "latest: " << elem << std::endl;
-    EXPECT_TRUE(test.get_oldest(elem));
-    std::cout << "oldest: " << elem << std::endl;
-
-    EXPECT_FALSE(test.get_at_t(0.2222, elem));
-    EXPECT_TRUE(test.get_at_t(0.2, elem));
-    EXPECT_TRUE(elem == 2);
-    std::cout << "at 0.2 sec: " << elem << std::endl;
-
-    EXPECT_TRUE(test.get_at_t(ikf::Timestamp(0.45), elem));
-    EXPECT_TRUE(elem == 6);
-    std::cout << "at 0.45 sec: " << elem << std::endl;
-
-    EXPECT_TRUE(test.get_before_t(ikf::Timestamp(0.45), elem));
-    EXPECT_TRUE(elem == 4);
-    std::cout << "before 0.45 sec: " << elem << std::endl;
-
-    EXPECT_TRUE(test.get_after_t(ikf::Timestamp(0.45), elem));
-    EXPECT_TRUE(elem == 5);
-    std::cout << "after 0.45 sec: " << elem << std::endl;
-
-
-    EXPECT_FALSE(test.get_before_t(ikf::Timestamp(0.1), elem));
-    EXPECT_FALSE(test.get_after_t(ikf::Timestamp(0.5), elem));
+  ctor_init_test<int>();
+  ctor_init_test<double>();
+  ctor_init_test<char>();
 
 
 }
