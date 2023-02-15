@@ -38,6 +38,7 @@ public:
     ikf::Timestamp t_a;
     ikf::Timestamp t_b = m.t_m;
     if(!get_belief_before_t(t_b, bel_a, t_a)) {
+      std::cout << "ERROR: apply_propagation belief before at t=" << t_b << std::endl;
       return res;
     }
     double const dt = t_b.to_sec() - t_a.to_sec(); // Time step
@@ -53,7 +54,7 @@ public:
     Eigen::MatrixXd Q_ab = G_a * m.R * G_a.transpose() + Q_II_ab;
 
     if(!apply_propagation(bel_a, mean_b, Phi_ab, Q_ab, t_a, t_b)) {
-
+      std::cout << "ERROR: apply_propagation failed at t=" << t_b << std::endl;
     }
 
    res.observation_type = "control_input_acc";

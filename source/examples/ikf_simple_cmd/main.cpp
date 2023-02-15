@@ -20,7 +20,7 @@ void wait_for_key() {
 
 int main(int /*argc*/, char** /*argv[]*/)
 {
-  int const N = 4; // number of filter instances
+  int const N = 2; // number of filter instances
 
 
   int const num_instances = std::max(N, 1); // at least 1 is needed!
@@ -42,7 +42,8 @@ int main(int /*argc*/, char** /*argv[]*/)
   std::cout << "noisy relative position measurement 'p_i_j' with std_dev_p_rel for isolated joint state correction between filter i and j using the Isolated Kalman Filter." << std::endl;
   std::cout << "for system model see: https://www.kalmanfilter.net/modeling.html (Example continued: constant acceleration moving body)" << std::endl;
 
-
+  ikf::GaussianNoiseGen& gen = ikf::GaussianNoiseGen::instance();
+  gen.seed(123123);
   std::shared_ptr<ikf::IKFHandlerStd> ptr_Handler(new ikf::IKFHandlerStd());
   int const dim_x = 2; // Number of states
   int const dim_z = 1; // Number of measurements

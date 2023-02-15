@@ -124,6 +124,19 @@ public:
         auto p_bel = ptr_IKF->current_belief();
         std::cout << "* Update [" << ID <<  "]:t=" << t_curr << ", mean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
       }
+
+      // Apply correct beliefs from the past!
+      if (delay_private) {
+        for (int i = delay_private; i > 0; i--) {
+          size_t const idx_meas = idx - i;
+          ikf::Timestamp t_meas(traj.t_arr(idx_meas));
+          auto p_bel = ptr_IKF->get_belief_at_t(t_meas);
+          Eigen::VectorXd mean_apos = p_bel->mean();
+          traj_est.p_arr(idx_meas) = mean_apos(0);
+          traj_est.v_arr(idx_meas) = mean_apos(1);
+        }
+      }
+
     }
 
     if (perform_joint && idx >= delay_joint)
@@ -151,7 +164,20 @@ public:
           std::cout << "* Update Rel [" << ID << "," << ID_J << "]:t=" << t_curr << ", mean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
         }
 
+        // Apply correct beliefs from the past!
+        if (delay_joint) {
+          for (int i = delay_joint; i > 0; i--) {
+            size_t const idx_meas = idx - i;
+            ikf::Timestamp t_meas(traj.t_arr(idx_meas));
+            auto p_bel = ptr_IKF->get_belief_at_t(t_meas);
+            Eigen::VectorXd mean_apos = p_bel->mean();
+            traj_est.p_arr(idx_meas) = mean_apos(0);
+            traj_est.v_arr(idx_meas) = mean_apos(1);
+          }
+        }
+
       }
+
     }
 
     auto p_bel = ptr_IKF->current_belief();
@@ -166,8 +192,8 @@ public:
 
 public:
   size_t ID = 0;
-  size_t delay_private = 0;
-  size_t delay_joint = 0;
+  size_t delay_private = 1;
+  size_t delay_joint = 2;
   bool perform_private = true;
   bool perform_joint = true;
   bool print_belief = false;

@@ -42,9 +42,11 @@ int main(int /*argc*/, char** /*argv[]*/)
   // https://github.com/hmartiro/kalman-cpp/blob/master/kalman-test.cpp
   // https://www.kalmanfilter.net/modeling.html (Example continued: constant acceleration moving body)
 
+  ikf::GaussianNoiseGen& gen = ikf::GaussianNoiseGen::instance();
+  gen.seed(123123);
   double const dt = 1.0/100; // Time step
-  double const D = 2;
-  double const omega = M_PI;
+  double const D = 5;
+  double const omega = M_PI/2;
   double const std_dev_p = 0.05;
   double const std_dev_a = 0.05;
   double const std_dev_p_rel = 0.05;
