@@ -44,6 +44,7 @@ public:
   ///////////////////////////////////////////////////////////////////////////////////
   virtual ProcessMeasResult_t process_measurement(MeasData const& m);
 
+  virtual void initialize(ptr_belief bel_init);
   virtual void initialize(ptr_belief bel_init, Timestamp const& t);
 
   virtual bool get_apri_belief_and_fcc_at_t(Timestamp const& t, size_t ID_other,  ptr_belief ptr_bel, Eigen::MatrixXd & factorized_cross_cov);
@@ -75,6 +76,7 @@ public:
   bool apply_correction_at_t(Timestamp const&t, Eigen::MatrixXd const& Sigma_apri, Eigen::MatrixXd const Sigma_apos);
 
 protected:
+  virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
   ///////////////////////////////////////////
   /// FUSION LOGIC:
   // KF:

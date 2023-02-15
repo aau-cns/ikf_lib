@@ -59,6 +59,8 @@ public:
   virtual void check_horizon();
 
 protected:
+
+  virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
   virtual bool propagate_from_to(const Timestamp &t_a, const Timestamp &t_b);
 
   // KF:

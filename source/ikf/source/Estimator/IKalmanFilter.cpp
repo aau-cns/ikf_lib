@@ -44,28 +44,7 @@ ProcessMeasResult_t IKalmanFilter::process_measurement(const MeasData &m) {
   // propagation and private -> to filter instance
   // joint -> use ptr_CIH and two filter instances: The CIH must provide others belief and ccf
 
-  ProcessMeasResult_t res;
-  res.rejected = true;
-  switch(m.obs_type) {
-    case eObservationType::PROPAGATION:
-      {
-        res = progapation_measurement(m);
-        break;
-      }
-    case eObservationType::PRIVATE_OBSERVATION:
-      {
-        res = local_private_measurement(m);
-        break;
-      }
-    case eObservationType::JOINT_OBSERVATION:
-    case eObservationType::UNKNOWN:
-    default:
-      res.rejected = true;
-      break;
-  }
-
-
-
+  auto res = IKalmanFilter::reprocess_measurement(m);
 
   if (m_handle_delayed_meas) {
     Timestamp t_m = m.t_m;
@@ -80,24 +59,32 @@ ProcessMeasResult_t IKalmanFilter::process_measurement(const MeasData &m) {
     }
 
     if (m.obs_type == eObservationType::PROPAGATION) {
+      RTV_EXPECT_FALSE_MSG(HistMeas.exist_at_t(t_m), "Measurement already exists at t=" + t_m.str());
       HistMeas.insert(m, t_m);
       // HistMeasPropagation can be at the actual timestamp, as no updates will coincide!
       HistMeasPropagation.insert(m, m.t_m);
     }
     else {
+      RTV_EXPECT_FALSE_MSG(HistMeas.exist_at_t(m.t_m), "Measurement already exists at t=" + m.t_m.str());
       HistMeas.insert(m, m.t_m);
     }
 
   }
   return res;
-
 }
 
 bool IKalmanFilter::redo_updates_after_t(const Timestamp &t) {
   remove_beliefs_after_t(t);
   Timestamp t_after, t_last;
   if (HistMeas.get_after_t(t, t_after) &&  HistMeas.get_latest_t(t_last)) {
-    HistMeas.foreach_between_t1_t2(t_after, t_last, [this](MeasData const&m){ this->process_measurement(m); });
+    if (t_after == t_last) {
+      MeasData m;
+      HistMeas.get_at_t(t_after, m);
+      this->reprocess_measurement(m);
+    }
+    else {
+      HistMeas.foreach_between_t1_t2(t_after, t_last, [this](MeasData const&m){ this->reprocess_measurement(m); });
+    }
     return true;
   }
   return false;
@@ -126,7 +113,7 @@ bool IKalmanFilter::exist_belief_at_t(const Timestamp &t) const {
 ptr_belief IKalmanFilter::get_belief_at_t(const Timestamp &t) const {
   ptr_belief bel;
   if (!HistBelief.get_at_t(t, bel)) {
-    std::cout << "Iikf::get_belief_at_t: could not find belief at t=" << t << std::endl;
+    std::cout << "IKalmanFilter::get_belief_at_t: could not find belief at t=" << t << std::endl;
   }
   return bel;
 }
@@ -139,7 +126,9 @@ bool IKalmanFilter::get_belief_at_t(const Timestamp &t, ptr_belief &bel) {
     if(HistBelief.get_before_t(t, stamped_data)){
 
       // TODO: simplification for now!
-      bel = stamped_data.data;
+      bel = stamped_data.data->clone();
+      bel->set_timestamp(t);
+      HistBelief.insert(bel, t);
       return true;
 
 //      if (propagate_from_to(stamped_data.stamp, t)) {
@@ -207,6 +196,29 @@ void IKalmanFilter::set_horizon(const double t_hor) {
 
 void IKalmanFilter::check_horizon() {
   HistBelief.check_horizon();
+}
+
+ProcessMeasResult_t IKalmanFilter::reprocess_measurement(const MeasData &m) {
+  ProcessMeasResult_t res;
+  res.rejected = true;
+  switch(m.obs_type) {
+    case eObservationType::PROPAGATION:
+      {
+        res = progapation_measurement(m);
+        break;
+      }
+    case eObservationType::PRIVATE_OBSERVATION:
+      {
+        res = local_private_measurement(m);
+        break;
+      }
+    case eObservationType::JOINT_OBSERVATION:
+    case eObservationType::UNKNOWN:
+    default:
+      res.rejected = true;
+      break;
+  }
+  return res;
 }
 
 bool IKalmanFilter::propagate_from_to(const Timestamp &t_a, const Timestamp &t_b) {

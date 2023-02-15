@@ -24,25 +24,42 @@ IIsolatedKalmanFilter::IIsolatedKalmanFilter(std::shared_ptr<IsolatedKalmanFilte
 ProcessMeasResult_t IIsolatedKalmanFilter::process_measurement(const MeasData &m) {
   // propagation and private -> to filter instance
   // joint -> use ptr_Handler and two filter instances: The CIH must provide others belief and ccf
-  ProcessMeasResult_t res;
-  res.rejected = true;
+  ProcessMeasResult_t res = reprocess_measurement(m);
 
-  if (m.obs_type == eObservationType::JOINT_OBSERVATION) {
-    res = local_joint_measurement(m);
-    if (m_handle_delayed_meas) {
-      if (!res.rejected && HistMeas.exist_after_t(m.t_m)) {
+  if (m_handle_delayed_meas) {
+    Timestamp t_m = m.t_m;
+    if (m.obs_type == eObservationType::PROPAGATION) {
+      RTV_EXPECT_TRUE_THROW(m.t_m.stamp_ns() > 0, "measurement timestamp must be greater 0 ns");
+      t_m =  Timestamp(t_m.stamp_ns() - 1);
+    }
+    if (!res.rejected && HistMeas.exist_after_t(t_m)) {
 
-        // TODO: notify other instances to redo their updates!
-        ///ptr_Handler->redo_updates_after_t(res.ID_participants, m.t);
-        redo_updates_after_t(m.t_m);
+      // notify other instances to redo their updates!
+      if (m.obs_type == eObservationType::JOINT_OBSERVATION) {
+        ptr_Handler->redo_updates_after_t(res.ID_participants, m.t_m);
       }
+      redo_updates_after_t(m.t_m);
+    }
+
+
+
+    if (m.obs_type == eObservationType::PROPAGATION) {
+      RTV_EXPECT_FALSE_MSG(HistMeas.exist_at_t(t_m), "Measurement already exists at t=" + t_m.str());
+      HistMeas.insert(m, t_m);
+      // HistMeasPropagation can be at the actual timestamp, as no updates will coincide!
+      HistMeasPropagation.insert(m, m.t_m);
+    }
+    else {
+      RTV_EXPECT_FALSE_MSG(HistMeas.exist_at_t(m.t_m), "Measurement already exists at t=" + m.t_m.str());
       HistMeas.insert(m, m.t_m);
     }
-  } else {
-    res = IKalmanFilter::process_measurement(m);
   }
 
   return res;
+}
+
+void IIsolatedKalmanFilter::initialize(ptr_belief bel_init) {
+  initialize(bel_init, bel_init->timestamp());
 }
 
 void IIsolatedKalmanFilter::initialize(ptr_belief bel_init, const Timestamp &t) {
@@ -73,12 +90,7 @@ bool IIsolatedKalmanFilter::set_apos_belief_and_fcc_at_t(const Timestamp &t, siz
 
 bool IIsolatedKalmanFilter::redo_updates_after_t(const Timestamp &t) {
   remove_after_t(t);
-  Timestamp t_after, t_last;
-  if (HistMeas.get_after_t(t, t_after) &&  HistMeas.get_latest_t(t_last)) {
-    HistMeas.foreach_between_t1_t2(t_after, t_last, [this](MeasData const&m){ this->process_measurement(m); });
-    return true;
-  }
-  return false;
+  return IKalmanFilter::redo_updates_after_t(t);
 }
 
 bool IIsolatedKalmanFilter::clone_fccs(const size_t ID_old, const size_t ID_new) {
@@ -281,6 +293,19 @@ bool IIsolatedKalmanFilter::apply_correction_at_t(const Timestamp &t, const Eige
 bool IIsolatedKalmanFilter::apply_correction_at_t(const Timestamp &t, const Eigen::MatrixXd &Sigma_apri, const Eigen::MatrixXd Sigma_apos){
   Eigen::MatrixXd Lambda = Sigma_apos * Sigma_apri.inverse();
   return apply_correction_at_t(t, Lambda);
+}
+
+ProcessMeasResult_t IIsolatedKalmanFilter::reprocess_measurement(const MeasData &m) {
+  ProcessMeasResult_t res;
+  res.rejected = true;
+
+  if (m.obs_type == eObservationType::JOINT_OBSERVATION) {
+    res = local_joint_measurement(m);
+  } else {
+    res = IKalmanFilter::reprocess_measurement(m);
+  }
+
+  return res;
 }
 
 bool IIsolatedKalmanFilter::apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab,

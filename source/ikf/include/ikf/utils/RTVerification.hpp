@@ -45,7 +45,7 @@ namespace utilities
         }
         else
         {
-          std::cout << ss.str();
+          std::cout << ss.str() << std::endl;
           return false;
         }
       }
@@ -77,7 +77,7 @@ namespace utilities
         }
         else
         {
-          std::cout << ss.str();
+          std::cout << ss.str()  << std::endl;
           return false;
         }
       }
