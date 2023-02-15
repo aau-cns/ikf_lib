@@ -74,7 +74,7 @@ int main(int /*argc*/, char** /*argv[]*/)
   G << 0.5*dt*dt, dt;
 
   // Reasonable covariance matrices
-  Q = Q.Identity(2,2)*0.01;
+  Q = Q.Identity(2,2)*0.000001;
   R_private << std_dev_p * std_dev_p;
   R_joint << std_dev_p_rel * std_dev_p_rel;
   u_var << std_dev_a * std_dev_a;
@@ -128,6 +128,10 @@ int main(int /*argc*/, char** /*argv[]*/)
     }
   }
 
+  for(int i=0; i < num_instances; i++) {
+    std::cout << "Beliefs of filter instance ID=" << i << std::endl;
+    dict_instance[i]->print_HistBelief(20);
+  }
 
   for(int i=0; i < num_instances; i++) {
     dict_instance[i]->traj.plot_trajectory(i, "True");

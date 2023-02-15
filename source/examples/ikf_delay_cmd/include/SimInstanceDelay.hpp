@@ -105,7 +105,7 @@ public:
 
   bool update_idx(size_t const idx) {
     ikf::Timestamp t_curr(traj.t_arr(idx));
-    if (perform_private && idx >= delay_private)
+    if (perform_private && idx > delay_private)
     {
       size_t const idx_meas = idx - delay_private;
       ikf::Timestamp t_meas(traj.t_arr(idx_meas));
@@ -139,7 +139,7 @@ public:
 
     }
 
-    if (perform_joint && idx >= delay_joint)
+    if (perform_joint && idx > delay_joint)
     {
       for(auto & elem : dict_p_rel_noisy_arr) {
         size_t const idx_meas = idx - delay_joint;
@@ -148,7 +148,7 @@ public:
         size_t ID_J = elem.first;
         ikf::MeasData m;
         m.obs_type = ikf::eObservationType::JOINT_OBSERVATION;
-        m.meta_info = "relative_position";
+        m.meas_type = "relative_position";
         m.meta_info = std::to_string(ID_J);
 
         m.z.setZero(1,1);

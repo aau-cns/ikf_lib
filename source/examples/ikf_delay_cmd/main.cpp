@@ -90,6 +90,16 @@ int main(int /*argc*/, char** /*argv[]*/)
   }
 
   for(int i=0; i < num_instances; i++) {
+    std::cout << "MeasData of filter instance ID=" << dict_instance[i]->ptr_IKF->ID() << std::endl;
+    dict_instance[i]->ptr_IKF->print_HistMeas(20);
+  }
+
+  for(int i=0; i < num_instances; i++) {
+    std::cout << "Beliefs of filter instance ID=" << dict_instance[i]->ptr_IKF->ID() << std::endl;
+    dict_instance[i]->ptr_IKF->print_HistBelief(20);
+  }
+
+  for(int i=0; i < num_instances; i++) {
     dict_instance[i]->traj.plot_trajectory(i, "True");
     dict_instance[i]->traj_est.plot_trajectory(i, "Est");
     dict_instance[i]->compute_error();

@@ -13,6 +13,7 @@
 #define SIMINSTANCE_HPP
 #include "Trajectory.hpp"
 #include "LinearIKF.hpp"
+#include "ikf/Container/TTimeHorizonBuffer.hpp"
 #include <ikf/Estimate/LinearBelief.hpp>
 
 
@@ -22,7 +23,7 @@ public:
               const Eigen::MatrixXd &H, const Eigen::MatrixXd &R,
               size_t const ID, double const dt, double const D, double const omega,
               double const std_dev_p, double const std_dev_a, double const std_dev_p_rel,
-              std::shared_ptr<ikf::IKFHandlerStd> ptr_Handler) : ID(ID), dt(dt), std_dev_p(std_dev_p), std_dev_a(std_dev_a), std_dev_p_rel(std_dev_p_rel), ptr_IKF(new LinearIKF(ptr_Handler, ID)) {
+              std::shared_ptr<ikf::IKFHandlerStd> ptr_Handler) : ID(ID), dt(dt), std_dev_p(std_dev_p), std_dev_a(std_dev_a), std_dev_p_rel(std_dev_p_rel), ptr_IKF(new LinearIKF(ptr_Handler, ID)), HistBelief(1.0) {
 
     double const omega_0 = M_PI/8;
     ptr_IKF->define_system(F, G, Q, H, R, dt);
@@ -142,9 +143,21 @@ public:
     traj_est.v_arr(idx) = mean_apos(1);
     traj_est.a_arr(idx) = a_noisy_arr(idx);
     traj_est.t_arr(idx) = traj.t_arr(idx);
+    HistBelief.insert(p_bel->clone(), p_bel->timestamp());
 
     return true;
   }
+
+  void print_HistBelief(size_t max) {
+    size_t cnt = 0;
+    HistBelief.foreach([&cnt, max](ikf::ptr_belief const& i){
+      if(cnt < max) {
+        std::cout << (*i.get()) << std::endl;
+      }
+      cnt++;
+    });
+  }
+
 
 public:
   size_t ID = 0;
@@ -162,6 +175,7 @@ public:
   Eigen::ArrayXd p_noisy_arr;
   Eigen::ArrayXd a_noisy_arr;
   std::map<size_t, Eigen::ArrayXd> dict_p_rel_noisy_arr;
+  ikf::TTimeHorizonBuffer<ikf::ptr_belief> HistBelief;
 };
 
 

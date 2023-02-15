@@ -48,7 +48,7 @@ public:
     G_a << 0.5*dt*dt, dt;
 
     // Reasonable covariance matrices
-    Q_II_ab = Q_II_ab.Identity(2,2)*0.01;
+    Q_II_ab = Q_II_ab.Identity(2,2)*0.000001;
 
     Eigen::VectorXd mean_b = (Phi_ab * bel_a->mean() + G_a * m.z);
     Eigen::MatrixXd Q_ab = G_a * m.R * G_a.transpose() + Q_II_ab;
@@ -64,7 +64,6 @@ public:
     ikf::ProcessMeasResult_t res;
     int dim_z = 1; // Number of measurements
     int dim_x = 2; // Number of states
-    Eigen::MatrixXd R_private (dim_z,dim_z);  // measurement covariance
     Eigen::MatrixXd H_private(dim_z, dim_x); // Output matrix
     H_private << 1, 0;
 
@@ -78,7 +77,7 @@ public:
     Eigen::VectorXd r = m.z - H_private * bel->mean();
     res.observation_type = "local_position";
     res.residual = r;
-    res.rejected = !apply_private_observation(bel, H_private, R_private, r, t);
+    res.rejected = !apply_private_observation(bel, H_private, m.R, r, t);
 
     return res;
 
