@@ -37,6 +37,9 @@ namespace ikf
       void insert(T const& data, double const t_sec);
       void insert(TData const& data);
       size_t size() const;
+      bool empty() const {
+        return buffer_.empty();
+      }
       bool at(size_t const idx, TData const& data);
       void clear();
 
@@ -213,27 +216,34 @@ namespace ikf
 
   template<typename T>
   bool THistoryBuffer<T>::exist_at_t(const Timestamp &t) const {
-      auto it = buffer_.find(t.stamp_ns());
-      return (it != buffer_.end());
+      if(!buffer_.empty()){
+        auto it = buffer_.find(t.stamp_ns());
+        return (it != buffer_.end());
+      }
+      return false;
   }
 
   template<typename T>
   bool THistoryBuffer<T>::exist_after_t(const Timestamp &t) const {
-      auto it = upper_bound(t);
-      if (it != buffer_.end()) {
-          return true;
+      if(!buffer_.empty()){
+        auto it = upper_bound(t);
+        if (it != buffer_.end()) {
+            return true;
+        }
       }
       return false;
   }
 
   template<typename T>
   bool THistoryBuffer<T>::exist_before_t(const Timestamp &t) const {
-      auto it = lower_bound(t);
-      if (it != buffer_.end()) {
-          if (it->first == t.stamp_ns()) {
-              return it != buffer_.begin();
-          }
-          return true;
+      if(!buffer_.empty()){
+        auto it = lower_bound(t);
+        if (it != buffer_.end()) {
+            if (it->first == t.stamp_ns()) {
+                return it != buffer_.begin();
+            }
+            return true;
+        }
       }
       return false;
   }
