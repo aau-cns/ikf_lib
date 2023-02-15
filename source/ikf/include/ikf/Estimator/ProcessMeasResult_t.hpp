@@ -19,10 +19,18 @@ namespace ikf {
 
 struct ProcessMeasResult_t {
   bool rejected = true;
-  Eigen::VectorXd residual;
   bool skipped = false;
+  Eigen::VectorXd residual;
   std::string observation_type;
   std::vector<size_t> ID_participants;
+
+  friend std::ostream& operator<< (std::ostream& out, const ProcessMeasResult_t& obj)
+  {
+    out << "MeasResult: " << "rejected=:" << obj.rejected << ", skipped=" << obj.skipped;
+    out << ", residual:" << obj.residual << ", observation_type=" << obj.observation_type;
+    out << ", num participants: " << obj.ID_participants.size();
+    return out;
+  }
 };
 
 

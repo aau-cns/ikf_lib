@@ -38,7 +38,7 @@ set(headers
     include/ikf/Estimate/LinearBelief.hpp
     include/ikf/EstimatorStd/KalmanFilterStd.hpp
     include/ikf/EstimatorStd/IsolatedKalmanFilterStd.hpp
-    include/ikf/EstimatorStd/LinearIKFStd.hpp
+    include/ikf/EstimatorStd/IKFHandlerStd.hpp
     include/ikf/Container/Timestamp.hpp
     include/ikf/Container/TStampedData.hpp
     include/ikf/Container/THistoryBuffer.hpp
@@ -66,8 +66,6 @@ set(sources
     source/Estimator/IKalmanFilter.cpp
     source/Estimator/IIsolatedKalmanFilter.cpp
     source/Estimator/IsolatedKalmanFilterHandler.cpp
-    source/Estimator/LinearIKF.cpp
-    source/EstimatorStd/LinearIKFStd.cpp
     source/EstimatorStd/KalmanFilterStd.cpp
     source/EstimatorStd/IsolatedKalmanFilterStd.cpp
     source/EstimatorStd/IKFHandlerStd.cpp

@@ -6,3 +6,4 @@ endif()
 
 # Example applications
 add_subdirectory(ikf_simple_cmd)
+add_subdirectory(ikf_delay_cmd)

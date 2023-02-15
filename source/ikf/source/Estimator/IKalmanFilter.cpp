@@ -52,28 +52,35 @@ ProcessMeasResult_t IKalmanFilter::process_measurement(const MeasData &m) {
         res = progapation_measurement(m);
         break;
       }
-    case eObservationType::LOCAL_PRIVATE:
+    case eObservationType::PRIVATE_OBSERVATION:
       {
         res = local_private_measurement(m);
         break;
       }
-    case eObservationType::LOCAL_JOINT:
-    case eObservationType::INTER_AGENT_JOINT:
+    case eObservationType::JOINT_OBSERVATION:
     case eObservationType::UNKNOWN:
     default:
       res.rejected = true;
       break;
   }
 
-  if (m_handle_delayed_meas) {
-    if (!res.rejected && HistMeas.exist_after_t(m.t_m)) {
-      redo_updates_after_t(m.t_m);
-    }
-    // TODO: propagation measurements need to be inserted a nanosecond before the actual measurement time (have a higher priority than updates + THistoryBuffer is not a multi-map!
-    if (m.obs_type == eObservationType::PROPAGATION) {
-      RTV_EXPECT_TRUE_THROW(m.t_m.stamp_ns() > 0, "measurement timestamp must be greater 0 ns");
-      HistMeas.insert(m, m.t_m.stamp_ns() - 1);
 
+
+
+  if (m_handle_delayed_meas) {
+    Timestamp t_m = m.t_m;
+    if (m.obs_type == eObservationType::PROPAGATION) {
+      // TODO: propagation measurements need to be inserted a nanosecond before the actual measurement time
+      //  (have a higher priority than updates + THistoryBuffer is not a multi-map!
+      RTV_EXPECT_TRUE_THROW(m.t_m.stamp_ns() > 0, "measurement timestamp must be greater 0 ns");
+      t_m =  Timestamp(t_m.stamp_ns() - 1);
+    }
+    if (!res.rejected && HistMeas.exist_after_t(t_m)) {
+      redo_updates_after_t(t_m);
+    }
+
+    if (m.obs_type == eObservationType::PROPAGATION) {
+      HistMeas.insert(m, t_m);
       // HistMeasPropagation can be at the actual timestamp, as no updates will coincide!
       HistMeasPropagation.insert(m, m.t_m);
     }

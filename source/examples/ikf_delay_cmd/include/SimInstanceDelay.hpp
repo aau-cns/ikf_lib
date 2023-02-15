@@ -12,20 +12,19 @@
 #ifndef SIMINSTANCE_HPP
 #define SIMINSTANCE_HPP
 #include "Trajectory.hpp"
-#include "LinearIKF.hpp"
+#include "LinearIKF_1D_const_acc.hpp"
+#include "ikf/Estimator/IsolatedKalmanFilterHandler.hpp"
 #include <ikf/Estimate/LinearBelief.hpp>
 
 
-class SimInstance {
+
+class SimInstanceDelay {
 public:
-  SimInstance(const Eigen::MatrixXd &F, const Eigen::MatrixXd &G, const Eigen::MatrixXd &Q,
-              const Eigen::MatrixXd &H, const Eigen::MatrixXd &R,
-              size_t const ID, double const dt, double const D, double const omega,
+  SimInstanceDelay(size_t const ID, double const dt, double const D, double const omega,
               double const std_dev_p, double const std_dev_a, double const std_dev_p_rel,
-              std::shared_ptr<ikf::IKFHandlerStd> ptr_Handler) : ID(ID), dt(dt), std_dev_p(std_dev_p), std_dev_a(std_dev_a), std_dev_p_rel(std_dev_p_rel), ptr_IKF(new LinearIKF(ptr_Handler, ID)) {
+              std::shared_ptr<ikf::IsolatedKalmanFilterHandler> ptr_Handler) : ID(ID), dt(dt), std_dev_p(std_dev_p), std_dev_a(std_dev_a), std_dev_p_rel(std_dev_p_rel), ptr_IKF(new LinearIKF_1D_const_acc(ptr_Handler, ID)) {
 
     double const omega_0 = M_PI/8;
-    ptr_IKF->define_system(F, G, Q, H, R, dt);
     traj.generate_sine(dt, D, omega, omega_0*ID, (0.1*ID+1), 0);
 
     traj_est = Trajectory(traj.size());
@@ -44,7 +43,7 @@ public:
     ptr_bel0->mean(m_0);
     ptr_bel0->Sigma(Sigma_0);
     ptr_bel0->set_timestamp(ikf::Timestamp(0.0));
-    ptr_IKF->set_belief(ptr_bel0);
+    ptr_IKF->initialize(ptr_bel0, ptr_bel0->timestamp());
 
     p_noisy_arr = traj.generate_noisy_pos(std_dev_p);
     a_noisy_arr = traj.generate_noisy_acc(std_dev_a);
@@ -85,58 +84,77 @@ public:
   }
 
   bool propagate_idx(size_t const idx) {
-    int dim_u = 1; // Number of inputs
-    Eigen::VectorXd u (dim_u,1);  // control input
-    Eigen::VectorXd u_var (dim_u,dim_u);  // control input covariance
-
-    u_var << std_dev_a * std_dev_a;
-    u << a_noisy_arr(idx);
     ikf::Timestamp t_curr(traj.t_arr(idx));
-    if (ptr_IKF->predict(u, u_var)  && print_belief) {
-      auto p_bel = ptr_IKF->get_belief();
+    ikf::MeasData m;
+    m.obs_type = ikf::eObservationType::PROPAGATION;
+    m.meas_type = "acceleration";
+    m.z.setZero(1,1);
+    m.R.setZero(1,1);
+    m.z << a_noisy_arr(idx);
+    m.R << std_dev_a * std_dev_a;
+    m.t_m = t_curr;
+    m.t_p = t_curr;
+
+    ikf::ProcessMeasResult_t res = ptr_IKF->process_measurement(m);
+    if (print_belief) {
+      auto p_bel = ptr_IKF->current_belief();
       std::cout << "* Prop[" << ID <<  "]:t=" << p_bel->timestamp() << ", \nmean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
     }
     return true;
   }
 
   bool update_idx(size_t const idx) {
-    int dim_x = 2; // Number of states
-    int dim_z = 1; // Number of measurements
-    Eigen::VectorXd z (dim_z,1);  // measurement
-
     ikf::Timestamp t_curr(traj.t_arr(idx));
-
-    if (perform_private)
+    if (perform_private && idx >= delay_private)
     {
-      z << p_noisy_arr(idx);
-      if (ptr_IKF->update(z)  && print_belief) {
-        auto p_bel = ptr_IKF->get_belief();
+      size_t const idx_meas = idx - delay_private;
+      ikf::Timestamp t_meas(traj.t_arr(idx_meas));
+      ikf::MeasData m;
+      m.obs_type = ikf::eObservationType::PRIVATE_OBSERVATION;
+      m.meas_type = "position";
+      m.z.setZero(1,1);
+      m.R.setZero(1,1);
+      m.z << p_noisy_arr(idx_meas);
+      m.R << std_dev_p * std_dev_p;
+      m.t_m = t_meas;
+      m.t_p = t_curr;
+
+      ikf::ProcessMeasResult_t res = ptr_IKF->process_measurement(m);
+      if (print_belief) {
+        auto p_bel = ptr_IKF->current_belief();
         std::cout << "* Update [" << ID <<  "]:t=" << t_curr << ", mean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
       }
     }
 
-    if (perform_joint)
+    if (perform_joint && idx >= delay_joint)
     {
       for(auto & elem : dict_p_rel_noisy_arr) {
+        size_t const idx_meas = idx - delay_joint;
+        ikf::Timestamp t_meas(traj.t_arr(idx_meas));
+
         size_t ID_J = elem.first;
-        Eigen::MatrixXd R (dim_z,dim_z);  // measurement covariance
+        ikf::MeasData m;
+        m.obs_type = ikf::eObservationType::JOINT_OBSERVATION;
+        m.meta_info = "relative_position";
+        m.meta_info = std::to_string(ID_J);
 
-        Eigen::MatrixXd H_II(dim_z, dim_x); // Output matrix
-        Eigen::MatrixXd H_JJ(dim_z, dim_x); // Output matrix
-        R << std_dev_p_rel * std_dev_p_rel;
-        H_II << -1, 0;
-        H_JJ << 1, 0;
+        m.z.setZero(1,1);
+        m.R.setZero(1,1);
+        m.z << elem.second(idx_meas);
+        m.R << std_dev_p_rel * std_dev_p_rel;
+        m.t_m = t_meas;
+        m.t_p = t_curr;
 
-        z << elem.second(idx);
-        if (ptr_IKF->joint_update(H_II, H_JJ, ID_J, R, z) && print_belief) {
-          auto p_bel = ptr_IKF->get_belief();
+        ikf::ProcessMeasResult_t res = ptr_IKF->process_measurement(m);
+        if (print_belief) {
+          auto p_bel = ptr_IKF->current_belief();
           std::cout << "* Update Rel [" << ID << "," << ID_J << "]:t=" << t_curr << ", mean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
         }
 
       }
     }
 
-    auto p_bel = ptr_IKF->get_belief();
+    auto p_bel = ptr_IKF->current_belief();
     Eigen::VectorXd mean_apos = p_bel->mean();
     traj_est.p_arr(idx) = mean_apos(0);
     traj_est.v_arr(idx) = mean_apos(1);
@@ -148,6 +166,8 @@ public:
 
 public:
   size_t ID = 0;
+  size_t delay_private = 0;
+  size_t delay_joint = 0;
   bool perform_private = true;
   bool perform_joint = true;
   bool print_belief = false;
@@ -155,7 +175,7 @@ public:
   double const std_dev_p = 0.05;
   double const std_dev_a = 0.05;
   double const std_dev_p_rel = 0.05;
-  std::shared_ptr<LinearIKF> ptr_IKF;
+  std::shared_ptr<LinearIKF_1D_const_acc> ptr_IKF;
   Trajectory traj;
   Trajectory traj_est;
   Trajectory traj_err;

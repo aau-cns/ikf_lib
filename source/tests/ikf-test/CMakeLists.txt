@@ -27,7 +27,7 @@ set(sources
     #
     #ikf_eigen_mvn_test.cpp
     ikf_Timestamp_test.cpp
-    ikf_LinearIKFStd_test.cpp
+    #ikf_LinearIKFStd_test.cpp
 )
 
 

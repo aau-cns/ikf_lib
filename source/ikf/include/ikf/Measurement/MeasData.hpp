@@ -22,9 +22,8 @@ namespace ikf
   enum class eObservationType {
     UNKNOWN = 0,
     PROPAGATION = 1,
-    LOCAL_PRIVATE = 2,
-    LOCAL_JOINT = 3,
-    INTER_AGENT_JOINT = 4
+    PRIVATE_OBSERVATION = 2,
+    JOINT_OBSERVATION = 3,
   };
 
   struct MeasData {
@@ -34,8 +33,8 @@ namespace ikf
     std::string meas_type;
     std::string meta_info;
     eObservationType obs_type = eObservationType::UNKNOWN;
-    Eigen::VectorXd z;
-    Eigen::MatrixXd R;
+    Eigen::VectorXd z; // measurement at t_m
+    Eigen::MatrixXd R; // measurement covariance at t_m
 
     friend std::ostream& operator<< (std::ostream& out, const MeasData& obj)
     {

@@ -27,7 +27,7 @@ ProcessMeasResult_t IIsolatedKalmanFilter::process_measurement(const MeasData &m
   ProcessMeasResult_t res;
   res.rejected = true;
 
-  if (m.obs_type == eObservationType::LOCAL_JOINT) {
+  if (m.obs_type == eObservationType::JOINT_OBSERVATION) {
     res = local_joint_measurement(m);
     if (m_handle_delayed_meas) {
       if (!res.rejected && HistMeas.exist_after_t(m.t_m)) {

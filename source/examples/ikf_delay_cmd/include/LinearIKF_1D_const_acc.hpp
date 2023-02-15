@@ -55,6 +55,8 @@ public:
     if(!apply_propagation(bel_a, mean_b, Phi_ab, Q_ab, t_a, t_b)) {
 
     }
+
+   res.observation_type = "control_input_acc";
    return res;
   }
   ikf::ProcessMeasResult_t local_private_measurement(const ikf::MeasData &m) override {
@@ -73,6 +75,8 @@ public:
     }
 
     Eigen::VectorXd r = m.z - H_private * bel->mean();
+    res.observation_type = "local_position";
+    res.residual = r;
     res.rejected = !apply_private_observation(bel, H_private, R_private, r, t);
 
     return res;
@@ -93,6 +97,8 @@ public:
 
 
     size_t ID_J = std::stoi(m.meta_info);
+    res.ID_participants.push_back(ID_J);
+    res.observation_type = m.meas_type + " between [" + std::to_string(m_ID) + "," + m.meta_info + "]";
     res.rejected = !apply_joint_observation(m_ID, ID_J, H_II, H_JJ, m.R, m.z, m.t_m);
     return res;
   }

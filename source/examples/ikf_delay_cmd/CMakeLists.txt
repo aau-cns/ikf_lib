@@ -22,8 +22,8 @@ message(STATUS "Example ${target}")
 #
 
 set(headers
- include/LinearIKF.hpp
- include/SimInstance.hpp
+ include/LinearIKF_1D_const_acc.hpp
+ include/SimInstanceDelay.hpp
  include/Trajectory.hpp
 )
 
