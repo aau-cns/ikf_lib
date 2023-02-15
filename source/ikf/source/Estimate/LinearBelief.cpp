@@ -23,6 +23,7 @@ LinearBelief::~LinearBelief() {}
 std::shared_ptr<IBelief> LinearBelief::clone() {
   auto p_bel = std::make_shared<LinearBelief>(LinearBelief());
   p_bel->set(this->mean(), this->Sigma());
+  p_bel->set_timestamp(this->timestamp());
   return p_bel;
 }
 

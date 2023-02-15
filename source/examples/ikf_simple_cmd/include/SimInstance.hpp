@@ -56,7 +56,7 @@ public:
     traj_est.a_arr(0) = a_noisy_arr(0);
     traj_est.t_arr(0) = traj.t_arr(0);
 
-
+    HistBelief.insert(ptr_bel0->clone(), ptr_bel0->timestamp());
   }
 
   void compute_error() {
@@ -137,7 +137,8 @@ public:
       }
     }
 
-    auto p_bel = ptr_IKF->get_belief();
+    auto p_bel = ptr_IKF->get_belief()->clone();
+    p_bel->set_timestamp(ikf::Timestamp(traj.t_arr(idx)));
     Eigen::VectorXd mean_apos = p_bel->mean();
     traj_est.p_arr(idx) = mean_apos(0);
     traj_est.v_arr(idx) = mean_apos(1);
