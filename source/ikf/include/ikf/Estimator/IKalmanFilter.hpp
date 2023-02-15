@@ -11,6 +11,7 @@
 ******************************************************************************/
 #ifndef I_KALMAN_FILTER_HPP
 #define I_KALMAN_FILTER_HPP
+#include "ikf/Container/TMultiHistoryBuffer.hpp"
 #include <ikf/ikf_api.h>
 #include <ikf/Estimator/ProcessMeasResult_t.hpp>
 #include <ikf/Measurement/MeasData.hpp>
@@ -58,8 +59,10 @@ public:
   virtual void set_horizon(double const t_hor);
   virtual void check_horizon();
 
-protected:
+  void print_HistMeas(size_t max=100);
 
+  void print_HistBelief(size_t max=100);
+protected:
   virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
   virtual bool propagate_from_to(const Timestamp &t_a, const Timestamp &t_b);
 
@@ -76,7 +79,7 @@ protected:
 
 
   TTimeHorizonBuffer<ptr_belief> HistBelief;
-  TTimeHorizonBuffer<MeasData> HistMeas;
+  TTimeHorizonBuffer<MeasData, TMultiHistoryBuffer<MeasData>> HistMeas;
   TTimeHorizonBuffer<MeasData> HistMeasPropagation;
   double max_time_horizon_sec;
   bool m_handle_delayed_meas = true;  // specifies, if the instance maintains a history of past measurements or not

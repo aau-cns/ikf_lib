@@ -27,12 +27,7 @@ ProcessMeasResult_t IIsolatedKalmanFilter::process_measurement(const MeasData &m
   ProcessMeasResult_t res = reprocess_measurement(m);
 
   if (m_handle_delayed_meas) {
-    Timestamp t_m = m.t_m;
-    if (m.obs_type == eObservationType::PROPAGATION) {
-      RTV_EXPECT_TRUE_THROW(m.t_m.stamp_ns() > 0, "measurement timestamp must be greater 0 ns");
-      t_m =  Timestamp(t_m.stamp_ns() - 1);
-    }
-    if (!res.rejected && HistMeas.exist_after_t(t_m)) {
+    if (!res.rejected && HistMeas.exist_after_t(m.t_m)) {
 
       // notify other instances to redo their updates!
       if (m.obs_type == eObservationType::JOINT_OBSERVATION) {
@@ -41,18 +36,10 @@ ProcessMeasResult_t IIsolatedKalmanFilter::process_measurement(const MeasData &m
       redo_updates_after_t(m.t_m);
     }
 
-
-
     if (m.obs_type == eObservationType::PROPAGATION) {
-      RTV_EXPECT_FALSE_MSG(HistMeas.exist_at_t(t_m), "Measurement already exists at t=" + t_m.str());
-      HistMeas.insert(m, t_m);
-      // HistMeasPropagation can be at the actual timestamp, as no updates will coincide!
       HistMeasPropagation.insert(m, m.t_m);
     }
-    else {
-      RTV_EXPECT_FALSE_MSG(HistMeas.exist_at_t(m.t_m), "Measurement already exists at t=" + m.t_m.str());
-      HistMeas.insert(m, m.t_m);
-    }
+    HistMeas.insert(m, m.t_m);
   }
 
   return res;

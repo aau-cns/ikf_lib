@@ -47,28 +47,14 @@ ProcessMeasResult_t IKalmanFilter::process_measurement(const MeasData &m) {
   auto res = IKalmanFilter::reprocess_measurement(m);
 
   if (m_handle_delayed_meas) {
-    Timestamp t_m = m.t_m;
-    if (m.obs_type == eObservationType::PROPAGATION) {
-      // TODO: propagation measurements need to be inserted a nanosecond before the actual measurement time
-      //  (have a higher priority than updates + THistoryBuffer is not a multi-map!
-      RTV_EXPECT_TRUE_THROW(m.t_m.stamp_ns() > 0, "measurement timestamp must be greater 0 ns");
-      t_m =  Timestamp(t_m.stamp_ns() - 1);
-    }
-    if (!res.rejected && HistMeas.exist_after_t(t_m)) {
-      redo_updates_after_t(t_m);
+    if (!res.rejected && HistMeas.exist_after_t(m.t_m)) {
+      redo_updates_after_t(m.t_m);
     }
 
     if (m.obs_type == eObservationType::PROPAGATION) {
-      RTV_EXPECT_FALSE_MSG(HistMeas.exist_at_t(t_m), "Measurement already exists at t=" + t_m.str());
-      HistMeas.insert(m, t_m);
-      // HistMeasPropagation can be at the actual timestamp, as no updates will coincide!
       HistMeasPropagation.insert(m, m.t_m);
     }
-    else {
-      RTV_EXPECT_FALSE_MSG(HistMeas.exist_at_t(m.t_m), "Measurement already exists at t=" + m.t_m.str());
-      HistMeas.insert(m, m.t_m);
-    }
-
+    HistMeas.insert(m, m.t_m);
   }
   return res;
 }
@@ -196,6 +182,26 @@ void IKalmanFilter::set_horizon(const double t_hor) {
 
 void IKalmanFilter::check_horizon() {
   HistBelief.check_horizon();
+}
+
+void IKalmanFilter::print_HistMeas(size_t max) {
+  size_t cnt = 0;
+  HistMeas.foreach([&cnt, max](MeasData const& i){
+    if(cnt < max) {
+      std::cout << "* " << i << std::endl;
+    }
+    cnt++;
+  });
+}
+
+void IKalmanFilter::print_HistBelief(size_t max) {
+  size_t cnt = 0;
+  HistBelief.foreach([&cnt, max](ptr_belief const& i){
+    if(cnt < max) {
+      std::cout << (*i.get()) << std::endl;
+    }
+    cnt++;
+  });
 }
 
 ProcessMeasResult_t IKalmanFilter::reprocess_measurement(const MeasData &m) {

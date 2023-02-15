@@ -70,6 +70,12 @@ public:
   static void apply_init_strategy(std::shared_ptr<IBelief>& bel_0, eInitStrategies const type, int const seed = 0);
   //// STATIC:
   ////////////////////////////////////////////////////////
+  ///
+
+  friend std::ostream& operator<< (std::ostream& out, const IBelief& obj) {
+    out << "* IBelief: t=" << obj.m_timestamp << ", mean=" << obj.m_mean.transpose() << ", diag(Sigma)=" << obj.m_Sigma.diagonal().transpose();
+    return out;
+  }
 protected:
   Eigen::VectorXd m_mean;
   Eigen::MatrixXd m_Sigma;
