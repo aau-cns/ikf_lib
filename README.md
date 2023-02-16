@@ -1,13 +1,13 @@
 # ikf_lib (Isolated Kalman Filtering C++ library) 
 
-A Isolated Kalman Filtering framework. 
+An **Isolated Kalman Filtering** framework. 
 
 
 Find the lib impementation in `source/ikf` and the test directory in `source/tests/ikf-test`.
 Find a commandline example tool in `source/examples/ikf_cmd`.
 
 
-## build project
+## Build project
 
 ```
 mkdir build && cd build
@@ -17,7 +17,7 @@ make all test
 
 View the documentation in your browser: `build/doc/index.html`.
 
-## run examples
+## Run examples
 
 Example is based on constant accelation moving body model in 1D (see https://www.kalmanfilter.net/modeling.html). The body is moving in a harmonic way and the filter obtains as control input  noisy acceleration measurements for the state propagation. The filter is corrected via noisy position updates and relative position updates between bodies.   
 

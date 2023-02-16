@@ -12,11 +12,10 @@ configure_file(version.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/${META_PROJECT_N
 #find_package(Boost REQUIRED)
 find_package(Eigen REQUIRED)
 #´find_package(matplotplusplus REQUIRED)
-find_package(matplot REQUIRED)
+
 message(" **************************************")
 message(" --- Main Dependencies:")
 message(" * Eigen: ${EIGEN3_INCLUDE_DIR}, ${Eigen_VERSION} ")
-message(" * matplot: ${MATPLOT_INCLUDE_DIR}, ${MATPLOT_VERSION} ")
 message(" **************************************")
 #
 # Sub-projects

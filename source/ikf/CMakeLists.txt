@@ -169,13 +169,13 @@ target_link_libraries(${target}
     #kindr
     #Sophus
     #Boost
-    matplot_imp
+
 
     INTERFACE
     $<BUILD_INTERFACE:Eigen>
 #    $<BUILD_INTERFACE:kindr>
 #    $<BUILD_INTERFACE:Sophus>
-    $<BUILD_INTERFACE:matplot_imp>
+#    $<BUILD_INTERFACE:matplot_imp>
 )
 
 

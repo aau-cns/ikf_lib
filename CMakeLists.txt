@@ -2,10 +2,7 @@
 #
 # CMake options
 #
-if (NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "Debug")
-  message("**** Debug build ****")
-endif ()
+
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release")
   message("**** Release build ****")
@@ -64,7 +61,7 @@ set(META_PROJECT_NAME        "ikf_lib")
 set(META_PROJECT_DESCRIPTION "Isolated Kalman Filtering framework C++17 library (GNU LGPLv3)")
 set(META_AUTHOR_ORGANIZATION "University Klagenfurt: Control of Networked Systems (CNS) Group")
 set(META_AUTHOR_DOMAIN       "https://gitlab.aau.at/aau-cns/ikf_lib")
-set(META_AUTHOR_MAINTAINER   "opensource@cginternals.com")
+set(META_AUTHOR_MAINTAINER   "roland.jung@aau.at")
 set(META_VERSION_MAJOR       "0")
 set(META_VERSION_MINOR       "1")
 set(META_VERSION_PATCH       "0")
@@ -85,7 +82,7 @@ string(TOUPPER ${META_PROJECT_ID} META_PROJECT_ID)
 option(BUILD_SHARED_LIBS     "Build shared instead of static libraries."              ON)
 option(OPTION_SELF_CONTAINED "Create a self-contained install with all dependencies." ON)
 option(OPTION_BUILD_TESTS    "Build tests."                                           ON)
-option(OPTION_BUILD_DOCS     "Build documentation."                                   OFF)
+option(OPTION_BUILD_DOCS     "Build documentation."                                   ON)
 option(OPTION_BUILD_EXAMPLES "Build examples."                                        ON)
 
 

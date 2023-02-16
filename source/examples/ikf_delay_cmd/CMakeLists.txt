@@ -79,6 +79,7 @@ target_link_libraries(${target}
     ${DEFAULT_LIBRARIES}
     ${META_PROJECT_NAME}::ikf
     Eigen
+    matplot_imp
 )
 
 
