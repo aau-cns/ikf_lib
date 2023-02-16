@@ -9,6 +9,8 @@
 *  Copyright (C) 2023
 *  All rights reserved. See the LICENSE file for details.
 ******************************************************************************/
+#include "ikf/utils/RTVerification.hpp"
+#include "ikf/utils/eigen_utils.hpp"
 #include <ikf/EstimatorStd/KalmanFilterStd.hpp>
 #include <ikf/Estimator/KalmanFilter.hpp>
 namespace ikf {
@@ -59,11 +61,15 @@ bool KalmanFilterStd::propagate(const Eigen::MatrixXd &Phi_II_ab, const Eigen::M
 }
 
 bool KalmanFilterStd::private_update(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &z) {
+  RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(m_belief->Sigma()), "Apri covariance is not PSD!");
+
   Eigen::VectorXd r = z - H_II * m_belief->mean();
   KalmanFilter::CorrectionCfg_t cfg;
   KalmanFilter::CorrectionResult_t res;
   res = KalmanFilter::correction_step(H_II, R, r, m_belief->Sigma(), cfg);
   if (!res.rejected) {
+    RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(res.Sigma_apos), "Apos covariance is not PSD!");
+
     // inplace correction, no need to write belief in HistBelief
     m_belief->correct(res.delta_mean, res.Sigma_apos);
   }

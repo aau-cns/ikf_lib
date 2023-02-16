@@ -60,7 +60,8 @@ bool IsolatedKalmanFilterStd::joint_update(const size_t ID_I, const size_t ID_J,
   // stack the measurement sensitivity matrix:
   Eigen::MatrixXd H_joint = utils::horcat(H_II, H_JJ);
   // stack individual's covariances:
-  Eigen::MatrixXd Sigma_joint = utils::stabilize_covariance(stack_apri_covariance(bel_J_apri, ID_J));
+  Eigen::MatrixXd Sigma_apri = utils::stabilize_covariance(stack_apri_covariance(bel_J_apri, ID_J));
+  RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_apri), "Joint apri covariance is not PSD");
   // stack individual's mean:
   Eigen::VectorXd mean_joint = utils::vertcat_vec(m_belief->mean(), bel_J_apri->mean());
 
@@ -69,7 +70,7 @@ bool IsolatedKalmanFilterStd::joint_update(const size_t ID_I, const size_t ID_J,
 
   KalmanFilter::CorrectionCfg_t cfg;
   KalmanFilter::CorrectionResult_t res;
-  res = KalmanFilter::correction_step(H_joint, R, r, Sigma_joint, cfg);
+  res = KalmanFilter::correction_step(H_joint, R, r, Sigma_apri, cfg);
   if (!res.rejected) {
     RTV_EXPECT_TRUE_THROW(utils::is_positive_semidefinite(res.Sigma_apos), "Joint apos covariance is not PSD!");
     size_t dim_I = m_belief->Sigma().rows();
