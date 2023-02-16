@@ -80,20 +80,6 @@ public:
     save("img/barchart_jpeg", "jpeg");
   }
 
-  Eigen::Array<double, Eigen::Dynamic, 1> generate_pos_meas(double const std_dev_p) {
-    //Eigen::UnivariateNormal<double> normX_solver(0,std_dev_p);
-    Eigen::Array<double, Eigen::Dynamic, 1> res;
-    res.setZero(10,1);
-    return res;
-  }
-
-  Eigen::Array<double, Eigen::Dynamic, 1> generate_acc_meas(double const std_dev_a) {
-    Eigen::Array<double, Eigen::Dynamic, 1> res;
-    res.setZero(10,1);
-    return res;
-  }
-
-
   Eigen::ArrayXd generate_noisy_pos(double const std_dev) {
     ikf::UnivariateNormal<double> gen1(0, std_dev);
     size_t n_samples = t_arr.size();

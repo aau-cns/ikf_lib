@@ -89,7 +89,6 @@ public:
     ikf::ProcessMeasResult_t res;
     int dim_z = 1; // Number of measurements
     int dim_x = 2; // Number of states
-    Eigen::MatrixXd R_private (dim_z,dim_z);  // measurement covariance
     Eigen::MatrixXd H_II(dim_z, dim_x); // Output matrix
     Eigen::MatrixXd H_JJ(dim_z, dim_x); // Output matrix
     H_II << -1, 0;

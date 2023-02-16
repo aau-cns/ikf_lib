@@ -192,8 +192,8 @@ public:
 
 public:
   size_t ID = 0;
-  size_t delay_private = 1;
-  size_t delay_joint = 2;
+  size_t delay_private = 0;
+  size_t delay_joint = 0;
   bool perform_private = true;
   bool perform_joint = true;
   bool print_belief = false;
