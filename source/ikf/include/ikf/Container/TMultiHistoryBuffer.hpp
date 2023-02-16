@@ -136,6 +136,15 @@ public:
     }
   }
 
+  template<typename Operation>
+  inline void foreach_reverse(Operation op ) {
+    auto __first = buffer_.rbegin();
+    auto __last =  buffer_.rend();
+    for(; __first != __last; ++__first) {
+      op(__first->second);
+    }
+  }
+
   bool get_at_t(Timestamp const& t, T& elem) const;
   bool get_at_t(double const t_sec, T& elem) const;
   std::vector<T> get_all_at_t(Timestamp const& t) const{

@@ -302,6 +302,9 @@ TEST_F(IKF_THistoryBuffer_test, foreach_between_t1_t2) {
     std::cout << "use foreach directly:" << std::endl;
     test.foreach([](int const& i){std::cout << "* i=" << i << std::endl;});
 
+    std::cout << "use foreach_reverse directly:" << std::endl;
+    test.foreach_reverse([](int const& i){std::cout << "* i=" << i << std::endl;});
+
     std::cout << "use printer class:" << std::endl;
     Printer printme;
     printme.test = test;

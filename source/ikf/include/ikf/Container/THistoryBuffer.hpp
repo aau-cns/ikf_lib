@@ -112,9 +112,18 @@ namespace ikf
       inline void foreach(Operation op ) {
         auto __first = buffer_.begin();
         auto __last =  buffer_.end();
-        for(; __first != __last; ++__first)
+        for(; __first != __last; ++__first) {
             op(__first->second);
+        }
+      }
 
+      template<typename Operation>
+      inline void foreach_reverse(Operation op ) {
+        auto __first = buffer_.rbegin();
+        auto __last =  buffer_.rend();
+        for(; __first != __last; ++__first) {
+            op(__first->second);
+        }
       }
 
       bool get_at_t(Timestamp const& t, T& elem) const;
