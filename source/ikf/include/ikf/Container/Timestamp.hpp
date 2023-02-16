@@ -53,8 +53,7 @@ namespace ikf
           return out;
       }
 
-      bool operator < (Timestamp const& rhs)  const
-      {
+      bool operator < (Timestamp const& rhs)  const {
           if(sec < rhs.sec)
           {
               return true;
@@ -68,9 +67,15 @@ namespace ikf
           }
           return false;
       }
+
       bool operator==(Timestamp const& rhs) const  {
           return (sec == rhs.sec) && (nsec == rhs.nsec);
       }
+
+      bool operator<=(Timestamp const& rhs) const  {
+          return !(*this > rhs);
+      }
+
       bool operator > (Timestamp const& rhs) const  {
           return !(*this == rhs ) && !(*this < rhs);
       }

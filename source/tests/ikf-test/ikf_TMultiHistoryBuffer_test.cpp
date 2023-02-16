@@ -266,6 +266,17 @@ TEST_F(IKF_TMultiHistoryBuffer_test, accum_sum) {
   int res = test.accumulate(0, [](int A, int B){return B+A; });
   std::cout << res << std::endl;
   EXPECT_TRUE(res == 0);
+
+
+  std::cout << "sum between_t1_t2: [0.1,0.1]\n";
+  res = test.accumulate_between_t1_t2(ikf::Timestamp(0.1), ikf::Timestamp(0.1), -1, [](int const A, int const B){return B+A; });
+  std::cout << res << std::endl;
+  EXPECT_TRUE(res == -1);
+
+  std::cout << "sum between_t1_t2: [0.1,-0.0]\n";
+  res = test.accumulate_between_t1_t2(ikf::Timestamp(0.1), ikf::Timestamp(0.0), -1, [](int const A, int const B){return B+A; });
+  std::cout << res << std::endl;
+  EXPECT_TRUE(res == -1);
 }
 
 TEST_F(IKF_TMultiHistoryBuffer_test, accum_between_prod) {

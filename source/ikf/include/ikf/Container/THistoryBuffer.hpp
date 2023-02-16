@@ -78,7 +78,7 @@ namespace ikf
       template<typename BinaryOperation> // Ret fun(const Type1 &a, const Type2 &b)
       inline T accumulate_between_t1_t2(Timestamp const& t1, Timestamp const& t2, T init, BinaryOperation op ) const {
 
-        if (t1 < t2 && size() > 0) {
+        if (t1 <= t2 && size() > 0) {
           auto __first = lower_bound(t1);
           auto __last = upper_bound(t2);
           for(; __first != __last; ++__first)
@@ -99,7 +99,7 @@ namespace ikf
 
       template<typename Operation>
       inline void foreach_between_t1_t2(Timestamp const& t1, Timestamp const& t2, Operation op ) {
-        if (t1 < t2 && size() > 0) {
+        if (t1 <= t2 && size() > 0) {
           auto __first = lower_bound(t1);
           auto __last = upper_bound(t2);
 

@@ -61,7 +61,7 @@ public:
   bool get_latest(T& elem) const;
 
   TMultiHistoryBuffer get_between_t1_t2(Timestamp const& t1, Timestamp const& t2) {
-    if (t1 < t2 && size() > 0) {
+    if (t1 <= t2 && size() > 0) {
       auto itlow = lower_bound(t1);
       auto itup = upper_bound(t2);
       TMultiHistoryBuffer h;
@@ -79,7 +79,7 @@ public:
   template<typename BinaryOperation> // Ret fun(const Type1 &a, const Type2 &b)
   inline T accumulate_between_t1_t2(Timestamp const& t1, Timestamp const& t2, T init, BinaryOperation op ) const {
 
-    if (t1 < t2 && size() > 0) {
+    if (t1 <= t2 && size() > 0) {
       std::set<int64_t> stamps = get_timestamps_between_t1_t2(t1, t2);
       for(auto iter = stamps.begin(); iter != stamps.end(); iter++) {
         //std::pair <typename std::multimap<int64_t,T>::const_iterator, typename std::multimap<int64_t,T>::const_iterator> ret;
