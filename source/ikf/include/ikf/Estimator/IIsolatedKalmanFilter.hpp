@@ -1,13 +1,21 @@
 /******************************************************************************
 * FILENAME:     IsolatedKalmanFilter.hpp
 * PURPOSE:      %{Cpp:License:ClassName}
-* AUTHOR:       jungr
-* MAIL:         <your mail address>
+* AUTHOR:       Roland Jung
+* MAIL:         <roland.jung@aau.at>
 * VERSION:      v0.0.0
 * CREATION:     30.01.2023
 *
-*  Copyright (C) 2023
-*  All rights reserved. See the LICENSE file for details.
+* Copyright (C) 2023 Roland Jung, Control of Networked Systems, University of Klagenfurt, Austria.
+*
+* All rights reserved.
+*
+* This software is licensed under the terms of the BSD-2-Clause-License with
+* no commercial use allowed, the full terms of which are made available
+* in the LICENSE file. No license in patents is granted.
+*
+* You can contact the author at <roland.jung@aau.at>
+*
 *
 *  References:
 *  [1] Roland Jung and Stephan Weiss, "Modular Multi-Sensor Fusion: A Collaborative State Estimation Perspective", IEEE Robotics and Automation Letters, DOI: 10.1109/LRA.2021.3096165, 2021.

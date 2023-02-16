@@ -43,9 +43,6 @@ set(headers
     include/ikf/Container/TStampedData.hpp
     include/ikf/Container/THistoryBuffer.hpp
     include/ikf/utils/QuaternionUtils.hpp
-    include/ikf/Strategies/IMMSF.hpp
-    include/ikf/Strategies/MMSF_IKF.hpp
-    include/ikf/Strategies/IIKF_DICO.hpp
     ${include_local_path}/helper.hpp
     ${include_local_path}/utils.hpp
 )
@@ -54,11 +51,6 @@ set(sources
  source/utils/eigen_utils.cpp
  source/utils/RandValGenerator.cpp
     source/Containers/Timestamp.cpp
-    source/Strategies/IInstanceHandler.cpp
-    source/Strategies/IInstanceHandle.cpp
-    source/Strategies/IMMSF.cpp
-    source/Strategies/IIKF_DICO.cpp
-    source/Strategies/MMSF_IKF.cpp
     source/Estimate/IBelief.cpp
     source/Estimate/LinearBelief.cpp
     source/Estimator/KalmanFilter.cpp

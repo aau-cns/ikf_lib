@@ -6,8 +6,15 @@
 * VERSION:      v0.0.1
 * CREATION:     13.02.2023
 *
-*  Copyright (C) 2023
-*  All rights reserved. See the LICENSE file for details.
+* Copyright (C) 2023 Roland Jung, Control of Networked Systems, University of Klagenfurt, Austria.
+*
+* All rights reserved.
+*
+* This software is licensed under the terms of the BSD-2-Clause-License with
+* no commercial use allowed, the full terms of which are made available
+* in the LICENSE file. No license in patents is granted.
+*
+* You can contact the author at <roland.jung@aau.at>
 *
 *  References:
 *  [1] L. Luft, T. Schubert, S. I. Roumeliotis, and W. Burgard, "Recursive decentralized localization for multi-robot systems with asynchronous pairwise communication", The International Journal of Robotics Research (IJRR), 2018.
