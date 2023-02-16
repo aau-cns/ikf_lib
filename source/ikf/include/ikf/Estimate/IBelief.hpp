@@ -67,7 +67,7 @@ public:
   virtual std::shared_ptr<IBelief> clone() = 0;
   virtual std::shared_ptr<IBelief> interpolate(std::shared_ptr<IBelief> obj_a,
                                                        std::shared_ptr<IBelief> obj_b,
-                                                       double const i) = 0; // % returns a new object!
+                                                       double const i) = 0; //  returns a new object!
   virtual void correct(Eigen::VectorXd const& dx) = 0; // inplace and accoring to the error definiton!
   virtual void correct(Eigen::VectorXd const& dx, const Eigen::MatrixXd& Sigma_apos) = 0; // inplace and accoring to the error definiton!
   //// PURE VIRTUAL:

@@ -1,7 +1,7 @@
 
-# 
+#
 # Find doxygen
-# 
+#
 
 find_package(Doxygen)
 if(NOT DOXYGEN_FOUND)
@@ -10,24 +10,24 @@ if(NOT DOXYGEN_FOUND)
 endif()
 
 
-# 
+#
 # Target name
-# 
+#
 
 set(target api-docs)
 message(STATUS "Doc ${target}")
 
-set(DEPENDENCIES "${META_PROJECT_NAME}::mmsf")
-# 
+set(DEPENDENCIES "${META_PROJECT_NAME}::ikf")
+#
 # Input file
-# 
+#
 
 set(doxyfile_in doxyfile.in)
 
 
-# 
+#
 # Create documentation
-# 
+#
 
 # Set project variables
 set(doxyfile            "${CMAKE_CURRENT_BINARY_DIR}/doxyfile")
@@ -60,9 +60,9 @@ add_custom_target(${target} ALL DEPENDS ${doxyfile_html})
 add_dependencies(docs ${target})
 
 
-# 
+#
 # Deployment
-# 
+#
 
 install(
     DIRECTORY ${doxyfile_directory}

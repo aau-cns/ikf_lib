@@ -130,7 +130,7 @@ protected:
 
   std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler;
   std::unordered_map<size_t, TTimeHorizonBuffer<Eigen::MatrixXd>> HistCrossCovFactors;
-  TTimeHorizonBuffer<Eigen::MatrixXd> HistCorr; // % TimeHorizonBuffer<Corrections>; Corrections := {Phi, Lambda Epsilon}
+  TTimeHorizonBuffer<Eigen::MatrixXd> HistCorr; //  TimeHorizonBuffer<Corrections>; Corrections := {Phi, Lambda Epsilon}
   size_t keep_n_elems = 4;
   std::string m_name = "unknown";
   size_t m_ID;
