@@ -15,7 +15,7 @@ add_dependencies(matplot_imp matplot)
 #set(MATPLOT_LIB_PATH "${CMAKE_BINARY_DIR}/matplot/lib/libmatplot.so")
 set(MATPLOT_INCLUDE_DIR ${CMAKE_BINARY_DIR}/matplot/include)
 
-if($<CONFIG:Debug>)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   set_target_properties(matplot_imp PROPERTIES
     IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/libmatplotd.so
     INTERFACE_INCLUDE_DIRECTORIES ${matplot_SOURCE_DIR}/source
@@ -26,6 +26,7 @@ else()
    INTERFACE_INCLUDE_DIRECTORIES ${matplot_SOURCE_DIR}/source
  )
 endif()
+
 
 
 # List all variables:
