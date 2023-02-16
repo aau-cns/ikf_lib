@@ -97,6 +97,10 @@ protected:
                                const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ, const Eigen::MatrixXd &R,
                                const Eigen::VectorXd &r, const Timestamp &t);
 
+
+  static Eigen::MatrixXd stack_Sigma(const Eigen::MatrixXd &Sigma_II, const Eigen::MatrixXd &Sigma_JJ, const Eigen::MatrixXd &Sigma_IJ);
+  static void split_Sigma(Eigen::MatrixXd const& Sigma, size_t const dim_I, size_t const dim_J, Eigen::MatrixXd& Sigma_II, Eigen::MatrixXd& Sigma_JJ, Eigen::MatrixXd& Sigma_IJ);
+
   //Eigen::MatrixXd stack_apri_covariance(const size_t ID_I, const size_t ID_J, Timestamp const& t);
   Eigen::MatrixXd stack_apri_covariance(ptr_belief& bel_I_apri, ptr_belief& bel_J_apri, const size_t ID_I, const size_t ID_J,
                                         Timestamp const& t);

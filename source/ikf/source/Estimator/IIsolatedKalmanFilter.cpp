@@ -325,9 +325,10 @@ bool IIsolatedKalmanFilter::apply_private_observation(const Eigen::MatrixXd &H_I
                                                       const Eigen::VectorXd &z, const Timestamp &t) {
   ptr_belief bel_apri;
   if (get_belief_at_t(t, bel_apri)) {
+    Eigen::VectorXd r = z - H_II * bel_apri->mean();
     KalmanFilter::CorrectionCfg_t cfg; // TODO: cfg as parameter?
     KalmanFilter::CorrectionResult_t res;
-    Eigen::VectorXd r = z - H_II * bel_apri->mean();
+
     res = KalmanFilter::correction_step(H_II, R, r, bel_apri->Sigma(), cfg);
 
     if (!res.rejected) {
@@ -345,13 +346,17 @@ bool IIsolatedKalmanFilter::apply_private_observation(const Eigen::MatrixXd &H_I
 bool IIsolatedKalmanFilter::apply_private_observation(ptr_belief &bel_II_apri, const Eigen::MatrixXd &H_II,
                                                       const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t){
 
+  RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(bel_II_apri->Sigma()), "Apri covariance is not PSD at t=" + t.str());
+
   KalmanFilter::CorrectionCfg_t cfg; // TODO: cfg as parameter?
   KalmanFilter::CorrectionResult_t res;
   res = KalmanFilter::correction_step(H_II, R, r, bel_II_apri->Sigma(), cfg);
 
   if (!res.rejected) {
+    RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(res.Sigma_apos), "Apos covariance is not PSD at t=" + t.str());
+
     // correction strategy: IMPORTANT: before setting the belief implace!
-    if (apply_correction_at_t(t, bel_II_apri->Sigma(), res.Sigma_apos)) {
+    if (apply_correction_at_t(t, res.U)) {
 
       bel_II_apri->correct(res.delta_mean, res.Sigma_apos);
       return true;
@@ -364,13 +369,9 @@ bool IIsolatedKalmanFilter::apply_private_observation(ptr_belief &bel_II_apri, c
 }
 
 
-Eigen::MatrixXd stack_Sigma(const Eigen::MatrixXd &Sigma_II, const Eigen::MatrixXd &Sigma_JJ, const Eigen::MatrixXd &Sigma_IJ) {
+Eigen::MatrixXd IIsolatedKalmanFilter::stack_Sigma(const Eigen::MatrixXd &Sigma_II, const Eigen::MatrixXd &Sigma_JJ, const Eigen::MatrixXd &Sigma_IJ) {
 
   RTV_EXPECT_TRUE_THROW(Sigma_IJ.size() != 0, "empty Sigma_IJ!");
-//  if (Sigma_IJ.size() == 0) {
-//    Sigma_IJ = Sigma_IJ.Zero(Sigma_II.rows(), Sigma_JJ.cols());
-//  }
-
   RTV_EXPECT_TRUE_THROW((Sigma_II.rows() == Sigma_IJ.rows()) && (Sigma_IJ.cols() == Sigma_JJ.cols()), "dimension missmatch!");
 
   Eigen::MatrixXd C(Sigma_II.rows()+Sigma_JJ.rows(), Sigma_II.cols() + Sigma_JJ.cols());
@@ -380,7 +381,7 @@ Eigen::MatrixXd stack_Sigma(const Eigen::MatrixXd &Sigma_II, const Eigen::Matrix
   return C;
 }
 
-void split_Sigma(Eigen::MatrixXd const& Sigma, size_t const dim_I, size_t const dim_J, Eigen::MatrixXd& Sigma_II,
+void IIsolatedKalmanFilter::split_Sigma(Eigen::MatrixXd const& Sigma, size_t const dim_I, size_t const dim_J, Eigen::MatrixXd& Sigma_II,
                  Eigen::MatrixXd& Sigma_JJ, Eigen::MatrixXd& Sigma_IJ) {
   RTV_EXPECT_TRUE_THROW(dim_I > 0 && dim_J > 0, "Dimension insvalid");
 
@@ -402,7 +403,6 @@ Eigen::MatrixXd IIsolatedKalmanFilter::stack_apri_covariance(ptr_belief &bel_I_a
   else {
     // Not correlated!
     Sigma_IJ = Sigma_IJ.Zero(bel_I_apri->Sigma().rows(), bel_J_apri->Sigma().cols());
-    // (Sigma_II.rows() == Sigma_IJ.rows()) && (Sigma_IJ.cols() == Sigma_JJ.cols())
     return stack_Sigma(bel_I_apri->Sigma(), bel_J_apri->Sigma(), Sigma_IJ);
   }
 }
@@ -453,7 +453,9 @@ bool IIsolatedKalmanFilter::apply_joint_observation(const size_t ID_I, const siz
   // stack the measurement sensitivity matrix:
   Eigen::MatrixXd H_joint = utils::horcat(H_II, H_JJ);
   // stack individual's covariances:
-  Eigen::MatrixXd Sigma_joint = utils::stabilize_covariance(stack_apri_covariance(bel_I_apri, bel_J_apri, ID_I, ID_J, t));
+  Eigen::MatrixXd Sigma_apri = utils::stabilize_covariance(stack_apri_covariance(bel_I_apri, bel_J_apri, ID_I, ID_J, t));
+  RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_apri), "Joint apri covariance is not PSD at t=" + t.str());
+
   // stack individual's mean:
   Eigen::VectorXd mean_joint = utils::vertcat_vec(bel_I_apri->mean(), bel_J_apri->mean());
 
@@ -462,10 +464,10 @@ bool IIsolatedKalmanFilter::apply_joint_observation(const size_t ID_I, const siz
 
   KalmanFilter::CorrectionCfg_t cfg;
   KalmanFilter::CorrectionResult_t res;
-  res = KalmanFilter::correction_step(H_joint, R, r, Sigma_joint, cfg);
+  res = KalmanFilter::correction_step(H_joint, R, r, Sigma_apri, cfg);
   if (!res.rejected) {
 
-    RTV_EXPECT_TRUE_THROW(utils::is_positive_semidefinite(res.Sigma_apos), "Joint apos covariance is not PSD!");
+    RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(res.Sigma_apos), "Joint apos covariance is not PSD at t=" + t.str());
 
     // split covariance
     Eigen::MatrixXd Sigma_II_apos, Sigma_JJ_apos, Sigma_IJ_apos;
@@ -510,15 +512,15 @@ bool IIsolatedKalmanFilter::apply_joint_observation(ptr_belief &bel_II_apri, ptr
     Eigen::MatrixXd Sigma_II_apos, Sigma_JJ_apos, Sigma_IJ_apos;
     split_Sigma(res.Sigma_apos, bel_II_apri->es_dim(), bel_JJ_apri->es_dim(), Sigma_II_apos, Sigma_JJ_apos, Sigma_IJ_apos);
 
-    // IMPORTANT: before setting the belief implace!
-    // add correction terms in the appropriate correction buffers!
+    // IMPORTANT: keep order! before setting cross-covariance factors and beliefs implace!
+    // 1) add correction terms in the appropriate correction buffers!
     apply_correction_at_t(t, bel_II_apri->Sigma(), Sigma_II_apos);
     ptr_Handler->get(ID_J)->apply_correction_at_t(t, bel_JJ_apri->Sigma(), Sigma_JJ_apos);
 
-    // set a corrected factorized a posterioiry cross-covariance
+    // 2) set a corrected factorized a posterioiry cross-covariance
     set_Sigma_IJ_at_t(ID_I, ID_J, Sigma_IJ_apos, t);
 
-    // correct beliefs implace!
+    // 3) correct beliefs implace!
     bel_II_apri->correct(res.delta_mean.topLeftCorner(bel_II_apri->es_dim(), 1), Sigma_II_apos);
     bel_JJ_apri->correct(res.delta_mean.bottomRightCorner(bel_JJ_apri->es_dim(), 1), Sigma_JJ_apos);
 
