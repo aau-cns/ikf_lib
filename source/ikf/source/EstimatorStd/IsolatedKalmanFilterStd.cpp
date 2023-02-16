@@ -54,26 +54,29 @@ bool IsolatedKalmanFilterStd::joint_update(const size_t ID_I, const size_t ID_J,
   RTV_EXPECT_TRUE_THROW(m_pHandler->exists(ID_I) && m_pHandler->exists(ID_J), "IKF instances do not exists!");
   RTV_EXPECT_TRUE_THROW(ID_I == m_ID, "ID_I missmatch! wrong interim master");
 
+  ptr_belief bel_I_apri = m_belief;
   ptr_belief bel_J_apri = m_pHandler->get(ID_J)->get_belief();
-  RTV_EXPECT_TRUE_THROW(bel_J_apri->timestamp() == m_belief->timestamp(), "Timestamps of bliefs need to match! Did you forgett to propagate first?");
+  RTV_EXPECT_TRUE_THROW(bel_I_apri->timestamp() == bel_J_apri->timestamp(), "Timestamps of bliefs need to match! Did you forgett to propagate first?");
 
   // stack the measurement sensitivity matrix:
   Eigen::MatrixXd H_joint = utils::horcat(H_II, H_JJ);
-  // stack individual's covariances:
-  Eigen::MatrixXd Sigma_apri = utils::stabilize_covariance(stack_apri_covariance(bel_J_apri, ID_J));
-  RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_apri), "Joint apri covariance is not PSD");
+
   // stack individual's mean:
-  Eigen::VectorXd mean_joint = utils::vertcat_vec(m_belief->mean(), bel_J_apri->mean());
+  Eigen::VectorXd mean_joint = utils::vertcat_vec(bel_I_apri->mean(), bel_J_apri->mean());
 
   // residual:
   Eigen::VectorXd r =  z - H_joint * mean_joint;
+
+  // stack individual's covariances:
+  Eigen::MatrixXd Sigma_apri = utils::stabilize_covariance(stack_apri_covariance(bel_J_apri, ID_J));
+  RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_apri), "Joint apri covariance is not PSD");
 
   KalmanFilter::CorrectionCfg_t cfg;
   KalmanFilter::CorrectionResult_t res;
   res = KalmanFilter::correction_step(H_joint, R, r, Sigma_apri, cfg);
   if (!res.rejected) {
     RTV_EXPECT_TRUE_THROW(utils::is_positive_semidefinite(res.Sigma_apos), "Joint apos covariance is not PSD!");
-    size_t dim_I = m_belief->Sigma().rows();
+    size_t dim_I = bel_I_apri->Sigma().rows();
     size_t dim_J = bel_J_apri->Sigma().rows();
 
     // split covariance
@@ -82,15 +85,15 @@ bool IsolatedKalmanFilterStd::joint_update(const size_t ID_I, const size_t ID_J,
 
     // IMPORTANT: keep order! before setting cross-covariance factors and beliefs implace!
     // 1) add correction terms in the appropriate correction buffers!
-    apply_correction(m_belief->Sigma(), Sigma_II_apos);
+    apply_correction(bel_I_apri->Sigma(), Sigma_II_apos);
     m_pHandler->get(ID_J)->apply_correction(bel_J_apri->Sigma(), Sigma_JJ_apos);
 
     // 2) set a corrected factorized a posterioiry cross-covariance
     set_Sigma_IJ(ID_I, ID_J, Sigma_IJ_apos);
 
     // 3) correct beliefs implace!
-    m_belief->correct(res.delta_mean.topLeftCorner(m_belief->es_dim(), 1), Sigma_II_apos);
-    bel_J_apri->correct(res.delta_mean.bottomRightCorner(bel_J_apri->es_dim(), 1), Sigma_JJ_apos);
+    bel_I_apri->correct(res.delta_mean.topLeftCorner(dim_I, 1), Sigma_II_apos);
+    bel_J_apri->correct(res.delta_mean.bottomRightCorner(dim_J, 1), Sigma_JJ_apos);
   }
   return !res.rejected;
 }

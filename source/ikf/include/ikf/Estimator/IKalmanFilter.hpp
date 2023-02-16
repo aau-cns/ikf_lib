@@ -59,9 +59,8 @@ public:
   virtual void set_horizon(double const t_hor);
   virtual void check_horizon();
 
-  void print_HistMeas(size_t max=100);
-
-  void print_HistBelief(size_t max=100);
+  void print_HistMeas(size_t max=100, bool reverse=false);
+  void print_HistBelief(size_t max=100, bool reverse=false);
 protected:
   virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
   virtual bool propagate_from_to(const Timestamp &t_a, const Timestamp &t_b);

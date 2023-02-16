@@ -75,6 +75,7 @@ public:
   // -- apply_correction_at_t(): Eq. 14, 15 in [1]
   bool apply_correction_at_t(Timestamp const&t, Eigen::MatrixXd const& Sigma_apri, Eigen::MatrixXd const Sigma_apos);
 
+  void print_HistCorr(size_t max=100, bool reverse=false);
 protected:
   virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
   ///////////////////////////////////////////
@@ -91,9 +92,12 @@ protected:
   bool apply_private_observation(ptr_belief& bel_II_apri,const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R,
                                  const Eigen::VectorXd &r, const Timestamp &t);
 
+  // KF:
   bool apply_joint_observation(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ,
                                const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t);
-  bool apply_joint_observation(ptr_belief& bel_II_apri, ptr_belief& bel_JJ_apri, const size_t ID_I, const size_t ID_J,
+
+  // EKF:
+  bool apply_joint_observation(ptr_belief& bel_I_apri, ptr_belief& bel_J_apri, const size_t ID_I, const size_t ID_J,
                                const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ, const Eigen::MatrixXd &R,
                                const Eigen::VectorXd &r, const Timestamp &t);
 

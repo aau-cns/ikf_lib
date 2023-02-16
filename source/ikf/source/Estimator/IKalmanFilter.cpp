@@ -184,24 +184,35 @@ void IKalmanFilter::check_horizon() {
   HistBelief.check_horizon();
 }
 
-void IKalmanFilter::print_HistMeas(size_t max) {
+void IKalmanFilter::print_HistMeas(size_t max, bool reverse) {
   size_t cnt = 0;
-  HistMeas.foreach([&cnt, max](MeasData const& i){
+  auto lambda = [&cnt, max](MeasData const& i){
     if(cnt < max) {
       std::cout << "* " << i << std::endl;
     }
     cnt++;
-  });
+  };
+  if (!reverse) {
+    HistMeas.foreach(lambda);
+  } else {
+    HistMeas.foreach_reverse(lambda);
+  }
+
 }
 
-void IKalmanFilter::print_HistBelief(size_t max) {
+void IKalmanFilter::print_HistBelief(size_t max, bool reverse) {
   size_t cnt = 0;
-  HistBelief.foreach([&cnt, max](ptr_belief const& i){
+  auto lambda = [&cnt, max](ptr_belief const& i){
     if(cnt < max) {
       std::cout << (*i.get()) << std::endl;
     }
     cnt++;
-  });
+  };
+  if (!reverse) {
+    HistBelief.foreach(lambda);
+  } else {
+    HistBelief.foreach_reverse(lambda);
+  }
 }
 
 ProcessMeasResult_t IKalmanFilter::reprocess_measurement(const MeasData &m) {
