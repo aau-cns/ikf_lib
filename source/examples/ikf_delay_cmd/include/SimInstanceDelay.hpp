@@ -143,7 +143,7 @@ public:
           traj_est.v_arr(idx_meas) = mean_apos(1);
         }
       }
-
+      HistBelief.insert(ptr_IKF->get_belief_at_t(t_meas), t_meas);
     }
 
     if (perform_joint && idx > delay_joint)
@@ -182,7 +182,7 @@ public:
             traj_est.v_arr(idx_meas) = mean_apos(1);
           }
         }
-
+        HistBelief.insert(ptr_IKF->get_belief_at_t(t_meas), t_meas);
       }
 
     }
@@ -194,8 +194,6 @@ public:
     traj_est.a_arr(idx) = a_noisy_arr(idx);
     traj_est.t_arr(idx) = traj.t_arr(idx);
 
-
-    HistBelief.insert(p_bel->clone(), p_bel->timestamp());
     return true;
   }
 
@@ -213,8 +211,8 @@ public:
 
 public:
   size_t ID = 0;
-  size_t delay_private = 0;
-  size_t delay_joint = 0;
+  size_t delay_private = 1;
+  size_t delay_joint = 2;
   bool perform_private = true;
   bool perform_joint = true;
   bool print_belief = false;
