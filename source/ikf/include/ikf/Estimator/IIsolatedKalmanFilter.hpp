@@ -8,6 +8,9 @@
 *
 *  Copyright (C) 2023
 *  All rights reserved. See the LICENSE file for details.
+*
+*  References:
+*  [1] Roland Jung and Stephan Weiss, "Modular Multi-Sensor Fusion: A Collaborative State Estimation Perspective", IEEE Robotics and Automation Letters, DOI: 10.1109/LRA.2021.3096165, 2021.
 ******************************************************************************/
 #ifndef IISOLATEDKALMANFILTER_HPP
 #define IISOLATEDKALMANFILTER_HPP
@@ -42,6 +45,9 @@ public:
   virtual ProcessMeasResult_t local_joint_measurement(MeasData const& m) = 0;
   /// pure virtual method
   ///////////////////////////////////////////////////////////////////////////////////
+  ///
+
+  // Algorithm 7 in [1]
   virtual ProcessMeasResult_t process_measurement(MeasData const& m);
 
   virtual void initialize(ptr_belief bel_init);
@@ -64,39 +70,43 @@ public:
   void propagate_CrossCovFact(Timestamp const& t_a, Timestamp const& t_b, Eigen::MatrixXd const& M_a_b);
   virtual void remove_after_t(Timestamp const& t);
   virtual void set_horizon(double const t_hor);
-  // -- check_horizon(): Algorithm 2 in [1]
+
+  // Algorithm 3 in [1]
+  virtual void check_correction_horizon();
   virtual void check_horizon();
-  // -- compute_correction(): Algorithm 4 in [1]
+
+  // Algorithm 1 in [1]
   Eigen::MatrixXd compute_correction(Timestamp const& t_a, Timestamp const& t_b) const;
-  // -- apply_correction_at_t(): Eq. 7 in [1]
+  // Eq. 8 in [1]
   bool add_correction_at_t(Timestamp const& t_b, Eigen::MatrixXd const& Phi_a_b);
-  // -- apply_correction_at_t(): Eq. 14, 15 in [1]
+  // Eq. 15, 21 in [1]
   bool apply_correction_at_t(Timestamp const&t, Eigen::MatrixXd const& Factor);
-  // -- apply_correction_at_t(): Eq. 14, 15 in [1]
+  // Eq. 20 in [1]
   bool apply_correction_at_t(Timestamp const&t, Eigen::MatrixXd const& Sigma_apri, Eigen::MatrixXd const Sigma_apos);
 
   void print_HistCorr(size_t max=100, bool reverse=false);
 protected:
+  // Algorithm 7 in [1]
   virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
   ///////////////////////////////////////////
   /// FUSION LOGIC:
-  // KF:
+  // KF: Algorithm 8 in [1]
   bool apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
-  // EKF:
+  // EKF: Algorithm 8 in [1]
   bool apply_propagation(ptr_belief& bel_II_apri, const Eigen::VectorXd &mean_II_b, const Eigen::MatrixXd &Phi_II_ab,
                          const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
 
-  // KF:
+  // KF:  Algorithm 4 in [1]
   bool apply_private_observation(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t);
-  // EKF:
+  // EKF: Algorithm 4 in [1]
   bool apply_private_observation(ptr_belief& bel_II_apri,const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R,
                                  const Eigen::VectorXd &r, const Timestamp &t);
 
-  // KF:
+  // KF: Algorithm 6 in [1]
   bool apply_joint_observation(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ,
                                const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t);
 
-  // EKF:
+  // EKF: Algorithm 6 in [1]
   bool apply_joint_observation(ptr_belief& bel_I_apri, ptr_belief& bel_J_apri, const size_t ID_I, const size_t ID_J,
                                const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ, const Eigen::MatrixXd &R,
                                const Eigen::VectorXd &r, const Timestamp &t);
@@ -105,7 +115,6 @@ protected:
   static Eigen::MatrixXd stack_Sigma(const Eigen::MatrixXd &Sigma_II, const Eigen::MatrixXd &Sigma_JJ, const Eigen::MatrixXd &Sigma_IJ);
   static void split_Sigma(Eigen::MatrixXd const& Sigma, size_t const dim_I, size_t const dim_J, Eigen::MatrixXd& Sigma_II, Eigen::MatrixXd& Sigma_JJ, Eigen::MatrixXd& Sigma_IJ);
 
-  //Eigen::MatrixXd stack_apri_covariance(const size_t ID_I, const size_t ID_J, Timestamp const& t);
   Eigen::MatrixXd stack_apri_covariance(ptr_belief& bel_I_apri, ptr_belief& bel_J_apri, const size_t ID_I, const size_t ID_J,
                                         Timestamp const& t);
   Eigen::MatrixXd get_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, Timestamp const& t);

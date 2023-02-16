@@ -8,6 +8,9 @@
 *
 *  Copyright (C) 2023
 *  All rights reserved. See the LICENSE file for details.
+*
+*  References:
+*  [1] Roland Jung and Stephan Weiss, "Modular Multi-Sensor Fusion: A Collaborative State Estimation Perspective", IEEE RA-L, DOI: 10.1109/LRA.2021.3096165, 2021.
 ******************************************************************************/
 #include <ikf/Estimator/IIsolatedKalmanFilter.hpp>
 #include <ikf/Estimator/IsolatedKalmanFilterHandler.hpp>
@@ -21,6 +24,7 @@ IIsolatedKalmanFilter::IIsolatedKalmanFilter(std::shared_ptr<IsolatedKalmanFilte
 
 }
 
+// Algorithm 7 in [1]
 ProcessMeasResult_t IIsolatedKalmanFilter::process_measurement(const MeasData &m) {
   // propagation and private -> to filter instance
   // joint -> use ptr_Handler and two filter instances: The CIH must provide others belief and ccf
@@ -192,14 +196,47 @@ void IIsolatedKalmanFilter::set_horizon(const double t_hor) {
   }
 }
 
+// Algorithm 3 in [1]
+void IIsolatedKalmanFilter::check_correction_horizon() {
+  double cur_horizon = HistCorr.horizon();
+  double half_horizon = HistCorr.max_horizon()*0.5;
+  if  (cur_horizon > half_horizon) {
+    // if the latest element of FCCs is about to fall outside the correction buffer's horizon
+    // propagate it to the middle of the buffer.
+    Timestamp oldest_t;
+    HistCorr.get_oldest_t(oldest_t);
+
+    Timestamp middle_t;
+    HistCorr.get_before_t(Timestamp(oldest_t.to_sec() + half_horizon), middle_t);
+
+    for(auto & HistCCF : HistCrossCovFactors) {
+      Timestamp latest_ccf_t;
+      if(HistCCF.second.get_latest_t(latest_ccf_t)) {
+        if(latest_ccf_t <= middle_t) {
+          RTV_EXPECT_TRUE_THROW(HistCorr.exist_at_t(latest_ccf_t), "No correction term found at t=" + latest_ccf_t.str());
+          Eigen::MatrixXd M_latest_to_mid = compute_correction(latest_ccf_t, middle_t);
+          Eigen::MatrixXd CCF_latest;
+          HistCCF.second.get_latest(CCF_latest);
+          HistCCF.second.insert(M_latest_to_mid * CCF_latest, middle_t);
+        }
+      }
+    }
+  }
+}
+
 void IIsolatedKalmanFilter::check_horizon() {
   IKalmanFilter::check_horizon();
+
+  // IMPORTANT: before the horizon is about to be shrinked!
+  check_correction_horizon();
+
   HistCorr.check_horizon();
   for (auto& elem : HistCrossCovFactors){
     elem.second.check_horizon();
   }
 }
 
+// Algorithm 1 in [1]
 Eigen::MatrixXd IIsolatedKalmanFilter::compute_correction(const Timestamp &t_a, const Timestamp &t_b) const {
   TStampedData<Eigen::MatrixXd> data_ta, data_tb;
 
@@ -230,6 +267,7 @@ Eigen::MatrixXd IIsolatedKalmanFilter::compute_correction(const Timestamp &t_a, 
   return Eigen::MatrixXd();
 }
 
+// Eq. 8 in [1]
 bool IIsolatedKalmanFilter::add_correction_at_t(const Timestamp &t_b, const Eigen::MatrixXd &Phi_a_b) {
   bool res = RTV_EXPECT_TRUE_MSG(!HistCorr.exist_at_t(t_b), "correction term already exists at t_b:" + t_b.str() + "! First propagate, then update!");
   if (res){
@@ -242,6 +280,7 @@ bool IIsolatedKalmanFilter::add_correction_at_t(const Timestamp &t_b, const Eige
   return res;
 }
 
+// Eq. 15, 21 in [1]
 bool IIsolatedKalmanFilter::apply_correction_at_t(const Timestamp &t, const Eigen::MatrixXd &Factor){
   RTV_EXPECT_TRUE_MSG(Factor.cols() == Factor.rows(), "Factor must be a square matrix!");
   Eigen::MatrixXd mat;
@@ -257,6 +296,7 @@ bool IIsolatedKalmanFilter::apply_correction_at_t(const Timestamp &t, const Eige
   }
 }
 
+// Eq. 20 in [1]
 bool IIsolatedKalmanFilter::apply_correction_at_t(const Timestamp &t, const Eigen::MatrixXd &Sigma_apri, const Eigen::MatrixXd Sigma_apos){
   Eigen::MatrixXd Lambda = Sigma_apos * Sigma_apri.inverse();
   return apply_correction_at_t(t, Lambda);
@@ -277,6 +317,7 @@ void IIsolatedKalmanFilter::print_HistCorr(size_t max, bool reverse) {
   }
 }
 
+// Algorithm 7 in [1]
 ProcessMeasResult_t IIsolatedKalmanFilter::reprocess_measurement(const MeasData &m) {
   ProcessMeasResult_t res;
   res.rejected = true;
@@ -290,10 +331,12 @@ ProcessMeasResult_t IIsolatedKalmanFilter::reprocess_measurement(const MeasData 
   return res;
 }
 
+// KF: Algorithm 8 in [1]
 bool IIsolatedKalmanFilter::apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab,
                                               const Timestamp &t_a, const Timestamp &t_b) {
   if (IKalmanFilter::apply_propagation(Phi_II_ab, Q_II_ab, t_a, t_b)) {
     if (add_correction_at_t(t_b, Phi_II_ab)) {
+      check_horizon();
       return true;
     }
     else {
@@ -303,10 +346,12 @@ bool IIsolatedKalmanFilter::apply_propagation(const Eigen::MatrixXd &Phi_II_ab, 
   return false;
 }
 
+// EKF: Algorithm 8 in [1]
 bool IIsolatedKalmanFilter::apply_propagation(ptr_belief &bel_II_apri, const Eigen::VectorXd &mean_II_b, const Eigen::MatrixXd &Phi_II_ab,
                                               const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b) {
   if (IKalmanFilter::apply_propagation(bel_II_apri, mean_II_b, Phi_II_ab, Q_II_ab, t_a, t_b)) {
     if (add_correction_at_t(t_b, Phi_II_ab)) {
+      check_horizon();
       return true;
     }
     else {
@@ -316,6 +361,7 @@ bool IIsolatedKalmanFilter::apply_propagation(ptr_belief &bel_II_apri, const Eig
   return false;
 }
 
+// KF:  Algorithm 4 in [1]
 bool IIsolatedKalmanFilter::apply_private_observation(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R,
                                                       const Eigen::VectorXd &z, const Timestamp &t) {
   ptr_belief bel_apri;
@@ -338,6 +384,7 @@ bool IIsolatedKalmanFilter::apply_private_observation(const Eigen::MatrixXd &H_I
   return false;
 }
 
+// EKF:  Algorithm 4 in [1]
 bool IIsolatedKalmanFilter::apply_private_observation(ptr_belief &bel_II_apri, const Eigen::MatrixXd &H_II,
                                                       const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t){
 
@@ -434,6 +481,7 @@ Eigen::MatrixXd IIsolatedKalmanFilter::get_Sigma_IJ_at_t(const size_t ID_I, cons
   return Sigma_IJ;
 }
 
+// KF: Algorithm 6 in [1]
 bool IIsolatedKalmanFilter::apply_joint_observation(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd &H_II,
                                                     const Eigen::MatrixXd &H_JJ, const Eigen::MatrixXd &R,
                                                     const Eigen::VectorXd &z, const Timestamp &t) {
@@ -458,6 +506,7 @@ bool IIsolatedKalmanFilter::apply_joint_observation(const size_t ID_I, const siz
   return apply_joint_observation(bel_I_apri, bel_J_apri, ID_I, ID_J, H_II, H_JJ, R, r, t);
 }
 
+// EKF: Algorithm 6 in [1]
 bool IIsolatedKalmanFilter::apply_joint_observation(ptr_belief &bel_I_apri, ptr_belief &bel_J_apri, const size_t ID_I,
                                                     const size_t ID_J, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ,
                                                     const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t) {

@@ -56,6 +56,11 @@ namespace ikf
           this->remove_before_t(oldest_t);
         }
       }
+
+      double max_horizon() const
+      {
+        return max_horizon_;
+      }
   protected:
       double max_horizon_;
   };
