@@ -20,7 +20,7 @@ namespace utils {
 template<typename scalar>
 static std::vector<scalar> to_vector(Eigen::Array<scalar, Eigen::Dynamic, 1> const & vec) {
   std::vector<scalar> v(vec.rows());
-  for(size_t i = 0; i < vec.rows(); i++) {
+  for(size_t i = 0; i < static_cast<size_t>(vec.rows()); i++) {
     v.at(i) = vec(i);
   }
   return v;
@@ -29,7 +29,7 @@ static std::vector<scalar> to_vector(Eigen::Array<scalar, Eigen::Dynamic, 1> con
 template<typename scalar>
 static std::vector<scalar> to_vector(Eigen::Array<scalar, 1, Eigen::Dynamic> const & vec) {
   std::vector<scalar> v(vec.cols());
-  for(size_t i = 0; i < vec.cols(); i++) {
+  for(size_t i = 0; i < static_cast<size_t>(vec.cols()); i++) {
     v.at(i) = vec(i);
   }
   return v;

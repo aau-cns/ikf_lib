@@ -45,7 +45,7 @@ namespace ikf
       out << ", t_p=" << std::setw(16) << obj.t_p.str();
       out << ", ID=" << std::setw(3)<< obj.id_sensor;
       out << ", meas_type=" << std::left << std::setw(20) << obj.meas_type;
-      out << ", meta info= "<< std::left << std::setw(12) << obj.meta_info;
+      out << ", meta info="<< std::left << std::setw(12) << obj.meta_info;
       out << ", obs. type=" << std::left  << std::setw(2) << (int)obj.obs_type;
       out << ", z=" << std::setprecision(4) <<  obj.z;
       out << ", R=" << std::setprecision(4) << obj.R.diagonal().transpose();
