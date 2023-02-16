@@ -13,6 +13,7 @@
 #define MMSF_BELIEF_HPP
 #include <ikf/ikf_api.h>
 #include <memory>
+#include <iomanip>      // std::setprecision
 #include <eigen3/Eigen/Eigen>
 #include <ikf/Container/Timestamp.hpp>
 
@@ -73,7 +74,12 @@ public:
   ///
 
   friend std::ostream& operator<< (std::ostream& out, const IBelief& obj) {
-    out << "* IBelief: t=" << obj.m_timestamp << ", mean=" << obj.m_mean.transpose() << ", diag(Sigma)=" << obj.m_Sigma.diagonal().transpose();
+    out << "* IBelief:";
+    out << std::left;
+    out << " t=" << std::setw(16) << obj.m_timestamp.str();
+    out << ", mean=" << std::setprecision(4) <<  obj.m_mean.transpose();
+    out << ", diag(Sigma)=" << std::setprecision(4) << obj.m_Sigma.diagonal().transpose();
+    out << std::internal;
     return out;
   }
 protected:

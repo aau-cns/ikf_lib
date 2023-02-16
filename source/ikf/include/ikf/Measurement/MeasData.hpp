@@ -13,6 +13,7 @@
 #define MEASDATA_HPP
 #include <eigen3/Eigen/Eigen>
 #include <memory>
+#include <iomanip>      // std::setprecision
 #include <ikf/Container/TTimeHorizonBuffer.hpp>
 #include <ikf/utils/RTVerification.hpp>
 #include <unordered_map>
@@ -29,7 +30,7 @@ namespace ikf
   struct MeasData {
     Timestamp t_m; // true measurement timestamp
     Timestamp t_p; // actual processing timestamp
-    size_t id_sensor;
+    size_t id_sensor = 0;
     std::string meas_type;
     std::string meta_info;
     eObservationType obs_type = eObservationType::UNKNOWN;
@@ -38,10 +39,17 @@ namespace ikf
 
     friend std::ostream& operator<< (std::ostream& out, const MeasData& obj)
     {
-      out << "MeasData: " << "t_m=:" << obj.t_m << ", t_p=" << obj.t_p;
-      out << ", ID:" << obj.id_sensor << ", meas_type=" << obj.meas_type;
-      out << ", meta info: " << obj.meta_info  << ", observation type=" << (int)obj.obs_type;
-      out << ", z=" << obj.z << " R=" << obj.R;
+      out << "MeasData:";
+      out << std::left;
+      out << " t_m=" << std::setw(16) << obj.t_m.str();
+      out << ", t_p=" << std::setw(16) << obj.t_p.str();
+      out << ", ID=" << std::setw(3)<< obj.id_sensor;
+      out << ", meas_type=" << std::left << std::setw(20) << obj.meas_type;
+      out << ", meta info= "<< std::left << std::setw(12) << obj.meta_info;
+      out << ", obs. type=" << std::left  << std::setw(2) << (int)obj.obs_type;
+      out << ", z=" << std::setprecision(4) <<  obj.z;
+      out << ", R=" << std::setprecision(4) << obj.R.diagonal().transpose();
+      out << std::internal;
       return out;
     }
 
