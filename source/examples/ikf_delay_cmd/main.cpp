@@ -67,6 +67,9 @@ int main(int /*argc*/, char** /*argv[]*/)
     size_t ID = i;
     dict_instance[i] = ptr_Instance(new SimInstanceDelay(ID, dt, D, omega, std_dev_p, std_dev_a, std_dev_p_rel, ptr_Handler));
     ptr_Handler->add(dict_instance[i]->ptr_IKF);
+    if (i > 0) {
+      dict_instance[i]->perform_private = false;
+    }
   }
 
 
@@ -95,8 +98,8 @@ int main(int /*argc*/, char** /*argv[]*/)
   }
 
   for(int i=0; i < num_instances; i++) {
-    std::cout << "Beliefs of filter instance ID=" << dict_instance[i]->ptr_IKF->ID() << std::endl;
-    dict_instance[i]->ptr_IKF->print_HistBelief(20);
+    std::cout << "Beliefs of filter instance ID=" << i << std::endl;
+    dict_instance[i]->print_HistBelief(20);
   }
 
   for(int i=0; i < num_instances; i++) {

@@ -109,14 +109,14 @@ std::vector<size_t> IIsolatedKalmanFilter::get_correlated_IDs() const {
   return IDs;
 }
 
-bool IIsolatedKalmanFilter::get_CrossCovFact_at_t(const Timestamp &t, size_t unique_ID, Eigen::MatrixXd &FFC){
-  FFC = get_CrossCovFact_at_t(t, unique_ID);
+bool IIsolatedKalmanFilter::get_CrossCovFact_at_t(const Timestamp &t, size_t ID_J, Eigen::MatrixXd &FFC){
+  FFC = get_CrossCovFact_at_t(t, ID_J);
   return FFC.size() > 0;
 }
 
-Eigen::MatrixXd IIsolatedKalmanFilter::get_CrossCovFact_at_t(const Timestamp &t, size_t unique_ID) {
+Eigen::MatrixXd IIsolatedKalmanFilter::get_CrossCovFact_at_t(const Timestamp &t, size_t ID_J) {
   Eigen::MatrixXd mat;
-  auto iter = HistCrossCovFactors.find(unique_ID);
+  auto iter = HistCrossCovFactors.find(ID_J);
   if (iter != HistCrossCovFactors.end()) {
     bool res = iter->second.get_at_t(t, mat);
     if (!res) {
@@ -129,15 +129,15 @@ Eigen::MatrixXd IIsolatedKalmanFilter::get_CrossCovFact_at_t(const Timestamp &t,
         Eigen::MatrixXd M_a_b = compute_correction(t_prev, t);
         if (res && M_a_b.size() > 0 ) {
           mat = M_a_b * mat;
-          set_CrossCovFact_at_t(t, unique_ID, mat);
+          set_CrossCovFact_at_t(t, ID_J, mat);
         }
         else {
           std::cout << "IMMSF.get_CrossCovFact_at_t(): could not compute correction between t_prev=" << t_prev << " and t_curr=" << t << std::endl;
         }
       }
       else {
-        std::cout << "IMMSF.get_CrossCovFact_at_t(): could not find elem for id=" << unique_ID << " at t=" << t << std::endl;
-        std::cout << "IMMSF.get_CrossCovFact_at_t(): could not find elem for id=" << unique_ID << " at t_prev=" << t_prev << std::endl;
+        std::cout << "IMMSF.get_CrossCovFact_at_t(): could not find elem for id=" << ID_J << " at t=" << t << std::endl;
+        std::cout << "IMMSF.get_CrossCovFact_at_t(): could not find elem for id=" << ID_J << " at t_prev=" << t_prev << std::endl;
       }
     }
   }
@@ -245,11 +245,12 @@ void IIsolatedKalmanFilter::check_horizon() {
 
 // Algorithm 1 in [1]
 Eigen::MatrixXd IIsolatedKalmanFilter::compute_correction(const Timestamp &t_a, const Timestamp &t_b) const {
-  TStampedData<Eigen::MatrixXd> data_ta, data_tb;
+  TStampedData<Eigen::MatrixXd> data_after_ta, data_tb;
 
-  bool exist_after_ta = HistCorr.get_after_t(t_a, data_ta);
+  bool exist_after_ta = HistCorr.get_after_t(t_a, data_after_ta);
   bool exist_at_tb = HistCorr.get_at_t(t_b, data_tb.data);
 
+  Timestamp t_after_a = data_after_ta.stamp;
   Timestamp t_b_found = t_b;
 
   if (!exist_at_tb) {
@@ -258,13 +259,13 @@ Eigen::MatrixXd IIsolatedKalmanFilter::compute_correction(const Timestamp &t_a, 
   }
 
   if (exist_after_ta && exist_at_tb) {
-    int max_dim = std::max(data_ta.data.cols(), data_ta.data.rows());
+    int max_dim = std::max(data_after_ta.data.cols(), data_after_ta.data.rows());
     Eigen::MatrixXd I  = Eigen::MatrixXd::Identity(max_dim, max_dim);
-    Eigen::MatrixXd M_a_b = HistCorr.accumulate_between_t1_t2(t_a, t_b_found, I,
+    Eigen::MatrixXd M_a_b = HistCorr.accumulate_between_t1_t2(t_after_a, t_b_found, I,
                                                               [](Eigen::MatrixXd const&A, Eigen::MatrixXd const&B){
-                                                                Eigen::MatrixXd C(A.rows(), A.cols());
-                                                                C = B*A;
-                                                                return C;
+                                                                //Eigen::MatrixXd C(A.rows(), A.cols());
+                                                                //C = B*A;
+                                                                return B*A;
                                                               });
     return M_a_b;
   }
@@ -430,6 +431,7 @@ Eigen::MatrixXd IIsolatedKalmanFilter::stack_Sigma(const Eigen::MatrixXd &Sigma_
   return C;
 }
 
+// Algorithm 6 in [1]
 void IIsolatedKalmanFilter::split_Sigma(Eigen::MatrixXd const& Sigma, size_t const dim_I, size_t const dim_J, Eigen::MatrixXd& Sigma_II,
                  Eigen::MatrixXd& Sigma_JJ, Eigen::MatrixXd& Sigma_IJ) {
   RTV_EXPECT_TRUE_THROW(dim_I > 0 && dim_J > 0, "Dimension insvalid");
@@ -441,7 +443,7 @@ void IIsolatedKalmanFilter::split_Sigma(Eigen::MatrixXd const& Sigma, size_t con
 }
 
 
-
+// Algorithm 6 in [1]
 Eigen::MatrixXd IIsolatedKalmanFilter::stack_apri_covariance(ptr_belief &bel_I_apri, ptr_belief &bel_J_apri,
                                                              const size_t ID_I, const size_t ID_J, const Timestamp &t) {
   Eigen::MatrixXd Sigma_IJ = get_Sigma_IJ_at_t(ID_I, ID_J, t);
@@ -456,7 +458,7 @@ Eigen::MatrixXd IIsolatedKalmanFilter::stack_apri_covariance(ptr_belief &bel_I_a
   }
 }
 
-
+//  Eq (1) and Algorithm 6 in [1]
 void IIsolatedKalmanFilter::set_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J,
                                               const Eigen::MatrixXd &Sigma_IJ, const Timestamp &t) {
   if (ID_I < ID_J) {
@@ -469,7 +471,7 @@ void IIsolatedKalmanFilter::set_Sigma_IJ_at_t(const size_t ID_I, const size_t ID
   }
 }
 
-
+//  Eq (1) and Algorithm 6 in [1]
 Eigen::MatrixXd IIsolatedKalmanFilter::get_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, const Timestamp &t) {
   Eigen::MatrixXd  SigmaFact_IJ = ptr_Handler->get(ID_I)->get_CrossCovFact_at_t(t, ID_J);
   Eigen::MatrixXd  SigmaFact_JI = ptr_Handler->get(ID_J)->get_CrossCovFact_at_t(t, ID_I);

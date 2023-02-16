@@ -71,8 +71,8 @@ public:
   virtual std::vector<size_t> get_correlated_IDs() const;
 
 
-  bool get_CrossCovFact_at_t(Timestamp const& t, size_t unique_ID, Eigen::MatrixXd &FFC);
-  Eigen::MatrixXd get_CrossCovFact_at_t(Timestamp const& t, size_t unique_ID);
+  bool get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J, Eigen::MatrixXd &FFC);
+  Eigen::MatrixXd get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J);
   Eigen::MatrixXd get_CrossCovFact_before_t(Timestamp const& t, size_t unique_ID) const;
   void set_CrossCovFact_at_t(Timestamp const& t, size_t const unique_ID, Eigen::MatrixXd const& ccf);
   void propagate_CrossCovFact(Timestamp const& t_a, Timestamp const& t_b, Eigen::MatrixXd const& M_a_b);
