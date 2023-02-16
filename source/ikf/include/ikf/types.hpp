@@ -2,7 +2,7 @@
 * FILENAME:     types.hpp
 * PURPOSE:
 * AUTHOR:       %USER%
-* MAIL:         <your mail address>
+* MAIL:         <roland.jung@ieee.org>
 * VERSION:      v0.0.0
 * CREATION:     %DATE%
 *

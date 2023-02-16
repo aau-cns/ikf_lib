@@ -1,7 +1,7 @@
 /******************************************************************************
 * FILENAME:     RandValGenerator.hpp
-* PURPOSE:      %{Cpp:License:ClassName}
-* AUTHOR:       jungr
+* PURPOSE:      Part of the ikf_lib
+* AUTHOR:       Roland Jung
 * MAIL:         roland.jung@ieee.org
 * VERSION:      v0.0.1
 * CREATION:     04.02.2023

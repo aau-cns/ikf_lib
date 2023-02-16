@@ -1,6 +1,7 @@
-# Isolated Kalman Filtering framework 
+# ikf_lib (Isolated Kalman Filtering C++ library) 
 
-[WIKI](https://gitlab.aau.at/aau-cns/aaucns_mmsf/wikis/home)
+A Isolated Kalman Filtering framework. 
+
 
 Find the lib impementation in `source/ikf` and the test directory in `source/tests/ikf-test`.
 Find a commandline example tool in `source/examples/ikf_cmd`.

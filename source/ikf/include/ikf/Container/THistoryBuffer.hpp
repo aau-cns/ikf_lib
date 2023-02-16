@@ -1,6 +1,6 @@
 /******************************************************************************
 * FILENAME:     THistoryBuffer.hpp
-* PURPOSE:      %{Cpp:License:ClassName}
+* PURPOSE:      Part of the ikf_lib
 * AUTHOR:       Roland Jung
 * MAIL:         jungr-ait@github
 * VERSION:      v0.0.0

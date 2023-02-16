@@ -1,8 +1,8 @@
 /******************************************************************************
 * FILENAME:     IKF_IKalmanFilter_test.cpp
-* PURPOSE:      %{Cpp:License:ClassName}
-* AUTHOR:       jungr
-* MAIL:         <your mail address>
+* PURPOSE:      Part of the ikf_lib
+* AUTHOR:       Roland Jung
+* MAIL:         <roland.jung@ieee.org>
 * VERSION:      v0.0.0
 * CREATION:     25.01.2023
 *
