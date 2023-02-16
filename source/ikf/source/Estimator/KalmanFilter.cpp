@@ -43,22 +43,20 @@ KalmanFilter::CorrectionResult_t KalmanFilter::correction_step(const Eigen::Matr
       if (!NormalizedInnovationSquared::check_NIS(S, r, cfg.confidence_interval)) {
         res.rejected = true;
       }
-      else {
-        Eigen::MatrixXd K = Sigma_apri*H.transpose() * S.inverse();
-        res.delta_mean = K * r;
-        res.U = (Eigen::MatrixXd::Identity(dim, dim) - K*H);
+    }
+    Eigen::MatrixXd K = Sigma_apri*H.transpose() * S.inverse();
+    res.delta_mean = K * r;
+    res.U = (Eigen::MatrixXd::Identity(dim, dim) - K*H);
 
-        if (cfg.use_Josephs_form) {
-          res.Sigma_apos =  res.U * Sigma_apri * res.U.transpose() + K * R * K.transpose();
-        }
-        else {
-          res.Sigma_apos = res.U * Sigma_apri;
-        }
+    if (cfg.use_Josephs_form) {
+      res.Sigma_apos =  res.U * Sigma_apri * res.U.transpose() + K * R * K.transpose();
+    }
+    else {
+      res.Sigma_apos = res.U * Sigma_apri;
+    }
 
-        if (cfg.nummerical_stabilization) {
-          res.Sigma_apos = utils::stabilize_covariance(res.Sigma_apos, cfg.eps);
-        }
-      }
+    if (cfg.nummerical_stabilization) {
+      res.Sigma_apos = utils::stabilize_covariance(res.Sigma_apos, cfg.eps);
     }
   }
   return res;

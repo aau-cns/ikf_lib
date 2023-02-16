@@ -44,7 +44,7 @@ public:
     bool use_Josephs_form=true;
     bool nummerical_stabilization=true;
     double confidence_interval = 0.997;
-    double eps = 1e-10;
+    double eps = 1e-16;
   };
 
   static CorrectionResult_t correction_step(Eigen::MatrixXd const& H, Eigen::MatrixXd const& R,
