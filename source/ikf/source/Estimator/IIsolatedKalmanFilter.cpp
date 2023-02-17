@@ -244,7 +244,7 @@ Eigen::MatrixXd IIsolatedKalmanFilter::compute_correction(const Timestamp &t_a, 
 }
 
 // Eq. 8 in [1]
-bool IIsolatedKalmanFilter::add_correction_at_t(const Timestamp &t_b, const Eigen::MatrixXd &Phi_a_b) {
+bool IIsolatedKalmanFilter::add_correction_at_t(const Timestamp &t_a, const Timestamp &t_b, const Eigen::MatrixXd &Phi_a_b) {
   bool res = RTV_EXPECT_TRUE_MSG(!HistCorr.exist_at_t(t_b), "correction term already exists at t_b:" + t_b.str() + "! First propagate, then update!");
   if (res){
     HistCorr.insert(Phi_a_b, t_b);
@@ -321,7 +321,7 @@ ProcessMeasResult_t IIsolatedKalmanFilter::reprocess_measurement(const MeasData 
 bool IIsolatedKalmanFilter::apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab,
                                               const Timestamp &t_a, const Timestamp &t_b) {
   if (IKalmanFilter::apply_propagation(Phi_II_ab, Q_II_ab, t_a, t_b)) {
-    if (add_correction_at_t(t_b, Phi_II_ab)) {
+    if (add_correction_at_t(t_a, t_b, Phi_II_ab)) {
       check_horizon();
       return true;
     }
@@ -336,7 +336,7 @@ bool IIsolatedKalmanFilter::apply_propagation(const Eigen::MatrixXd &Phi_II_ab, 
 bool IIsolatedKalmanFilter::apply_propagation(ptr_belief &bel_II_apri, const Eigen::VectorXd &mean_II_b, const Eigen::MatrixXd &Phi_II_ab,
                                               const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b) {
   if (IKalmanFilter::apply_propagation(bel_II_apri, mean_II_b, Phi_II_ab, Q_II_ab, t_a, t_b)) {
-    if (add_correction_at_t(t_b, Phi_II_ab)) {
+    if (add_correction_at_t(t_a, t_b, Phi_II_ab)) {
       check_horizon();
       return true;
     }

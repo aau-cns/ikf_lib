@@ -58,10 +58,10 @@ public:
   ///////////////////////////////////////////////////////////////////////////////////
   /// inter-filter interface:
   virtual bool redo_updates_after_t(Timestamp const& t);
-  Eigen::MatrixXd get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J);
+  virtual Eigen::MatrixXd get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J);
   void set_CrossCovFact_at_t(Timestamp const& t, size_t const unique_ID, Eigen::MatrixXd const& ccf);
   // Eq. 20 in [1]
-  bool apply_correction_at_t(Timestamp const&t, Eigen::MatrixXd const& Sigma_apri, Eigen::MatrixXd const Sigma_apos);
+  virtual bool apply_correction_at_t(Timestamp const&t, Eigen::MatrixXd const& Sigma_apri, Eigen::MatrixXd const Sigma_apos);
   ///////////////////////////////////////////////////////////////////////////////////
   virtual void remove_after_t(Timestamp const& t);
 
@@ -87,9 +87,9 @@ protected:
   // Algorithm 1 in [1]
   Eigen::MatrixXd compute_correction(Timestamp const& t_a, Timestamp const& t_b) const;
   // Eq. 8 in [1]
-  bool add_correction_at_t(Timestamp const& t_b, Eigen::MatrixXd const& Phi_a_b);
+  virtual bool add_correction_at_t(const Timestamp &t_a,Timestamp const& t_b, Eigen::MatrixXd const& Phi_a_b);
   // Eq. 15, 21 in [1]
-  bool apply_correction_at_t(Timestamp const&t, Eigen::MatrixXd const& Factor);
+  virtual bool apply_correction_at_t(Timestamp const&t, Eigen::MatrixXd const& Factor);
 
   // Algorithm 7 in [1]
   virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
