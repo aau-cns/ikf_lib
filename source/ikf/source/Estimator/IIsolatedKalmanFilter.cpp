@@ -31,6 +31,15 @@ IIsolatedKalmanFilter::IIsolatedKalmanFilter(std::shared_ptr<IsolatedKalmanFilte
 
 }
 
+size_t IIsolatedKalmanFilter::ID() const { return m_ID; }
+
+
+void IIsolatedKalmanFilter::reset() {
+  IKalmanFilter::reset();
+  HistCorr.clear();
+  HistCrossCovFactors.clear();
+}
+
 // Algorithm 7 in [1]
 ProcessMeasResult_t IIsolatedKalmanFilter::process_measurement(const MeasData &m) {
   // propagation and private -> to filter instance
@@ -65,49 +74,12 @@ void IIsolatedKalmanFilter::initialize(ptr_belief bel_init, const Timestamp &t) 
   HistBelief.insert(bel_init, t);
 }
 
-bool IIsolatedKalmanFilter::get_apri_belief_and_fcc_at_t(const Timestamp &t, size_t ID_other, ptr_belief ptr_bel, Eigen::MatrixXd &factorized_cross_cov) {
-  return IKalmanFilter::get_belief_at_t(t, ptr_bel) && get_CrossCovFact_at_t(t, ID_other, factorized_cross_cov);
-}
-
-bool IIsolatedKalmanFilter::set_apos_belief_and_fcc_at_t(const Timestamp &t, size_t ID_other, ptr_belief ptr_bel, Eigen::MatrixXd &factorized_cross_cov)
-{
-  IKalmanFilter::set_belief_at_t(ptr_bel, t);
-  set_CrossCovFact_at_t(t, ID_other, factorized_cross_cov);
-  return true;
-  // TODO: technically we could start redoing updates here!
-}
-
-bool IIsolatedKalmanFilter::set_apos_belief_and_fcc_at_t(const Timestamp &t, size_t ID_other, const Eigen::VectorXd &mean_corr, const Eigen::MatrixXd &Sigma, const Eigen::MatrixXd &factorized_cross_cov)
-{
-  bool res = IKalmanFilter::correct_belief_at_t(mean_corr, Sigma, t);
-  if (res) {
-    set_CrossCovFact_at_t(t, ID_other, factorized_cross_cov);
-  }
-  return res;
-}
-
 bool IIsolatedKalmanFilter::redo_updates_after_t(const Timestamp &t) {
   remove_after_t(t);
   return IKalmanFilter::redo_updates_after_t(t);
 }
 
-bool IIsolatedKalmanFilter::clone_fccs(const size_t ID_old, const size_t ID_new) {
-  auto iter = HistCrossCovFactors.find(ID_old);
-  if (iter != HistCrossCovFactors.end()) {
-    HistCrossCovFactors.emplace(ID_new, iter->second.clone());
-    return true;
-  }
-  return false;
-}
 
-std::vector<size_t> IIsolatedKalmanFilter::get_correlated_IDs() const {
-  std::vector<size_t> IDs;
-  IDs.reserve(HistCrossCovFactors.size());
-  for (auto const& elem : HistCrossCovFactors) {
-    IDs.push_back(elem.first);
-  }
-  return IDs;
-}
 
 bool IIsolatedKalmanFilter::get_CrossCovFact_at_t(const Timestamp &t, size_t ID_J, Eigen::MatrixXd &FFC){
   FFC = get_CrossCovFact_at_t(t, ID_J);
@@ -178,11 +150,6 @@ void IIsolatedKalmanFilter::propagate_CrossCovFact(const Timestamp &t_a, const T
   }
 }
 
-void IIsolatedKalmanFilter::reset() {
-  IKalmanFilter::reset();
-  HistCorr.clear();
-  HistCrossCovFactors.clear();
-}
 
 void IIsolatedKalmanFilter::remove_after_t(const Timestamp &t) {
   IKalmanFilter::remove_beliefs_after_t(t);

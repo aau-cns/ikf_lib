@@ -34,7 +34,7 @@ class IsolatedKalmanFilterHandler;
 
 
 ///
-/// \brief The IsolatedKalmanFilter class: A modular sensor fusion strategy by Roland Jung and Stephan Weiss.
+/// \brief The IsolatedKalmanFilter class: A modular and decoupled sensor fusion strategy by Roland Jung and Stephan Weiss.
 ///
 class IKF_API IIsolatedKalmanFilter: public IKalmanFilter {
 public:
@@ -42,42 +42,43 @@ public:
                         bool const handle_delayed_meas=true , double const horizon_sec=1.0);
   virtual ~IIsolatedKalmanFilter() {}
 
-  virtual size_t ID() const { return m_ID; }
-  virtual std::string name() const { return m_name; }
-  virtual bool enabled() const { return m_enabled; }
-  virtual void enabled(bool const val) { m_enabled = val; }
+  virtual size_t ID() const;
   void reset();
+  virtual void initialize(ptr_belief bel_init);
+  virtual void initialize(ptr_belief bel_init, Timestamp const& t);
+  virtual void set_horizon(double const t_hor);
+  void print_HistCorr(size_t max=100, bool reverse=false);
 
+  ///////////////////////////////////////////////////////////////////////////////////
+  /// Trigger the filter:
+  // Algorithm 7 in [1]
+  virtual ProcessMeasResult_t process_measurement(MeasData const& m);
+  ///////////////////////////////////////////////////////////////////////////////////
+
+  ///////////////////////////////////////////////////////////////////////////////////
+  /// inter-filter interface:
+  virtual bool redo_updates_after_t(Timestamp const& t);
+  Eigen::MatrixXd get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J);
+  void set_CrossCovFact_at_t(Timestamp const& t, size_t const unique_ID, Eigen::MatrixXd const& ccf);
+  // Eq. 20 in [1]
+  bool apply_correction_at_t(Timestamp const&t, Eigen::MatrixXd const& Sigma_apri, Eigen::MatrixXd const Sigma_apos);
+  ///////////////////////////////////////////////////////////////////////////////////
+
+
+protected:
   ///////////////////////////////////////////////////////////////////////////////////
   /// pure virtual method
   virtual ProcessMeasResult_t local_joint_measurement(MeasData const& m) = 0;
   /// pure virtual method
   ///////////////////////////////////////////////////////////////////////////////////
-  ///
-
-  // Algorithm 7 in [1]
-  virtual ProcessMeasResult_t process_measurement(MeasData const& m);
-
-  virtual void initialize(ptr_belief bel_init);
-  virtual void initialize(ptr_belief bel_init, Timestamp const& t);
-
-  virtual bool get_apri_belief_and_fcc_at_t(Timestamp const& t, size_t ID_other,  ptr_belief ptr_bel, Eigen::MatrixXd & factorized_cross_cov);
-  virtual bool set_apos_belief_and_fcc_at_t(Timestamp const& t, size_t ID_other, ptr_belief ptr_bel, Eigen::MatrixXd & factorized_cross_cov);
- virtual bool set_apos_belief_and_fcc_at_t(Timestamp const& t, size_t ID_other, Eigen::VectorXd const& mean_corr,
-                                            Eigen::MatrixXd const& Sigma,  Eigen::MatrixXd const& factorized_cross_cov);
-
-  virtual bool redo_updates_after_t(Timestamp const& t);
-  virtual bool clone_fccs(size_t const ID_old, size_t const ID_new);
-  virtual std::vector<size_t> get_correlated_IDs() const;
-
 
   bool get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J, Eigen::MatrixXd &FFC);
-  Eigen::MatrixXd get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J);
+
   Eigen::MatrixXd get_CrossCovFact_before_t(Timestamp const& t, size_t unique_ID) const;
-  void set_CrossCovFact_at_t(Timestamp const& t, size_t const unique_ID, Eigen::MatrixXd const& ccf);
+
   void propagate_CrossCovFact(Timestamp const& t_a, Timestamp const& t_b, Eigen::MatrixXd const& M_a_b);
   virtual void remove_after_t(Timestamp const& t);
-  virtual void set_horizon(double const t_hor);
+
 
   // Algorithm 3 in [1]
   virtual void check_correction_horizon();
@@ -89,11 +90,7 @@ public:
   bool add_correction_at_t(Timestamp const& t_b, Eigen::MatrixXd const& Phi_a_b);
   // Eq. 15, 21 in [1]
   bool apply_correction_at_t(Timestamp const&t, Eigen::MatrixXd const& Factor);
-  // Eq. 20 in [1]
-  bool apply_correction_at_t(Timestamp const&t, Eigen::MatrixXd const& Sigma_apri, Eigen::MatrixXd const Sigma_apos);
 
-  void print_HistCorr(size_t max=100, bool reverse=false);
-protected:
   // Algorithm 7 in [1]
   virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
   ///////////////////////////////////////////
@@ -131,12 +128,7 @@ protected:
   std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler;
   std::unordered_map<size_t, TTimeHorizonBuffer<Eigen::MatrixXd>> HistCrossCovFactors;
   TTimeHorizonBuffer<Eigen::MatrixXd> HistCorr; //  TimeHorizonBuffer<Corrections>; Corrections := {Phi, Lambda Epsilon}
-  size_t keep_n_elems = 4;
-  std::string m_name = "unknown";
   size_t m_ID;
-  bool m_enabled = true;
-
-
 }; // class DCSE_DAH
 
 
