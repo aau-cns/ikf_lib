@@ -105,10 +105,10 @@ int main(int /*argc*/, char** /*argv[]*/)
   }
 
   for(int i=0; i < num_instances; i++) {
-    dict_instance[i]->traj.plot_trajectory(i, "True");
-    dict_instance[i]->traj_est.plot_trajectory(i, "Est");
+    dict_instance[i]->traj.plot_trajectory(i, "D-True");
+    dict_instance[i]->traj_est.plot_trajectory(i, "D-Est");
     dict_instance[i]->compute_error();
-    dict_instance[i]->traj_err.plot_trajectory(i, "Err");
+    dict_instance[i]->traj_err.plot_trajectory(i, "D-Err");
   }
 
   wait_for_key();

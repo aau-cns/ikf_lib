@@ -127,10 +127,7 @@ public:
       m.t_p = t_curr;
 
       ikf::ProcessMeasResult_t res = ptr_IKF->process_measurement(m);
-      if (print_belief) {
-        auto p_bel = ptr_IKF->current_belief();
-        std::cout << "* Update [" << ID <<  "]:t=" << t_curr << ", mean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
-      }
+
 
       // Apply correct beliefs from the past!
       if (delay_private) {
@@ -143,6 +140,12 @@ public:
           traj_est.v_arr(idx_meas) = mean_apos(1);
         }
       }
+
+      if (print_belief) {
+        auto p_bel = ptr_IKF->get_belief_at_t(t_meas);
+        std::cout << "* Update [" << ID <<  "]:t=" << t_meas << ", mean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
+      }
+
       HistBelief.insert(ptr_IKF->get_belief_at_t(t_meas), t_meas);
     }
 
@@ -166,10 +169,7 @@ public:
         m.t_p = t_curr;
 
         ikf::ProcessMeasResult_t res = ptr_IKF->process_measurement(m);
-        if (print_belief) {
-          auto p_bel = ptr_IKF->current_belief();
-          std::cout << "* Update Rel [" << ID << "," << ID_J << "]:t=" << t_curr << ", mean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
-        }
+
 
         // Apply correct beliefs from the past!
         if (delay_joint) {
@@ -181,6 +181,11 @@ public:
             traj_est.p_arr(idx_meas) = mean_apos(0);
             traj_est.v_arr(idx_meas) = mean_apos(1);
           }
+        }
+
+        if (print_belief) {
+          auto p_bel = ptr_IKF->get_belief_at_t(t_meas);
+          std::cout << "* Update Rel [" << ID << "," << ID_J << "]:t=" << t_meas << ", mean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
         }
         HistBelief.insert(ptr_IKF->get_belief_at_t(t_meas), t_meas);
       }
@@ -211,8 +216,8 @@ public:
 
 public:
   size_t ID = 0;
-  size_t delay_private = 1;
-  size_t delay_joint = 2;
+  size_t delay_private = 0;
+  size_t delay_joint = 0;
   bool perform_private = true;
   bool perform_joint = true;
   bool print_belief = false;
