@@ -48,21 +48,21 @@ ProcessMeasResult_t IIsolatedKalmanFilter::process_measurement(const MeasData &m
 
   if (m_handle_delayed_meas) {
     if (!res.rejected && HistMeas.exist_after_t(m.t_m)) {
-
       redo_updates_after_t(m.t_m);
-      // notify other instances to redo their updates!
-      if (m.obs_type == eObservationType::JOINT_OBSERVATION) {
-        ptr_Handler->redo_updates_after_t(res.ID_participants, m.t_m);
-      }
-
     }
 
-    if (m.obs_type == eObservationType::PROPAGATION) {
-      HistMeasPropagation.insert(m, m.t_m);
+    // notify other instances to redo their updates!
+    if (m.obs_type != eObservationType::PROPAGATION) {
+      ptr_Handler->redo_updates_after_t(m_ID, m.t_m);
     }
+
     HistMeas.insert(m, m.t_m);
   }
 
+  // needed for inter-properation interpolation
+  if (m.obs_type == eObservationType::PROPAGATION) {
+    HistMeasPropagation.insert(m, m.t_m);
+  }
   return res;
 }
 

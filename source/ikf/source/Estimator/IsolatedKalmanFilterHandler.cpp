@@ -22,6 +22,8 @@ namespace ikf {
 
 bool IsolatedKalmanFilterHandler::add(ptr_IKF p_IKF) {
   if (!exists(p_IKF->ID())) {
+    // either one is handling delayed measurements!
+    p_IKF->handle_delayed_meas(!m_handle_delayed_meas);
     id_dict.emplace(p_IKF->ID(), p_IKF);
     return true;
   }
@@ -50,6 +52,48 @@ std::vector<size_t> IsolatedKalmanFilterHandler::get_instance_ids() {
   return IDs;
 }
 
+ProcessMeasResult_t IsolatedKalmanFilterHandler::process_measurement(const MeasData &m) {
+  ProcessMeasResult_t res = reprocess_measurement(m);
+  if (m_handle_delayed_meas) {
+    if (!res.rejected && HistMeas.exist_after_t(m.t_m)) {
+      redo_updates_after_t(m.t_m);
+    }
+    HistMeas.insert(m, m.t_m);
+  }
+  return res;
+}
+
+ProcessMeasResult_t IsolatedKalmanFilterHandler::reprocess_measurement(const MeasData &m) {
+  ProcessMeasResult_t res;
+  if(exists(m.id_sensor)) {
+    res = id_dict[m.id_sensor]->process_measurement(m);
+  }
+  return res;
+}
+
+bool IsolatedKalmanFilterHandler::redo_updates_after_t(const Timestamp &t) {
+  remove_beliefs_after_t(t);
+  Timestamp t_after, t_last;
+  if (HistMeas.get_after_t(t, t_after) &&  HistMeas.get_latest_t(t_last)) {
+    if (t_after == t_last) {
+      MeasData m;
+      HistMeas.get_at_t(t_after, m);
+      this->reprocess_measurement(m);
+    }
+    else {
+      HistMeas.foreach_between_t1_t2(t_after, t_last, [this](MeasData const&m){ this->reprocess_measurement(m); });
+    }
+    return true;
+  }
+  return false;
+}
+
+void IsolatedKalmanFilterHandler::remove_beliefs_after_t(const Timestamp &t) {
+  for (auto& elem : id_dict) {
+    elem.second->remove_after_t(t);
+  }
+}
+
 std::shared_ptr<IIsolatedKalmanFilter> IsolatedKalmanFilterHandler::get(const size_t ID) {
   auto it = id_dict.find(ID);
   if (it != id_dict.end()) {
@@ -64,6 +108,14 @@ std::shared_ptr<IIsolatedKalmanFilter> IsolatedKalmanFilterHandler::get(const si
 void IsolatedKalmanFilterHandler::redo_updates_after_t(std::vector<size_t> const& ID_participants, const Timestamp &t) {
   for (size_t const& elem : ID_participants) {
     if (exists(elem)) {
+      id_dict[elem]->redo_updates_after_t(t);
+    }
+  }
+}
+
+void IsolatedKalmanFilterHandler::redo_updates_after_t(size_t ID_master, const Timestamp &t) {
+  for (size_t const& elem : get_instance_ids()) {
+    if (exists(elem) && elem != ID_master) {
       id_dict[elem]->redo_updates_after_t(t);
     }
   }

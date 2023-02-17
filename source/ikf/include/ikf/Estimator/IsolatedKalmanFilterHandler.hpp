@@ -38,13 +38,21 @@ public:
   bool exists(const size_t ID);
   std::vector<size_t> get_instance_ids();
 
+  virtual ProcessMeasResult_t process_measurement(MeasData const& m);
+
   void redo_updates_after_t(std::vector<size_t> const& ID_participants, const Timestamp &t);
+  void redo_updates_after_t(size_t ID_master, const Timestamp &t);
   void reset();
 
 protected:
+  virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
+
+  virtual bool redo_updates_after_t(const Timestamp &t);
+  virtual void remove_beliefs_after_t(Timestamp const& t);
+
   std::unordered_map<size_t, std::shared_ptr<IIsolatedKalmanFilter>> id_dict;
   bool m_handle_delayed_meas = true;
-  TTimeHorizonBuffer<MeasData> HistMeas;
+  TTimeHorizonBuffer<MeasData, TMultiHistoryBuffer<MeasData>> HistMeas;
   double m_horzion_sec;
 };
 

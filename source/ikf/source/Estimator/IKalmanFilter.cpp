@@ -57,12 +57,14 @@ ProcessMeasResult_t IKalmanFilter::process_measurement(const MeasData &m) {
     if (!res.rejected && HistMeas.exist_after_t(m.t_m)) {
       redo_updates_after_t(m.t_m);
     }
-
-    if (m.obs_type == eObservationType::PROPAGATION) {
-      HistMeasPropagation.insert(m, m.t_m);
-    }
     HistMeas.insert(m, m.t_m);
   }
+
+  // needed for inter-properation interpolation
+  if (m.obs_type == eObservationType::PROPAGATION) {
+    HistMeasPropagation.insert(m, m.t_m);
+  }
+
   return res;
 }
 

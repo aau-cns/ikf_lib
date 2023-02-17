@@ -63,6 +63,7 @@ public:
   // Eq. 20 in [1]
   bool apply_correction_at_t(Timestamp const&t, Eigen::MatrixXd const& Sigma_apri, Eigen::MatrixXd const Sigma_apos);
   ///////////////////////////////////////////////////////////////////////////////////
+  virtual void remove_after_t(Timestamp const& t);
 
 
 protected:
@@ -77,7 +78,6 @@ protected:
   Eigen::MatrixXd get_CrossCovFact_before_t(Timestamp const& t, size_t unique_ID) const;
 
   void propagate_CrossCovFact(Timestamp const& t_a, Timestamp const& t_b, Eigen::MatrixXd const& M_a_b);
-  virtual void remove_after_t(Timestamp const& t);
 
 
   // Algorithm 3 in [1]

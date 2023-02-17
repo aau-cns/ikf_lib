@@ -29,7 +29,7 @@ class SimInstanceDelay {
 public:
   SimInstanceDelay(size_t const ID, double const dt, double const D, double const omega,
               double const std_dev_p, double const std_dev_a, double const std_dev_p_rel,
-              std::shared_ptr<ikf::IsolatedKalmanFilterHandler> ptr_Handler) : ID(ID), dt(dt), std_dev_p(std_dev_p), std_dev_a(std_dev_a), std_dev_p_rel(std_dev_p_rel), ptr_IKF(new LinearIKF_1D_const_acc(ptr_Handler, ID)), HistBelief(1.0) {
+                   std::shared_ptr<ikf::IsolatedKalmanFilterHandler> ptr_Handler) : ID(ID), dt(dt), std_dev_p(std_dev_p), std_dev_a(std_dev_a), std_dev_p_rel(std_dev_p_rel), ptr_IKF(new LinearIKF_1D_const_acc(ptr_Handler, ID)), m_ptr_Handler(ptr_Handler), HistBelief(1.0) {
 
     double const omega_0 = M_PI/8;
     traj.generate_sine(dt, D, omega, omega_0*ID, (0.1*ID+1), 0);
@@ -95,6 +95,7 @@ public:
     ikf::MeasData m;
     m.obs_type = ikf::eObservationType::PROPAGATION;
     m.meas_type = "acceleration";
+    m.id_sensor = ptr_IKF->ID();
     m.z.setZero(1,1);
     m.R.setZero(1,1);
     m.z << a_noisy_arr(idx);
@@ -102,7 +103,7 @@ public:
     m.t_m = t_curr;
     m.t_p = t_curr;
 
-    ikf::ProcessMeasResult_t res = ptr_IKF->process_measurement(m);
+    ikf::ProcessMeasResult_t res = m_ptr_Handler->process_measurement(m);
     if (print_belief) {
       auto p_bel = ptr_IKF->current_belief();
       std::cout << "* Prop[" << ID <<  "]:t=" << p_bel->timestamp() << ", \nmean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
@@ -119,6 +120,7 @@ public:
       ikf::MeasData m;
       m.obs_type = ikf::eObservationType::PRIVATE_OBSERVATION;
       m.meas_type = "position";
+      m.id_sensor = ptr_IKF->ID();
       m.z.setZero(1,1);
       m.R.setZero(1,1);
       m.z << p_noisy_arr(idx_meas);
@@ -126,7 +128,7 @@ public:
       m.t_m = t_meas;
       m.t_p = t_curr;
 
-      ikf::ProcessMeasResult_t res = ptr_IKF->process_measurement(m);
+      ikf::ProcessMeasResult_t res = m_ptr_Handler->process_measurement(m);
 
 
       // Apply correct beliefs from the past!
@@ -160,7 +162,7 @@ public:
         m.obs_type = ikf::eObservationType::JOINT_OBSERVATION;
         m.meas_type = "relative_position";
         m.meta_info = std::to_string(ID_J);
-
+        m.id_sensor = ptr_IKF->ID();
         m.z.setZero(1,1);
         m.R.setZero(1,1);
         m.z << elem.second(idx_meas);
@@ -168,7 +170,7 @@ public:
         m.t_m = t_meas;
         m.t_p = t_curr;
 
-        ikf::ProcessMeasResult_t res = ptr_IKF->process_measurement(m);
+        ikf::ProcessMeasResult_t res = m_ptr_Handler->process_measurement(m);
 
 
         // Apply correct beliefs from the past!
@@ -216,8 +218,8 @@ public:
 
 public:
   size_t ID = 0;
-  size_t delay_private = 0;
-  size_t delay_joint = 0;
+  size_t delay_private = 1;
+  size_t delay_joint = 2;
   bool perform_private = true;
   bool perform_joint = true;
   bool print_belief = false;
@@ -226,6 +228,7 @@ public:
   double const std_dev_a = 0.05;
   double const std_dev_p_rel = 0.05;
   std::shared_ptr<LinearIKF_1D_const_acc> ptr_IKF;
+  std::shared_ptr<ikf::IsolatedKalmanFilterHandler> m_ptr_Handler;
   Trajectory traj;
   Trajectory traj_est;
   Trajectory traj_err;

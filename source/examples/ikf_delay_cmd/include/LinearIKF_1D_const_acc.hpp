@@ -62,9 +62,12 @@ public:
 
     if(!apply_propagation(bel_a, mean_b, Phi_ab, Q_ab, t_a, t_b)) {
       std::cout << "ERROR: apply_propagation failed at t=" << t_b << std::endl;
+    } else {
+      res.rejected = false;
     }
 
    res.observation_type = "control_input_acc";
+
    return res;
   }
   ikf::ProcessMeasResult_t local_private_measurement(const ikf::MeasData &m) override {
