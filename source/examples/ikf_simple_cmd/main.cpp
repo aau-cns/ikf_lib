@@ -20,11 +20,9 @@ void wait_for_key() {
 
 int main(int /*argc*/, char** /*argv[]*/)
 {
-  int const N = 2; // number of filter instances
-
-
+  int const N = 4; // number of filter instances
   int const num_instances = std::max(N, 1); // at least 1 is needed!
-  // Calculate and print fibonacci number
+
   std::cout << "ikf_cmd example: 1D constant acceleration moving body (harmonic motion)" << std::endl;
   std::cout << "* \t p = sin(t*omega   + omega_0)*amplitude + offset" << std::endl;
   std::cout << "* \t v = omega* cost(t*omega  + omega_0)*amplitude" << std::endl;

@@ -20,30 +20,32 @@ void wait_for_key() {
 
 int main(int /*argc*/, char** /*argv[]*/)
 {
-  int num_instances = 2;
-  // Calculate and print fibonacci number
+  int const N = 4; // number of filter instances
+  int const num_instances = std::max(N, 1); // at least 1 is needed!
+
   std::cout << "ikf_delay_cmd example: 1D constant acceleration moving body (harmonic motion)" << std::endl;
   std::cout << "* \t p = sin(t*omega   + omega_0)*amplitude + offset" << std::endl;
   std::cout << "* \t v = omega* cost(t*omega  + omega_0)*amplitude" << std::endl;
   std::cout << "* \t a = -omega*omega*sin(omega*t_arr  + omega_0)*amplitude" << std::endl;
-  std::cout << "* \t omega_0 = 0.4*ID" << std::endl;
+  std::cout << "* \t omega_0 = PI/8*ID" << std::endl;
   std::cout << "* \t amplitude = 1+0.1*ID" << std::endl;
-  std::cout << "* \t offset = ID" << std::endl;
+  std::cout << "* \t offset = 0" << std::endl;
   std::cout << "* \t ID = number of filter instance [0,N-1]" << std::endl;
   std::cout << "* \t N = " << num_instances << std::endl;
+  std::cout << "* \t Sigma(0) = eye(2)*0.5 " << num_instances << std::endl;
+  std::cout << "* \t mean(0) = randn(Sigma(0)) " << num_instances << std::endl;
   std::cout << "noisy control input 'a' with std_dev_a for prediction" << std::endl;
   std::cout << "noisy position measurement 'p' with std_dev_p for private state correction" << std::endl;
-  std::cout << "noisy relative position measurement 'p_i_j' with std_dev_p_rel for isolated joint state correction between filter 1 and 2 using the Isolated Kalman Filter." << std::endl;
-  std::cout << "see: https://www.kalmanfilter.net/modeling.html (Example continued: constant acceleration moving body)" << std::endl;
-
-
-  std::shared_ptr<ikf::IsolatedKalmanFilterHandler> ptr_Handler(new ikf::IsolatedKalmanFilterHandler());
-
-  // https://github.com/hmartiro/kalman-cpp/blob/master/kalman-test.cpp
-  // https://www.kalmanfilter.net/modeling.html (Example continued: constant acceleration moving body)
+  std::cout << " -> noisy position measurement is just obtained by filter instance 0" << std::endl;
+  std::cout << "noisy relative position measurement 'p_i_j' with std_dev_p_rel for isolated joint state correction between filter i and j using the Isolated Kalman Filter." << std::endl;
+  std::cout << "for system model see: https://www.kalmanfilter.net/modeling.html (Example continued: constant acceleration moving body)" << std::endl;
 
   ikf::GaussianNoiseGen& gen = ikf::GaussianNoiseGen::instance();
   gen.seed(123123);
+
+  std::shared_ptr<ikf::IsolatedKalmanFilterHandler> ptr_Handler(new ikf::IsolatedKalmanFilterHandler());
+
+
   double const dt = 1.0/100; // Time step
   double const D = 5;
   double const omega = M_PI/2;

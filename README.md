@@ -84,8 +84,8 @@ corresponding paper and consult the `LICENSE` file for a detailed explanation.
 ```latex
 @inproceedings{jung_isolated_23,
    author   = {Jung, Roland and Luft, Lukas and Weiss, Stephan},
-   journal  = {},
-   title    = {"The Isolated Kalman Filtering Paradigm},
+   journal  = {To be defined: IEEE Robotics and Automation Letters or ArXiv},
+   title    = {The Isolated Kalman Filtering Paradigm},
    year     = {2023},
 }
 ```

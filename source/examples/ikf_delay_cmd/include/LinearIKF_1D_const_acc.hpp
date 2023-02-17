@@ -25,8 +25,7 @@
 class LinearIKF_1D_const_acc: public ikf::IIsolatedKalmanFilter {
 public:
   LinearIKF_1D_const_acc(std::shared_ptr<ikf::IsolatedKalmanFilterHandler> pHandler, size_t const ID) : ikf::IIsolatedKalmanFilter(pHandler, ID) {
-      std::cout << "LinearIKF_1D_const_acc: 1D constant acceleration moving body (harmonic motion)" << std::endl;
-      std::cout << "see: https://www.kalmanfilter.net/modeling.html (Example continued: constant acceleration moving body)" << std::endl;
+    std::cout << "LinearIKF_1D_const_acc: 1D constant acceleration moving body (harmonic motion) ID=" << ID << std::endl;
   }
   virtual ~LinearIKF_1D_const_acc() {}
 
@@ -50,6 +49,7 @@ public:
     }
     double const dt = t_b.to_sec() - t_a.to_sec(); // Time step
 
+    // see: https://www.kalmanfilter.net/modeling.html (Example continued: constant acceleration moving body)
     // Discrete LTI projectile motion, measuring position only
     Phi_ab << 1, dt, 0, 1;
     G_a << 0.5*dt*dt, dt;
