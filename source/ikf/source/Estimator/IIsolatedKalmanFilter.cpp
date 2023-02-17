@@ -49,11 +49,12 @@ ProcessMeasResult_t IIsolatedKalmanFilter::process_measurement(const MeasData &m
   if (m_handle_delayed_meas) {
     if (!res.rejected && HistMeas.exist_after_t(m.t_m)) {
 
+      redo_updates_after_t(m.t_m);
       // notify other instances to redo their updates!
       if (m.obs_type == eObservationType::JOINT_OBSERVATION) {
         ptr_Handler->redo_updates_after_t(res.ID_participants, m.t_m);
       }
-      redo_updates_after_t(m.t_m);
+
     }
 
     if (m.obs_type == eObservationType::PROPAGATION) {
@@ -258,6 +259,16 @@ bool IIsolatedKalmanFilter::add_correction_at_t(const Timestamp &t_b, const Eige
 // Eq. 15, 21 in [1]
 bool IIsolatedKalmanFilter::apply_correction_at_t(const Timestamp &t, const Eigen::MatrixXd &Factor){
   RTV_EXPECT_TRUE_MSG(Factor.cols() == Factor.rows(), "Factor must be a square matrix!");
+
+  // apply correction to exisit cross-covariance factors at t
+  for(auto & HistCCF : HistCrossCovFactors) {
+    Timestamp latest_ccf_t;
+    if(HistCCF.second.exist_at_t(t)) {
+      Eigen::MatrixXd ccf_IJ_t;
+      HistCCF.second.get_at_t(t, ccf_IJ_t);
+      HistCCF.second.insert(Factor*ccf_IJ_t, t);
+    }
+  }
   Eigen::MatrixXd mat;
   if (HistCorr.get_at_t(t, mat)) {
     mat = Factor * mat;
