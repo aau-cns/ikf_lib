@@ -52,6 +52,11 @@ The `Isolated Kalman Filter` can be used in estimation problems, where individua
 
 A simple, linar example is implemented in [LinearIKF_1D_const_acc](./source/examples/ikf_delay_cmd/include/LinearIKF_1D_const_acc.hpp), where the virtual methods of [ikf::IIsolatedKalmanFilter](./source//ikf/include/ikf/Estimator/IIsolatedKalmanFilter.hpp) (`progapation_measurement`, `local_private_measurement`, `local_joint_measurement`)  are defined. As measurement/input we use a generic structure [MeasData](./source//ikf/include/ikf/Measurement/MeasData.hpp), providing meta information and is inevitable for (re)processing delayed measurements. In [SimInstanceDelay](./source/examples/ikf_delay_cmd/include/SimInstanceDelay.hpp) one can see how this structure is filled and provided to the `process_measurement` method of the filter instance. Please note, that the filter needs inputs to perform a state prediction in order to advance the state in time. If you do not have control inputs, provide simply a "empty"  measurement with the observation type `ikf::eObservationType::PRIVATE_OBSERVATION` and the timestamp `t_m` to which the state should be predicted, before a update measurement is issued/provided to the filter. 
 
+
+Please note: redoing updates exactly requires a central measurement handling in the correct order (first propagations then updates across all filter instances!). 
+If reprocessing would be triggered by an IKF instance,  that again sequentially triggers other instances is sub-optimal. One could chronologically sort **all** measurements from **all** instances after the delayed measurement and process them sequentially, but propagation measurements need to be prioritized, which is not straightforward (multimap has no order for elements at a key, just fifo). Therefore, the current realization of the IKF with Handler and support of delayed measurements is not distributed, as it requires a central handler for
+measurement distribution and re-computation (unfortunately). Still measurementscan be computed isolated among participants. 
+
 ## Third party content:
 
 * [eigenmvn](https://github.com/beniz/eigenmvn)
