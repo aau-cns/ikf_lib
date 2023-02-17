@@ -18,7 +18,7 @@
 *
 *
 *  References:
-*  [1] Roland Jung and Stephan Weiss, "Modular Multi-Sensor Fusion: A Collaborative State Estimation Perspective", IEEE Robotics and Automation Letters, DOI: 10.1109/LRA.2021.3096165, 2021.
+*  [1] Jung, Roland and Weiss, Stephan, "Modular Multi-Sensor Fusion: A Collaborative State Estimation Perspective", IEEE Robotics and Automation Letters, DOI: 10.1109/LRA.2021.3096165, 2021.
 ******************************************************************************/
 #ifndef IISOLATEDKALMANFILTER_HPP
 #define IISOLATEDKALMANFILTER_HPP

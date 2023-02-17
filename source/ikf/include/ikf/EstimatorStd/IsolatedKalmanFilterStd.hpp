@@ -18,7 +18,7 @@
 *
 *  References:
 *  [1] L. Luft, T. Schubert, S. I. Roumeliotis, and W. Burgard, "Recursive decentralized localization for multi-robot systems with asynchronous pairwise communication", The International Journal of Robotics Research (IJRR), 2018.
-*  [2] Roland Jung and Stephan Weiss, "Scalable Recursive Distributed Collaborative State Estimation for Aided
+*  [2] Jung, Roland and Weiss, Stephan, "Scalable Recursive Distributed Collaborative State Estimation for Aided
 Inertial Navigation", Proceedings of the IEEE International Conference on Robotics and Automation (ICRA), IEEE, Xi’an, 2021.
 *
 ******************************************************************************/

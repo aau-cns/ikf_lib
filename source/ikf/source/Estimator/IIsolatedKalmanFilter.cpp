@@ -17,7 +17,7 @@
 * You can contact the author at <roland.jung@aau.at>
 *
 *  References:
-*  [1] Roland Jung and Stephan Weiss, "Modular Multi-Sensor Fusion: A Collaborative State Estimation Perspective", IEEE RA-L, DOI: 10.1109/LRA.2021.3096165, 2021.
+*  [1] Jung, Roland and Weiss, Stephan, "Modular Multi-Sensor Fusion: A Collaborative State Estimation Perspective", IEEE RA-L, DOI: 10.1109/LRA.2021.3096165, 2021.
 ******************************************************************************/
 #include <ikf/Estimator/IIsolatedKalmanFilter.hpp>
 #include <ikf/Estimator/IsolatedKalmanFilterHandler.hpp>

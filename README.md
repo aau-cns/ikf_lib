@@ -60,10 +60,10 @@ A simple, linar example is implemented in [LinearIKF_1D_const_acc](./source/exam
 
 # REFERENCES
 
-*  [1] Lukas Luft et al. "Recursive decentralized localization for multi-robot systems with asynchronous pairwise communication", 2018, IJRR
-*  [2] Roland Jung and Stephan Weiss, "Scalable Recursive Distributed Collaborative State Estimation for Aided Inertial Navigation", Proceedings of the IEEE International Conference on Robotics and Automation (ICRA), IEEE, Xi’an, DOI: 10.1109/ICRA48506.2021.9561203, 2021.
-*  [3] Roland Jung and Stephan Weiss, "Modular Multi-Sensor Fusion: A Collaborative State Estimation Perspective", IEEE Robotics and Automation Letters, DOI: 10.1109/LRA.2021.3096165, 2021.
-*  [4] Roland Jung,  Lukas Luft, and Stephan Weiss, "The Isolated Kalman Filtering Paradigm", 2023
+*  [1] Luft, Lukas and Schubert, Tobias and Roumeliotis, Stergios I. and Burgard, Wolfram, "Recursive decentralized localization for multi-robot systems with asynchronous pairwise communication", 2018, IJRR
+*  [2] Jung, Roland and Weiss, Stephan, "Scalable Recursive Distributed Collaborative State Estimation for Aided Inertial Navigation", Proceedings of the IEEE International Conference on Robotics and Automation (ICRA), IEEE, Xi’an, DOI: 10.1109/ICRA48506.2021.9561203, 2021.
+*  [3] Jung, Roland and Weiss, Stephan, "Modular Multi-Sensor Fusion: A Collaborative State Estimation Perspective", IEEE Robotics and Automation Letters, DOI: 10.1109/LRA.2021.3096165, 2021.
+*  [4] Jung, Roland and Luft, Lukas and Weiss, Stephan, "The Isolated Kalman Filtering Paradigm", 2023
 
 # CREDITS
 
@@ -83,7 +83,7 @@ corresponding paper and consult the `LICENSE` file for a detailed explanation.
 
 ```latex
 @inproceedings{jung_isolated_23,
-   author   = {Roland Jung,  Lukas Luft, and Stephan Weiss},
+   author   = {Jung, Roland and Luft, Lukas and Weiss, Stephan},
    journal  = {},
    title    = {"The Isolated Kalman Filtering Paradigm},
    year     = {2023},
