@@ -56,15 +56,10 @@ public:
 
   ///////////////////////////////////////////////////////////////////////////////////
   /// inter-filter interface:
-  TMultiHistoryBuffer<MeasData> get_measurements_after_t(Timestamp const&t) {
-    Timestamp t_after;
-    if(HistMeas.get_after_t(t, t_after)) {
-      Timestamp t_latest;
-      if(HistMeas.get_latest_t(t_latest)) {
-        return  HistMeas.get_between_t1_t2(t_after, t_latest);
-      }
-    }
-    return TMultiHistoryBuffer<MeasData>();
+  TMultiHistoryBuffer<MeasData> get_measurements_after_t(Timestamp const&t);
+  TMultiHistoryBuffer<MeasData> get_measurements_from_t(Timestamp const&t);
+  std::vector<MeasData> get_measurements_at_t(Timestamp const&t) {
+    return HistMeas.get_all_at_t(t);
   }
 
     // Algorithm 7 in [1]
@@ -79,6 +74,7 @@ public:
   virtual void remove_from_t(Timestamp const& t);
 
 protected:
+  bool is_order_violated(MeasData const& m);
   virtual bool redo_updates_after_t(Timestamp const& t) override;
   ///////////////////////////////////////////////////////////////////////////////////
   /// pure virtual method

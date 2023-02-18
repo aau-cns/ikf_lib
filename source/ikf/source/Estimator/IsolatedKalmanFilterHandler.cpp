@@ -60,6 +60,40 @@ std::vector<size_t> IsolatedKalmanFilterHandler::get_instance_ids() {
 
 bool IsolatedKalmanFilterHandler::handle_delayed_meas() const { return m_handle_delayed_meas; }
 
+void IsolatedKalmanFilterHandler::sort_measurements_from_t(const Timestamp &t) {
+  Timestamp t_latest;
+  if(HistMeas.get_latest_t(t_latest)) {
+    TMultiHistoryBuffer<MeasData> meas = HistMeas.get_between_t1_t2(t, t_latest);
+
+    if(!meas.empty()) {
+      HistMeas.remove_after_t(t);
+      HistMeas.remove_at_t(t);
+
+      // first insert all PROPAGATION sorted
+      meas.foreach([this](MeasData const& elem) {
+        if (elem.obs_type == eObservationType::PROPAGATION && elem.obs_type != eObservationType::UNKNOWN ) {
+          HistMeas.insert(elem, elem.t_m);
+        }
+      });
+
+      // second insert all PRIVATE sorted
+      meas.foreach([this](MeasData const& elem) {
+        if (elem.obs_type == eObservationType::PRIVATE_OBSERVATION && elem.obs_type != eObservationType::UNKNOWN ) {
+          HistMeas.insert(elem, elem.t_m);
+        }
+      });
+
+      // third insert all JOINT sorted
+      meas.foreach([this](MeasData const& elem) {
+        if (elem.obs_type == eObservationType::JOINT_OBSERVATION && elem.obs_type != eObservationType::UNKNOWN ) {
+          HistMeas.insert(elem, elem.t_m);
+        }
+      });
+    }
+
+  }
+}
+
 ProcessMeasResult_t IsolatedKalmanFilterHandler::process_measurement(const MeasData &m) {
 
   ProcessMeasResult_t res = reprocess_measurement(m);
@@ -71,11 +105,53 @@ ProcessMeasResult_t IsolatedKalmanFilterHandler::process_measurement(const MeasD
   }
   else if (m_handle_delayed_meas) {
     if (!res.rejected && HistMeas.exist_after_t(m.t_m)) {
-        redo_updates_after_t(m.t_m);
+      redo_updates_after_t(m.t_m);
     }
     HistMeas.insert(m, m.t_m);
   }
   return res;
+}
+
+TMultiHistoryBuffer<MeasData> IsolatedKalmanFilterHandler::get_measurements_from_t(const Timestamp &t) {
+  TMultiHistoryBuffer<MeasData>  hist_meas;
+  // NOTE: in the concurrent case (simulatnous case) we can choose for a priorzation of types.
+
+  // first insert all PROPAGATION sorted
+  for (auto& elem : id_dict) {
+    TMultiHistoryBuffer<MeasData> meas = elem.second->get_measurements_from_t(t);
+    if (!meas.empty()) {
+      meas.foreach([&hist_meas](MeasData const& elem) {
+        if (elem.obs_type == eObservationType::PROPAGATION && elem.obs_type != eObservationType::UNKNOWN ) {
+          hist_meas.insert(elem, elem.t_m);
+        }
+      });
+    }
+  }
+
+  // second insert all PRIVATE sorted
+  for (auto& elem : id_dict) {
+    TMultiHistoryBuffer<MeasData> meas = elem.second->get_measurements_from_t(t);
+    if (!meas.empty()) {
+      meas.foreach([&hist_meas](MeasData const& elem) {
+        if (elem.obs_type == eObservationType::PRIVATE_OBSERVATION && elem.obs_type != eObservationType::UNKNOWN ) {
+          hist_meas.insert(elem, elem.t_m);
+        }
+      });
+    }
+  }
+
+  // third insert all JOINT sorted
+  for (auto& elem : id_dict) {
+    TMultiHistoryBuffer<MeasData> meas = elem.second->get_measurements_from_t(t);
+    if (!meas.empty()) {
+      meas.foreach([&hist_meas](MeasData const& elem) {
+        if (elem.obs_type == eObservationType::JOINT_OBSERVATION && elem.obs_type != eObservationType::UNKNOWN ) {
+          hist_meas.insert(elem, elem.t_m);
+        }
+      });
+    }
+  }
+  return hist_meas;
 }
 
 TMultiHistoryBuffer<MeasData> IsolatedKalmanFilterHandler::get_measurements_after_t(const Timestamp &t) {

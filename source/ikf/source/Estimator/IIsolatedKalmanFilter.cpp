@@ -39,15 +39,25 @@ void IIsolatedKalmanFilter::reset() {
   HistCrossCovFactors.clear();
 }
 
+
+
 // Algorithm 7 in [1]
 ProcessMeasResult_t IIsolatedKalmanFilter::process_measurement(const MeasData &m) {
   // propagation and private -> to filter instance
   // joint -> use ptr_Handler and two filter instances: The CIH must provide others belief and ccf
   ProcessMeasResult_t res = reprocess_measurement(m);
 
-  if (m_handle_delayed_meas) {
-    if (!res.rejected && m.obs_type != eObservationType::PROPAGATION) {
-
+  bool order_violated = is_order_violated(m);
+  if (order_violated) {
+    HistMeas.insert(m, m.t_m);
+    TMultiHistoryBuffer<MeasData> meas_data = ptr_Handler->get_measurements_from_t(m.t_m);
+    this->ptr_Handler->remove_beliefs_from_t(m.t_m);
+    meas_data.foreach([this](MeasData const& m) {
+      this->ptr_Handler->reprocess_measurement(m);
+    });
+  }
+  else if (m_handle_delayed_meas) {
+    if (!res.rejected) {
       TMultiHistoryBuffer<MeasData> meas_data = ptr_Handler->get_measurements_after_t(m.t_m);
       if(meas_data.exist_after_t(m.t_m)) {
         this->ptr_Handler->remove_beliefs_after_t(m.t_m);
@@ -56,12 +66,30 @@ ProcessMeasResult_t IIsolatedKalmanFilter::process_measurement(const MeasData &m
         });
       }
     }
-
     HistMeas.insert(m, m.t_m);
   }
 
 
   return res;
+}
+
+TMultiHistoryBuffer<MeasData> IIsolatedKalmanFilter::get_measurements_after_t(const Timestamp &t) {
+  Timestamp t_after;
+  if(HistMeas.get_after_t(t, t_after)) {
+    Timestamp t_latest;
+    if(HistMeas.get_latest_t(t_latest)) {
+      return  HistMeas.get_between_t1_t2(t_after, t_latest);
+    }
+  }
+  return TMultiHistoryBuffer<MeasData>();
+}
+
+TMultiHistoryBuffer<MeasData> IIsolatedKalmanFilter::get_measurements_from_t(const Timestamp &t) {
+  Timestamp t_latest;
+  if(HistMeas.get_latest_t(t_latest)) {
+    return  HistMeas.get_between_t1_t2(t, t_latest);
+  }
+  return TMultiHistoryBuffer<MeasData>();
 }
 
 void IIsolatedKalmanFilter::initialize(ptr_belief bel_init) {
@@ -141,6 +169,37 @@ void IIsolatedKalmanFilter::remove_from_t(const Timestamp &t) {
     elem.second.remove_after_t(t);
     elem.second.remove_at_t(t);
   }
+}
+
+bool IIsolatedKalmanFilter::is_order_violated(const MeasData &m) {
+  bool order_violated = false;
+
+  if (m.obs_type != eObservationType::JOINT_OBSERVATION) {
+    std::vector<MeasData> meas_arr;
+
+    // append all measurements at m.t_m from all instances:
+    for (size_t id : this->ptr_Handler->get_instance_ids()) {
+      auto vec_ = this->ptr_Handler->get(id)->get_measurements_at_t(m.t_m);
+      meas_arr.insert(meas_arr.end(), vec_.begin(), vec_.end());
+    }
+
+    if (m.obs_type == eObservationType::PROPAGATION) {
+      for (MeasData & m_ : meas_arr) {
+        if (m_.obs_type == eObservationType::PRIVATE_OBSERVATION ||
+            m_.obs_type == eObservationType::JOINT_OBSERVATION ){
+          order_violated = true;
+        }
+      }
+    } else if  (m.obs_type == eObservationType::PRIVATE_OBSERVATION) {
+      for (MeasData & m_ : meas_arr) {
+        if (m_.obs_type == eObservationType::JOINT_OBSERVATION) {
+          order_violated = true;
+        }
+      }
+    }
+  }
+
+  return order_violated;
 }
 
 void IIsolatedKalmanFilter::set_horizon(const double t_hor) {
