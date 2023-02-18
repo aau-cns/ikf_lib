@@ -27,13 +27,16 @@ int main(int argc, char** argv)
   int N = 4; // number of filter instances
   app.add_option("--num_instances", N, "number of filter instances");
 
+  int duration = 5; // number of filter instances
+  app.add_option("--duration", duration, "Duration of the trajectory [sec]");
+
   bool first_private_only = true;
   app.add_option("--first_private_only", first_private_only, "specifies if the first instance is obtaining private observations only");
 
   bool joint_updates = true;
   app.add_option("--joint_updates", joint_updates, "specifies if cyclic joint observations are performed (ID_J = (ID_I + 1) % num_instances)");
 
-  bool list_beliefs = true;
+  bool list_beliefs = false;
   app.add_option("--list_beliefs", list_beliefs, "show a list of bliefs");
 
   bool show_plots = true; // number of filter instances
@@ -67,7 +70,7 @@ int main(int argc, char** argv)
   int const dim_u = 1; // Number of inputs
 
   double const dt = 1.0/100; // Time step
-  double const D = 5;
+  double const D = duration*1.0;
   double const omega = M_PI/2;
   double const std_dev_p = 0.05;
   double const std_dev_a = 0.05;
