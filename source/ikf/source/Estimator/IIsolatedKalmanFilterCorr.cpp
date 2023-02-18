@@ -50,12 +50,12 @@ Eigen::MatrixXd IIsolatedKalmanFilterCorr::get_CrossCovFact_at_t(const Timestamp
           set_CrossCovFact_at_t(t, ID_J, mat);
         }
         else {
-          std::cout << "IKF.get_CrossCovFact_at_t(): could not compute correction between t_prev=" << t_prev << " and t_curr=" << t << std::endl;
+          std::cout << "IKF::get_CrossCovFact_at_t(): could not compute correction between t_prev=" << t_prev << " and t_curr=" << t << std::endl;
         }
       }
       else {
-        std::cout << "IKF.get_CrossCovFact_at_t(): could not find elem for id=" << ID_J << " at t=" << t << std::endl;
-        std::cout << "IKF.get_CrossCovFact_at_t(): could not find elem for id=" << ID_J << " at t_prev=" << t_prev << std::endl;
+        std::cout << "IKF::get_CrossCovFact_at_t(): could not find elem for id=" << ID_J << " at t=" << t << std::endl;
+        std::cout << "IKF::get_CrossCovFact_at_t(): could not find elem for id=" << ID_J << " at t_prev=" << t_prev << std::endl;
       }
     }
   }
@@ -128,14 +128,12 @@ Eigen::MatrixXd IIsolatedKalmanFilterCorr::compute_correction(const Timestamp &t
     Eigen::MatrixXd I  = Eigen::MatrixXd::Identity(max_dim, max_dim);
     Eigen::MatrixXd M_a_b = HistCorr.accumulate_between_t1_t2(t_after_a, t_b_found, I,
                                                               [](Eigen::MatrixXd const&A, Eigen::MatrixXd const&B){
-                                                                //Eigen::MatrixXd C(A.rows(), A.cols());
-                                                                //C = B*A;
                                                                 return B*A;
                                                               });
     return M_a_b;
   }
   else {
-    std::cout << "IMMF::compute_correction(): no element found for timestamps:[" << t_a << "," << t_b_found << "]" << std::endl;
+    std::cout << "IKF::compute_correction(): no element found for timestamps:[" << t_a << "," << t_b_found << "]" << std::endl;
   }
   return Eigen::MatrixXd();
 }
