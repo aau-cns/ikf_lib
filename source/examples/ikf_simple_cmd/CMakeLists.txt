@@ -25,6 +25,7 @@ set(headers
  include/LinearIKF.hpp
  include/SimInstance.hpp
  include/Trajectory.hpp
+ include/CLI11.hpp
 )
 
 set(sources

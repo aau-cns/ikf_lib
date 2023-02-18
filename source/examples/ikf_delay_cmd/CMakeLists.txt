@@ -25,6 +25,7 @@ set(headers
  include/LinearIKF_1D_const_acc.hpp
  include/SimInstanceDelay.hpp
  include/Trajectory.hpp
+ include/CLI11.hpp
 )
 
 set(sources

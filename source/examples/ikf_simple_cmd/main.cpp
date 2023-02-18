@@ -1,11 +1,12 @@
 #include "Trajectory.hpp"
 #include "SimInstance.hpp"
+#include "include/CLI11.hpp"
 #include <ikf/EstimatorStd/IKFHandlerStd.hpp>
 
 
 
 void wait_for_key() {
-  std::cout << "press a value to continue..." << std::flush << std::endl;
+  std::cout << "insert a VALUE to continue..." << std::flush << std::endl;
   int Value;
   for(;;)
   {
@@ -18,11 +19,28 @@ void wait_for_key() {
 }
 
 
-int main(int /*argc*/, char** /*argv[]*/)
+int main(int argc, char** argv)
 {
-  int const N = 4; // number of filter instances
-  int const num_instances = std::max(N, 1); // at least 1 is needed!
+  std::string app_name = "ikf_simple_cmd";
+  CLI::App app{app_name};
 
+  int N = 4; // number of filter instances
+  app.add_option("--num_instances", N, "number of filter instances");
+
+  bool first_private_only = true;
+  app.add_option("--first_private_only", first_private_only, "specifies if the first instance is obtaining private observations only");
+
+  bool joint_updates = true;
+  app.add_option("--joint_updates", joint_updates, "specifies if cyclic joint observations are performed (ID_J = (ID_I + 1) % num_instances)");
+
+  bool list_beliefs = true;
+  app.add_option("--list_beliefs", list_beliefs, "show a list of bliefs");
+
+  bool show_plots = true; // number of filter instances
+  app.add_option("--show_plots", show_plots, "show plots of the estimated trajectories");
+  CLI11_PARSE(app, argc, argv);
+
+  int const num_instances = std::max(N, 1); // at least 1 is needed!
   std::cout << "ikf_cmd example: 1D constant acceleration moving body (harmonic motion)" << std::endl;
   std::cout << "* \t p = sin(t*omega   + omega_0)*amplitude + offset" << std::endl;
   std::cout << "* \t v = omega* cost(t*omega  + omega_0)*amplitude" << std::endl;
@@ -39,6 +57,7 @@ int main(int /*argc*/, char** /*argv[]*/)
   std::cout << " -> noisy position measurement is just obtained by filter instance 0" << std::endl;
   std::cout << "noisy relative position measurement 'p_i_j' with std_dev_p_rel for isolated joint state correction between filter i and j using the Isolated Kalman Filter." << std::endl;
   std::cout << "for system model see: https://www.kalmanfilter.net/modeling.html (Example continued: constant acceleration moving body)" << std::endl;
+  std::cout << "* \t first_private_only = " << first_private_only << std::endl;
 
   ikf::GaussianNoiseGen& gen = ikf::GaussianNoiseGen::instance();
   gen.seed(123123);
@@ -105,15 +124,13 @@ int main(int /*argc*/, char** /*argv[]*/)
     }
   }
 
-  if (num_instances > 1) {
+  if (joint_updates && num_instances > 1) {
     for(int i=0; i < num_instances; i++) {
       size_t ID_I = i;
       size_t ID_J = (i + 1) % num_instances;
       dict_instance[ID_I]->generate_rel_meas(dict_instance[ID_J]->traj, dict_instance[ID_J]->ID);
     }
   }
-
-
 
   for (int t = 1; t < dict_instance[0]->traj.t_arr.size(); t++) {
     for(int i=0; i < num_instances; i++) {
@@ -126,20 +143,27 @@ int main(int /*argc*/, char** /*argv[]*/)
     }
   }
 
-  for(int i=0; i < num_instances; i++) {
-    std::cout << "Beliefs of filter instance ID=" << i << std::endl;
-    dict_instance[i]->print_HistBelief(20);
+  if(list_beliefs) {
+    for(int i=0; i < num_instances; i++) {
+      std::cout << "Beliefs of filter instance ID=" << i << std::endl;
+      dict_instance[i]->print_HistBelief(20);
+    }
   }
 
-  for(int i=0; i < num_instances; i++) {
-    dict_instance[i]->traj.plot_trajectory(i, "S-True");
-    dict_instance[i]->traj_est.plot_trajectory(i, "S-Est");
-    dict_instance[i]->compute_error();
-    dict_instance[i]->traj_err.plot_trajectory(i, "S-Err");
+  if (show_plots) {
+    for(int i=0; i < num_instances; i++) {
+      dict_instance[i]->traj.plot_trajectory(i, "S-True");
+      dict_instance[i]->traj_est.plot_trajectory(i, "S-Est");
+      dict_instance[i]->compute_error();
+      dict_instance[i]->traj_err.plot_trajectory(i, "S-Err");
+    }
+    wait_for_key();
   }
-
-  wait_for_key();
-
+  else {
+    for(int i=0; i < num_instances; i++) {
+      dict_instance[i]->compute_error();
+    }
+  }
 
   return 0;
 }

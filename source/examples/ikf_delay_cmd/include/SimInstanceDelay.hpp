@@ -29,7 +29,8 @@ class SimInstanceDelay {
 public:
   SimInstanceDelay(size_t const ID, double const dt, double const D, double const omega,
               double const std_dev_p, double const std_dev_a, double const std_dev_p_rel,
-                   std::shared_ptr<ikf::IsolatedKalmanFilterHandler> ptr_Handler) : ID(ID), dt(dt), std_dev_p(std_dev_p), std_dev_a(std_dev_a), std_dev_p_rel(std_dev_p_rel), ptr_IKF(new LinearIKF_1D_const_acc(ptr_Handler, ID)), m_ptr_Handler(ptr_Handler), HistBelief(1.0) {
+                   int const delay_private,  int const delay_joint ,
+                   std::shared_ptr<ikf::IsolatedKalmanFilterHandler> ptr_Handler) : ID(ID), delay_private(delay_private), delay_joint(delay_joint), dt(dt), std_dev_p(std_dev_p), std_dev_a(std_dev_a), std_dev_p_rel(std_dev_p_rel), ptr_IKF(new LinearIKF_1D_const_acc(ptr_Handler, ID)), m_ptr_Handler(ptr_Handler), HistBelief(1.0) {
 
     double const omega_0 = M_PI/8;
     traj.generate_sine(dt, D, omega, omega_0*ID, (0.1*ID+1), 0);

@@ -1,11 +1,12 @@
 #include "include/Trajectory.hpp"
 #include "include/SimInstanceDelay.hpp"
+#include "include/CLI11.hpp"
 #include <ikf/Estimator/IsolatedKalmanFilterHandler.hpp>
 
 
 
 void wait_for_key() {
-  std::cout << "press a value to continue..." << std::flush << std::endl;
+  std::cout << "insert a VALUE to continue..." << std::flush << std::endl;
   int Value;
   for(;;)
   {
@@ -18,13 +19,38 @@ void wait_for_key() {
 }
 
 
-int main(int /*argc*/, char** /*argv[]*/)
+int main(int argc, char** argv)
 {
-  int const N = 4; // number of filter instances
+  std::string app_name = "ikf_delay_cmd";
+  CLI::App app{app_name};
+
+  bool handle_measurements_centralized = false;
+  app.add_option("--meas_centralized", handle_measurements_centralized, "specifies if measurements are maintained in handler or individual filter instances");
+
+  int N = 4; // number of filter instances
+  app.add_option("--num_instances", N, "number of filter instances");
+
+  bool first_private_only = true;
+  app.add_option("--first_private_only", first_private_only, "specifies if the first instance is obtaining private observations only");
+
+  bool joint_updates = true;
+  app.add_option("--joint_updates", joint_updates, "specifies if cyclic joint observations are performed (ID_J = (ID_I + 1) % num_instances)");
+
+
+  int delay_private = 1;
+  app.add_option("--delay_private", delay_private, "number of steps private measurements are delayed ");
+
+  int delay_joint = 1;
+  app.add_option("--delay_joint", delay_joint, "number of steps joint measurements are delayed ");
+
+  bool list_beliefs = true;
+  app.add_option("--list_beliefs", list_beliefs, "show a list of bliefs");
+
+  bool show_plots = true; // number of filter instances
+  app.add_option("--show_plots", show_plots, "show plots of the estimated trajectories");
+  CLI11_PARSE(app, argc, argv);
+
   int const num_instances = std::max(N, 1); // at least 1 is needed!
-
-  bool const handle_measurements_centralized = false; // specifies if measurements are maintained in handler or individual filter instances!
-
   std::cout << "ikf_delay_cmd example: 1D constant acceleration moving body (harmonic motion)" << std::endl;
   std::cout << "* \t p = sin(t*omega   + omega_0)*amplitude + offset" << std::endl;
   std::cout << "* \t v = omega* cost(t*omega  + omega_0)*amplitude" << std::endl;
@@ -42,6 +68,9 @@ int main(int /*argc*/, char** /*argv[]*/)
   std::cout << "noisy relative position measurement 'p_i_j' with std_dev_p_rel for isolated joint state correction between filter i and j using the Isolated Kalman Filter." << std::endl;
   std::cout << "for system model see: https://www.kalmanfilter.net/modeling.html (Example continued: constant acceleration moving body)" << std::endl;
 
+   std::cout << "* \t first_private_only = " << first_private_only << std::endl;
+   std::cout << "* \t delay_private = " << delay_private << std::endl;
+   std::cout << "* \t delay_joint = " << delay_joint << std::endl;
   if (handle_measurements_centralized) {
     std::cout << "* Measurements are maintained in IKF handler (centralized)"  << std::endl;
   } else {
@@ -76,20 +105,21 @@ int main(int /*argc*/, char** /*argv[]*/)
 
   for(int i=0; i < num_instances; i++) {
     size_t ID = i;
-    dict_instance[i] = ptr_Instance(new SimInstanceDelay(ID, dt, D, omega, std_dev_p, std_dev_a, std_dev_p_rel, ptr_Handler));
+    dict_instance[i] = ptr_Instance(new SimInstanceDelay(ID, dt, D, omega, std_dev_p, std_dev_a, std_dev_p_rel, delay_private, delay_joint, ptr_Handler));
     ptr_Handler->add(dict_instance[i]->ptr_IKF);
-    if (i > 0) {
+
+    if (first_private_only && i > 0) {
       dict_instance[i]->perform_private = false;
     }
   }
 
-
-  for(int i=0; i < num_instances; i++) {
-    size_t ID_I = i;
-    size_t ID_J = (i + 1) % num_instances;
-    dict_instance[ID_I]->generate_rel_meas(dict_instance[ID_J]->traj, dict_instance[ID_J]->ID);
+  if(joint_updates && num_instances > 1) {
+    for(int i=0; i < num_instances; i++) {
+      size_t ID_I = i;
+      size_t ID_J = (i + 1) % num_instances;
+      dict_instance[ID_I]->generate_rel_meas(dict_instance[ID_J]->traj, dict_instance[ID_J]->ID);
+    }
   }
-
 
 
   for (int t = 1; t < dict_instance[0]->traj.t_arr.size(); t++) {
@@ -103,25 +133,32 @@ int main(int /*argc*/, char** /*argv[]*/)
     }
   }
 
-  for(int i=0; i < num_instances; i++) {
-    std::cout << "MeasData of filter instance ID=" << dict_instance[i]->ptr_IKF->ID() << std::endl;
-    dict_instance[i]->ptr_IKF->print_HistMeas(20);
+  if(list_beliefs) {
+    for(int i=0; i < num_instances; i++) {
+      std::cout << "MeasData of filter instance ID=" << dict_instance[i]->ptr_IKF->ID() << std::endl;
+      dict_instance[i]->ptr_IKF->print_HistMeas(20);
+    }
+
+    for(int i=0; i < num_instances; i++) {
+      std::cout << "Beliefs of filter instance ID=" << i << std::endl;
+      dict_instance[i]->print_HistBelief(20);
+    }
   }
+  if (show_plots) {
+    for(int i=0; i < num_instances; i++) {
+      dict_instance[i]->traj.plot_trajectory(i, "D-True");
+      dict_instance[i]->traj_est.plot_trajectory(i, "D-Est");
+      dict_instance[i]->compute_error();
+      dict_instance[i]->traj_err.plot_trajectory(i, "D-Err");
+    }
 
-  for(int i=0; i < num_instances; i++) {
-    std::cout << "Beliefs of filter instance ID=" << i << std::endl;
-    dict_instance[i]->print_HistBelief(20);
+    wait_for_key();
   }
-
-  for(int i=0; i < num_instances; i++) {
-    dict_instance[i]->traj.plot_trajectory(i, "D-True");
-    dict_instance[i]->traj_est.plot_trajectory(i, "D-Est");
-    dict_instance[i]->compute_error();
-    dict_instance[i]->traj_err.plot_trajectory(i, "D-Err");
+  else {
+    for(int i=0; i < num_instances; i++) {
+      dict_instance[i]->compute_error();
+    }
   }
-
-  wait_for_key();
-
 
   return 0;
 }

@@ -35,7 +35,18 @@ Please note that `ikf_simple_cmd` and `ikf_delay_cmd` should perform, up to the 
 Naive implementation of the IKF, without supporting delayed measurements (no buffering). 
 
 ```
-build$ ./ikf_simple_cmd
+build$ ./ikf_delay_cmd --help
+ikf_simple_cmd
+Usage: ./ikf_simple_cmdd [OPTIONS]
+
+Options:
+  -h,--help                   Print this help message and exit
+  --num_instances INT         number of filter instances
+  --first_private_only BOOLEAN
+                              specifies if the first instance is obtaining private observations only
+  --joint_updates BOOLEAN     specifies if cyclic joint observations are performed (ID_J = (ID_I + 1) % num_instances)
+  --list_beliefs BOOLEAN      show a list of bliefs
+  --show_plots BOOLEAN        show plots of the estimated trajectories
 ```
 
 ### ikf_delay_cmd
@@ -43,7 +54,21 @@ build$ ./ikf_simple_cmd
 Implementation of the IKF supporting delayed measurements.
 
 ```
-build$ ./ikf_dealy_cmd
+build$ ./ikf_dealy_cmd -h
+ikf_delay_cmd
+Usage: ./ikf_delay_cmdd [OPTIONS]
+
+Options:
+  -h,--help                   Print this help message and exit
+  --meas_centralized BOOLEAN  specifies if measurements are maintained in handler or individual filter instances
+  --num_instances INT         number of filter instances
+  --first_private_only BOOLEAN
+                              specifies if the first instance is obtaining private observations only
+  --joint_updates BOOLEAN     specifies if cyclic joint observations are performed (ID_J = (ID_I + 1) % num_instances)
+  --delay_private INT         number of steps private measurements are delayed 
+  --delay_joint INT           number of steps joint measurements are delayed 
+  --list_beliefs BOOLEAN      show a list of bliefs
+  --show_plots BOOLEAN        show plots of the estimated trajectories
 ```
 
 ## How to "use" the Isolated Kalman Filtering framework
@@ -61,6 +86,7 @@ measurement distribution and re-computation (unfortunately). Still measurementsc
 
 * [eigenmvn](https://github.com/beniz/eigenmvn)
 * [matplotplusplus](https://github.com/alandefreitas/matplotplusplus)
+* [CLI11](https://github.com/CLIUtils/CLI11)
 
 
 # REFERENCES
