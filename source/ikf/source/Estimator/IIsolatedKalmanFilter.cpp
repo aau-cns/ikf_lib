@@ -46,22 +46,21 @@ ProcessMeasResult_t IIsolatedKalmanFilter::process_measurement(const MeasData &m
   ProcessMeasResult_t res = reprocess_measurement(m);
 
   if (m_handle_delayed_meas) {
-    if (!res.rejected && HistMeas.exist_after_t(m.t_m)) {
-      redo_updates_after_t(m.t_m);
-    }
+    if (!res.rejected && m.obs_type != eObservationType::PROPAGATION) {
 
-    // notify other instances to redo their updates!
-    if (m.obs_type != eObservationType::PROPAGATION) {
-      ptr_Handler->redo_updates_after_t(m_ID, m.t_m);
+      TMultiHistoryBuffer<MeasData> meas_data = ptr_Handler->get_measurements_after_t(m.t_m);
+      if(meas_data.exist_after_t(m.t_m)) {
+        this->ptr_Handler->remove_beliefs_after_t(m.t_m);
+        meas_data.foreach([this](MeasData const& m) {
+          this->ptr_Handler->reprocess_measurement(m);
+        });
+      }
     }
 
     HistMeas.insert(m, m.t_m);
   }
 
-  // needed for inter-properation interpolation
-  if (m.obs_type == eObservationType::PROPAGATION) {
-    HistMeasPropagation.insert(m, m.t_m);
-  }
+
   return res;
 }
 

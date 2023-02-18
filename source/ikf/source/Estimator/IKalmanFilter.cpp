@@ -231,6 +231,9 @@ ProcessMeasResult_t IKalmanFilter::reprocess_measurement(const MeasData &m) {
     case eObservationType::PROPAGATION:
       {
         res = progapation_measurement(m);
+
+        // needed for inter-properation interpolation (replace in case of re-do updates
+        HistMeasPropagation.insert(m, m.t_m);
         break;
       }
     case eObservationType::PRIVATE_OBSERVATION:

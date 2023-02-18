@@ -56,7 +56,20 @@ public:
 
   ///////////////////////////////////////////////////////////////////////////////////
   /// inter-filter interface:
-  virtual bool redo_updates_after_t(Timestamp const& t) override;
+  TMultiHistoryBuffer<MeasData> get_measurements_after_t(Timestamp const&t) {
+    Timestamp t_after;
+    if(HistMeas.get_after_t(t, t_after)) {
+      Timestamp t_latest;
+      if(HistMeas.get_latest_t(t_latest)) {
+        return  HistMeas.get_between_t1_t2(t_after, t_latest);
+      }
+    }
+    return TMultiHistoryBuffer<MeasData>();
+  }
+
+    // Algorithm 7 in [1]
+  virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
+
   virtual Eigen::MatrixXd get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J);
   void set_CrossCovFact_at_t(Timestamp const& t, size_t const unique_ID, Eigen::MatrixXd const& ccf);
   // Eq. 20 in [1]
@@ -66,6 +79,7 @@ public:
 
 
 protected:
+  virtual bool redo_updates_after_t(Timestamp const& t) override;
   ///////////////////////////////////////////////////////////////////////////////////
   /// pure virtual method
   virtual ProcessMeasResult_t local_joint_measurement(MeasData const& m) = 0;
@@ -88,7 +102,7 @@ protected:
   virtual bool apply_correction_at_t(Timestamp const&t, Eigen::MatrixXd const& Factor);
 
   // Algorithm 7 in [1]
-  virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
+  //virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
   ///////////////////////////////////////////
   /// FUSION LOGIC:
   // KF: Algorithm 8 in [1]

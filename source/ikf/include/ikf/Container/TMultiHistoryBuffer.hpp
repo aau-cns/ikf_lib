@@ -43,6 +43,8 @@ public:
 
   void insert(T const& data, Timestamp const t);
   void insert(T const& data, double const t_sec);
+  void insert(T const& data, std::int64_t t_nsec);
+  void insert(std::pair<int64_t, T> elem);
   void insert(TData const& data);
   size_t size() const;
   bool empty() const {
@@ -72,7 +74,14 @@ public:
       auto itlow = lower_bound(t1);
       auto itup = upper_bound(t2);
       TMultiHistoryBuffer h;
-      h.set(TContainer(itlow, itup));
+      std::set<int64_t> stamps = get_timestamps_between_t1_t2(t1, t2);
+      for(auto iter = stamps.begin(); iter != stamps.end(); iter++) {
+        //std::pair <typename std::multimap<int64_t,T>::const_iterator, typename std::multimap<int64_t,T>::const_iterator> ret;
+        auto ret = buffer_.equal_range(*iter);
+        for(auto iter_elem = ret.first; iter_elem != ret.second; iter_elem++) {
+          h.insert(*iter_elem);
+        }
+      }
       return h;
     }
     return TMultiHistoryBuffer();
@@ -192,6 +201,9 @@ private:
   void insert_sorted(Timestamp const& t, T const& elem){
     buffer_.insert(std::pair<int64_t, T>(t.stamp_ns(), elem));
   }
+  void insert_sorted(int64_t const& t, T const& elem){
+    buffer_.insert(std::pair<int64_t, T>(t, elem));
+  }
 
   // https://stackoverflow.com/a/72835502
   typename TContainer::const_iterator upper_bound(Timestamp const& t) const {
@@ -216,6 +228,16 @@ void TMultiHistoryBuffer<T>::insert(const T &data, const Timestamp t) {
 template<typename T>
 void TMultiHistoryBuffer<T>::insert(const T &data, const double t_sec){
   insert_sorted(Timestamp(t_sec), data);
+}
+
+template<typename T>
+void TMultiHistoryBuffer<T>::insert(const T &data, int64_t t_nsec) {
+  insert_sorted(t_nsec, data);
+}
+
+template<typename T>
+void TMultiHistoryBuffer<T>::insert(std::pair<int64_t, T> elem) {
+  buffer_.insert(elem);
 }
 
 template<typename T>

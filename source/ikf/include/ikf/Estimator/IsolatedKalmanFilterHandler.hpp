@@ -29,7 +29,7 @@ class IKF_API IsolatedKalmanFilterHandler {
 
   typedef std::shared_ptr<IIsolatedKalmanFilter> ptr_IKF;
 public:
-  IsolatedKalmanFilterHandler(double const horizon_sec=1.0) : HistMeas(horizon_sec), m_horzion_sec(horizon_sec) {}
+  IsolatedKalmanFilterHandler(bool const handle_delayed=true, double const horizon_sec=1.0);
   ~IsolatedKalmanFilterHandler() = default;
 
   bool add(ptr_IKF p_IKF);
@@ -37,18 +37,28 @@ public:
   bool remove(const size_t ID);
   bool exists(const size_t ID);
   std::vector<size_t> get_instance_ids();
+  bool handle_delayed_meas() const;
 
+
+  ///
+  /// \brief process_measurement: If the m_handle_delayed_meas == true, the IKF-Handler is a centralized entity hanndle all incomming measurements and is responsible to handle delayed measurements. If
+  /// \param m
+  /// \return
+  ///
   virtual ProcessMeasResult_t process_measurement(MeasData const& m);
 
-  void redo_updates_after_t(std::vector<size_t> const& ID_participants, const Timestamp &t);
-  void redo_updates_after_t(size_t ID_master, const Timestamp &t);
+  /////////////////////////////////////////////////////
+  /// Interface for IKF handles to reprocess measurements
+  TMultiHistoryBuffer<MeasData> get_measurements_after_t(Timestamp const&t);
+  virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
+  virtual void remove_beliefs_after_t(Timestamp const& t);
   void reset();
 
 protected:
-  virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
+
 
   virtual bool redo_updates_after_t(const Timestamp &t);
-  virtual void remove_beliefs_after_t(Timestamp const& t);
+
 
   std::unordered_map<size_t, std::shared_ptr<IIsolatedKalmanFilter>> id_dict;
   bool m_handle_delayed_meas = true;

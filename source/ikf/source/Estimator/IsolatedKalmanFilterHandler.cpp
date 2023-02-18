@@ -20,6 +20,12 @@
 
 namespace ikf {
 
+IsolatedKalmanFilterHandler::IsolatedKalmanFilterHandler(const bool handle_delayed, const double horizon_sec) : m_handle_delayed_meas(handle_delayed), HistMeas(horizon_sec), m_horzion_sec(horizon_sec) {
+  if (handle_delayed) {
+    std::cout << "IsolatedKalmanFilterHandler will handle delayed measurements, therefore call it's process_measurement method!" << std::endl;
+  }
+}
+
 bool IsolatedKalmanFilterHandler::add(ptr_IKF p_IKF) {
   if (!exists(p_IKF->ID())) {
     // either one is handling delayed measurements!
@@ -52,6 +58,8 @@ std::vector<size_t> IsolatedKalmanFilterHandler::get_instance_ids() {
   return IDs;
 }
 
+bool IsolatedKalmanFilterHandler::handle_delayed_meas() const { return m_handle_delayed_meas; }
+
 ProcessMeasResult_t IsolatedKalmanFilterHandler::process_measurement(const MeasData &m) {
   ProcessMeasResult_t res = reprocess_measurement(m);
   if (m_handle_delayed_meas) {
@@ -63,10 +71,41 @@ ProcessMeasResult_t IsolatedKalmanFilterHandler::process_measurement(const MeasD
   return res;
 }
 
+TMultiHistoryBuffer<MeasData> IsolatedKalmanFilterHandler::get_measurements_after_t(const Timestamp &t) {
+  TMultiHistoryBuffer<MeasData>  hist_meas;
+
+  // first insert all PROPAGATION sorted
+  for (auto& elem : id_dict) {
+    TMultiHistoryBuffer<MeasData> meas = elem.second->get_measurements_after_t(t);
+    if (!meas.empty()) {
+      meas.foreach([&hist_meas](MeasData const& elem) {
+        if (elem.obs_type == eObservationType::PROPAGATION && elem.obs_type != eObservationType::UNKNOWN ) {
+          hist_meas.insert(elem, elem.t_m);
+        }
+      });
+    }
+  }
+
+
+  // second insert all UPDATES sorted
+  for (auto& elem : id_dict) {
+    TMultiHistoryBuffer<MeasData> meas = elem.second->get_measurements_after_t(t);
+    if (!meas.empty()) {
+      meas.foreach([&hist_meas](MeasData const& elem) {
+        if (elem.obs_type != eObservationType::PROPAGATION && elem.obs_type != eObservationType::UNKNOWN ) {
+          hist_meas.insert(elem, elem.t_m);
+        }
+      });
+    }
+  }
+
+  return hist_meas;
+}
+
 ProcessMeasResult_t IsolatedKalmanFilterHandler::reprocess_measurement(const MeasData &m) {
   ProcessMeasResult_t res;
   if(exists(m.id_sensor)) {
-    res = id_dict[m.id_sensor]->process_measurement(m);
+    res = id_dict[m.id_sensor]->reprocess_measurement(m);
   }
   return res;
 }
@@ -102,24 +141,6 @@ std::shared_ptr<IIsolatedKalmanFilter> IsolatedKalmanFilterHandler::get(const si
   return std::shared_ptr<IIsolatedKalmanFilter>(nullptr);
 }
 
-
-
-
-void IsolatedKalmanFilterHandler::redo_updates_after_t(std::vector<size_t> const& ID_participants, const Timestamp &t) {
-  for (size_t const& elem : ID_participants) {
-    if (exists(elem)) {
-      id_dict[elem]->redo_updates_after_t(t);
-    }
-  }
-}
-
-void IsolatedKalmanFilterHandler::redo_updates_after_t(size_t ID_master, const Timestamp &t) {
-  for (size_t const& elem : get_instance_ids()) {
-    if (exists(elem) && elem != ID_master) {
-      id_dict[elem]->redo_updates_after_t(t);
-    }
-  }
-}
 
 void IsolatedKalmanFilterHandler::reset() {
   for (auto& elem : id_dict) {
