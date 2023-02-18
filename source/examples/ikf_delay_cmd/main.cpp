@@ -23,6 +23,8 @@ int main(int /*argc*/, char** /*argv[]*/)
   int const N = 4; // number of filter instances
   int const num_instances = std::max(N, 1); // at least 1 is needed!
 
+  bool const handle_measurements_centralized = false; // specifies if measurements are maintained in handler or individual filter instances!
+
   std::cout << "ikf_delay_cmd example: 1D constant acceleration moving body (harmonic motion)" << std::endl;
   std::cout << "* \t p = sin(t*omega   + omega_0)*amplitude + offset" << std::endl;
   std::cout << "* \t v = omega* cost(t*omega  + omega_0)*amplitude" << std::endl;
@@ -40,10 +42,17 @@ int main(int /*argc*/, char** /*argv[]*/)
   std::cout << "noisy relative position measurement 'p_i_j' with std_dev_p_rel for isolated joint state correction between filter i and j using the Isolated Kalman Filter." << std::endl;
   std::cout << "for system model see: https://www.kalmanfilter.net/modeling.html (Example continued: constant acceleration moving body)" << std::endl;
 
+  if (handle_measurements_centralized) {
+    std::cout << "* Measurements are maintained in IKF handler (centralized)"  << std::endl;
+  } else {
+    std::cout << "* Measurements are maintained in individual IKF instances (distributed)"  << std::endl;
+  }
+
+
   ikf::GaussianNoiseGen& gen = ikf::GaussianNoiseGen::instance();
   gen.seed(123123);
 
-  std::shared_ptr<ikf::IsolatedKalmanFilterHandler> ptr_Handler(new ikf::IsolatedKalmanFilterHandler());
+  std::shared_ptr<ikf::IsolatedKalmanFilterHandler> ptr_Handler(new ikf::IsolatedKalmanFilterHandler(handle_measurements_centralized));
 
 
   double const dt = 1.0/100; // Time step

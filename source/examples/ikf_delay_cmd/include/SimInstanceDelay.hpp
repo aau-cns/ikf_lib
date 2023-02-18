@@ -103,7 +103,13 @@ public:
     m.t_m = t_curr;
     m.t_p = t_curr;
 
-    ikf::ProcessMeasResult_t res = m_ptr_Handler->process_measurement(m);
+    ikf::ProcessMeasResult_t res;
+    if (m_ptr_Handler->handle_delayed_meas())
+      res = m_ptr_Handler->process_measurement(m);
+    else {
+      res = ptr_IKF->process_measurement(m);
+    }
+
     if (print_belief) {
       auto p_bel = ptr_IKF->current_belief();
       std::cout << "* Prop[" << ID <<  "]:t=" << p_bel->timestamp() << ", \nmean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
@@ -128,8 +134,12 @@ public:
       m.t_m = t_meas;
       m.t_p = t_curr;
 
-      ikf::ProcessMeasResult_t res = m_ptr_Handler->process_measurement(m);
-
+      ikf::ProcessMeasResult_t res;
+      if (m_ptr_Handler->handle_delayed_meas())
+        res = m_ptr_Handler->process_measurement(m);
+      else {
+        res = ptr_IKF->process_measurement(m);
+      }
 
       // Apply correct beliefs from the past!
       if (delay_private) {
@@ -170,7 +180,12 @@ public:
         m.t_m = t_meas;
         m.t_p = t_curr;
 
-        ikf::ProcessMeasResult_t res = m_ptr_Handler->process_measurement(m);
+        ikf::ProcessMeasResult_t res;
+        if (m_ptr_Handler->handle_delayed_meas())
+          res = m_ptr_Handler->process_measurement(m);
+        else {
+          res = ptr_IKF->process_measurement(m);
+        }
 
 
         // Apply correct beliefs from the past!
