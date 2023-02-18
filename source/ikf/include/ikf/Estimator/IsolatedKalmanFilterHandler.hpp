@@ -39,6 +39,40 @@ public:
   std::vector<size_t> get_instance_ids();
   bool handle_delayed_meas() const;
 
+  void sort_measurements_from_t(Timestamp const& t) {
+    Timestamp t_latest;
+    if(HistMeas.get_latest_t(t_latest)) {
+      TMultiHistoryBuffer<MeasData> meas = HistMeas.get_between_t1_t2(t, t_latest);
+
+      if(!meas.empty()) {
+        HistMeas.remove_after_t(t);
+        HistMeas.remove_at_t(t);
+
+        // first insert all PROPAGATION sorted
+        meas.foreach([this](MeasData const& elem) {
+          if (elem.obs_type == eObservationType::PROPAGATION && elem.obs_type != eObservationType::UNKNOWN ) {
+            HistMeas.insert(elem, elem.t_m);
+          }
+        });
+
+        // second insert all PRIVATE sorted
+        meas.foreach([this](MeasData const& elem) {
+          if (elem.obs_type == eObservationType::PRIVATE_OBSERVATION && elem.obs_type != eObservationType::UNKNOWN ) {
+            HistMeas.insert(elem, elem.t_m);
+          }
+        });
+
+        // third insert all JOINT sorted
+        meas.foreach([this](MeasData const& elem) {
+          if (elem.obs_type == eObservationType::JOINT_OBSERVATION && elem.obs_type != eObservationType::UNKNOWN ) {
+            HistMeas.insert(elem, elem.t_m);
+          }
+        });
+      }
+
+    }
+  }
+
 
   ///
   /// \brief process_measurement: If the m_handle_delayed_meas == true, the IKF-Handler is a centralized entity hanndle all incomming measurements and is responsible to handle delayed measurements. If
@@ -52,11 +86,12 @@ public:
   TMultiHistoryBuffer<MeasData> get_measurements_after_t(Timestamp const&t);
   virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
   virtual void remove_beliefs_after_t(Timestamp const& t);
+  virtual void remove_beliefs_from_t(Timestamp const& t);
   void reset();
 
 protected:
-
-
+  bool is_order_violated(MeasData const& m);
+  virtual bool redo_updates_from_t(const Timestamp &t);
   virtual bool redo_updates_after_t(const Timestamp &t);
 
 

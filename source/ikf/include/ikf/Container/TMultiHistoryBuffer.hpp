@@ -71,8 +71,6 @@ public:
 
   TMultiHistoryBuffer get_between_t1_t2(Timestamp const& t1, Timestamp const& t2) {
     if (t1 <= t2 && size() > 0) {
-      auto itlow = lower_bound(t1);
-      auto itup = upper_bound(t2);
       TMultiHistoryBuffer h;
       std::set<int64_t> stamps = get_timestamps_between_t1_t2(t1, t2);
       for(auto iter = stamps.begin(); iter != stamps.end(); iter++) {

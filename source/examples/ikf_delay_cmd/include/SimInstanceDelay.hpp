@@ -30,7 +30,10 @@ public:
   SimInstanceDelay(size_t const ID, double const dt, double const D, double const omega,
               double const std_dev_p, double const std_dev_a, double const std_dev_p_rel,
                    int const delay_private,  int const delay_joint ,
-                   std::shared_ptr<ikf::IsolatedKalmanFilterHandler> ptr_Handler) : ID(ID), delay_private(delay_private), delay_joint(delay_joint), dt(dt), std_dev_p(std_dev_p), std_dev_a(std_dev_a), std_dev_p_rel(std_dev_p_rel), ptr_IKF(new LinearIKF_1D_const_acc(ptr_Handler, ID)), m_ptr_Handler(ptr_Handler), HistBelief(1.0) {
+                   std::shared_ptr<ikf::IsolatedKalmanFilterHandler> ptr_Handler) : ID(ID), delay_private(delay_private), delay_joint(delay_joint), dt(dt), std_dev_p(std_dev_p), std_dev_a(std_dev_a), std_dev_p_rel(std_dev_p_rel), ptr_IKF(new LinearIKF_1D_const_acc(ptr_Handler, ID)), m_ptr_Handler(ptr_Handler), HistBelief(D) {
+
+    // we need a long horizon for plotting the estiamtes correctly.
+    ptr_IKF->set_horizon(D);
 
     double const omega_0 = M_PI/8;
     traj.generate_sine(dt, D, omega, omega_0*ID, (0.1*ID+1), 0);
@@ -110,11 +113,6 @@ public:
     else {
       res = ptr_IKF->process_measurement(m);
     }
-
-    if (print_belief) {
-      auto p_bel = ptr_IKF->current_belief();
-      std::cout << "* Prop[" << ID <<  "]:t=" << p_bel->timestamp() << ", \nmean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
-    }
     return true;
   }
 
@@ -141,25 +139,6 @@ public:
       else {
         res = ptr_IKF->process_measurement(m);
       }
-
-      // Apply correct beliefs from the past!
-      if (delay_private) {
-        for (int i = delay_private; i > 0; i--) {
-          size_t const idx_meas = idx - i;
-          ikf::Timestamp t_meas(traj.t_arr(idx_meas));
-          auto p_bel = ptr_IKF->get_belief_at_t(t_meas);
-          Eigen::VectorXd mean_apos = p_bel->mean();
-          traj_est.p_arr(idx_meas) = mean_apos(0);
-          traj_est.v_arr(idx_meas) = mean_apos(1);
-        }
-      }
-
-      if (print_belief) {
-        auto p_bel = ptr_IKF->get_belief_at_t(t_meas);
-        std::cout << "* Update [" << ID <<  "]:t=" << t_meas << ", mean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
-      }
-
-      HistBelief.insert(ptr_IKF->get_belief_at_t(t_meas), t_meas);
     }
 
     if (perform_joint && idx > delay_joint)
@@ -187,39 +166,27 @@ public:
         else {
           res = ptr_IKF->process_measurement(m);
         }
-
-
-        // Apply correct beliefs from the past!
-        if (delay_joint) {
-          for (int i = delay_joint; i > 0; i--) {
-            size_t const idx_meas = idx - i;
-            ikf::Timestamp t_meas(traj.t_arr(idx_meas));
-            auto p_bel = ptr_IKF->get_belief_at_t(t_meas);
-            Eigen::VectorXd mean_apos = p_bel->mean();
-            traj_est.p_arr(idx_meas) = mean_apos(0);
-            traj_est.v_arr(idx_meas) = mean_apos(1);
-          }
-        }
-
-        if (print_belief) {
-          auto p_bel = ptr_IKF->get_belief_at_t(t_meas);
-          std::cout << "* Update Rel [" << ID << "," << ID_J << "]:t=" << t_meas << ", mean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
-        }
-        HistBelief.insert(ptr_IKF->get_belief_at_t(t_meas), t_meas);
       }
 
     }
-
-    auto p_bel = ptr_IKF->current_belief();
-    Eigen::VectorXd mean_apos = p_bel->mean();
-    traj_est.p_arr(idx) = mean_apos(0);
-    traj_est.v_arr(idx) = mean_apos(1);
-    traj_est.a_arr(idx) = a_noisy_arr(idx);
-    traj_est.t_arr(idx) = traj.t_arr(idx);
-
     return true;
   }
+  void calc_est_traj() {
+    HistBelief.clear();
+    for(size_t idx = 0; idx < traj.size(); idx++) {
+      ikf::Timestamp t_curr(traj.t_arr(idx));
+      auto p_bel = ptr_IKF->get_belief_at_t(t_curr);
+      if (p_bel) {
+        Eigen::VectorXd mean_apos = p_bel->mean();
+        traj_est.p_arr(idx) = mean_apos(0);
+        traj_est.v_arr(idx) = mean_apos(1);
+        traj_est.a_arr(idx) = a_noisy_arr(idx);
+        traj_est.t_arr(idx) = traj.t_arr(idx);
 
+        HistBelief.insert(p_bel, t_curr);
+      }
+    }
+  }
 
   void print_HistBelief(size_t max) {
     size_t cnt = 0;

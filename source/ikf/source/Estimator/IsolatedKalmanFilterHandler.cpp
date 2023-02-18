@@ -61,10 +61,17 @@ std::vector<size_t> IsolatedKalmanFilterHandler::get_instance_ids() {
 bool IsolatedKalmanFilterHandler::handle_delayed_meas() const { return m_handle_delayed_meas; }
 
 ProcessMeasResult_t IsolatedKalmanFilterHandler::process_measurement(const MeasData &m) {
+
   ProcessMeasResult_t res = reprocess_measurement(m);
-  if (m_handle_delayed_meas) {
+  bool order_violated = is_order_violated(m);
+  if (order_violated) {
+    HistMeas.insert(m, m.t_m);
+    sort_measurements_from_t(m.t_m);
+    redo_updates_from_t(m.t_m);
+  }
+  else if (m_handle_delayed_meas) {
     if (!res.rejected && HistMeas.exist_after_t(m.t_m)) {
-      redo_updates_after_t(m.t_m);
+        redo_updates_after_t(m.t_m);
     }
     HistMeas.insert(m, m.t_m);
   }
@@ -121,14 +128,33 @@ ProcessMeasResult_t IsolatedKalmanFilterHandler::reprocess_measurement(const Mea
   return res;
 }
 
+bool IsolatedKalmanFilterHandler::redo_updates_from_t(const Timestamp &t) {
+  remove_beliefs_from_t(t);
+  Timestamp t_last;
+  if (HistMeas.get_latest_t(t_last)) {
+    if (t == t_last) {
+      auto vec = HistMeas.get_all_at_t(t);
+      for (MeasData &m : vec) {
+        this->reprocess_measurement(m);
+      }
+    }
+    else {
+      HistMeas.foreach_between_t1_t2(t, t_last, [this](MeasData const&m){ this->reprocess_measurement(m); });
+    }
+    return true;
+  }
+  return false;
+}
+
 bool IsolatedKalmanFilterHandler::redo_updates_after_t(const Timestamp &t) {
   remove_beliefs_after_t(t);
   Timestamp t_after, t_last;
   if (HistMeas.get_after_t(t, t_after) &&  HistMeas.get_latest_t(t_last)) {
     if (t_after == t_last) {
-      MeasData m;
-      HistMeas.get_at_t(t_after, m);
-      this->reprocess_measurement(m);
+      auto vec = HistMeas.get_all_at_t(t_after);
+      for (MeasData &m : vec) {
+        this->reprocess_measurement(m);
+      }
     }
     else {
       HistMeas.foreach_between_t1_t2(t_after, t_last, [this](MeasData const&m){ this->reprocess_measurement(m); });
@@ -141,6 +167,12 @@ bool IsolatedKalmanFilterHandler::redo_updates_after_t(const Timestamp &t) {
 void IsolatedKalmanFilterHandler::remove_beliefs_after_t(const Timestamp &t) {
   for (auto& elem : id_dict) {
     elem.second->remove_after_t(t);
+  }
+}
+
+void IsolatedKalmanFilterHandler::remove_beliefs_from_t(const Timestamp &t) {
+  for (auto& elem : id_dict) {
+    elem.second->remove_from_t(t);
   }
 }
 
@@ -157,6 +189,29 @@ void IsolatedKalmanFilterHandler::reset() {
   for (auto& elem : id_dict) {
     elem.second->reset();
   }
+}
+
+bool IsolatedKalmanFilterHandler::is_order_violated(const MeasData &m) {
+  bool order_violated = false;
+  auto meas_arr = HistMeas.get_all_at_t(m.t_m);
+
+  if (m.obs_type == eObservationType::PROPAGATION) {
+    auto meas_arr = HistMeas.get_all_at_t(m.t_m);
+    for (MeasData & m_ : meas_arr) {
+      if (m_.obs_type == eObservationType::PRIVATE_OBSERVATION ||
+          m_.obs_type == eObservationType::JOINT_OBSERVATION ){
+        order_violated = true;
+      }
+    }
+  } else if  (m.obs_type == eObservationType::PRIVATE_OBSERVATION) {
+    auto meas_arr = HistMeas.get_all_at_t(m.t_m);
+    for (MeasData & m_ : meas_arr) {
+      if (m_.obs_type == eObservationType::JOINT_OBSERVATION) {
+        order_violated = true;
+      }
+    }
+  }
+  return order_violated;
 }
 
 

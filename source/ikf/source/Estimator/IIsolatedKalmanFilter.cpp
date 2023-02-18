@@ -134,6 +134,15 @@ void IIsolatedKalmanFilter::remove_after_t(const Timestamp &t) {
   }
 }
 
+void IIsolatedKalmanFilter::remove_from_t(const Timestamp &t) {
+  HistBelief.remove_after_t(t);
+  HistBelief.remove_at_t(t);
+  for (auto& elem : HistCrossCovFactors){
+    elem.second.remove_after_t(t);
+    elem.second.remove_at_t(t);
+  }
+}
+
 void IIsolatedKalmanFilter::set_horizon(const double t_hor) {
   IKalmanFilter::set_horizon(t_hor*2);
   // measurement horizon can be max half the horizon of beliefs!

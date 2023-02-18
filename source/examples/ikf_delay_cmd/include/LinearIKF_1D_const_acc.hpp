@@ -23,9 +23,9 @@
 #include <iostream>
 
 
-class LinearIKF_1D_const_acc: public ikf::IIsolatedKalmanFilterCorr {
+class LinearIKF_1D_const_acc: public ikf::IIsolatedKalmanFilter {
 public:
-  LinearIKF_1D_const_acc(std::shared_ptr<ikf::IsolatedKalmanFilterHandler> pHandler, size_t const ID) : ikf::IIsolatedKalmanFilterCorr(pHandler, ID) {
+  LinearIKF_1D_const_acc(std::shared_ptr<ikf::IsolatedKalmanFilterHandler> pHandler, size_t const ID) : ikf::IIsolatedKalmanFilter(pHandler, ID) {
     std::cout << "LinearIKF_1D_const_acc: 1D constant acceleration moving body (harmonic motion) ID=" << ID << std::endl;
   }
   virtual ~LinearIKF_1D_const_acc() {}
@@ -77,7 +77,6 @@ public:
     int dim_x = 2; // Number of states
     Eigen::MatrixXd H_private(dim_z, dim_x); // Output matrix
     H_private << 1, 0;
-
 
     ikf::ptr_belief bel;
     ikf::Timestamp t = m.t_m;

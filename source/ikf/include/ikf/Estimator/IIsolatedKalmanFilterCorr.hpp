@@ -37,6 +37,7 @@ public:
   Eigen::MatrixXd get_CrossCovFact_at_t(const Timestamp &t, size_t ID_J) override;
 
   virtual void remove_after_t(const Timestamp &t) override;
+  virtual void remove_from_t(const Timestamp &t) override;
 
   virtual void set_horizon(const double t_hor) override;
 

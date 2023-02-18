@@ -152,6 +152,11 @@ int main(int argc, char** argv)
     }
   }
 
+  // we need to compute the estimated trajectory based on the final HistBelief!
+  for(int i=0; i < num_instances; i++) {
+    dict_instance[i]->calc_est_traj();
+  }
+
   if(list_beliefs) {
     for(int i=0; i < num_instances; i++) {
       std::cout << "MeasData of filter instance ID=" << dict_instance[i]->ptr_IKF->ID() << std::endl;

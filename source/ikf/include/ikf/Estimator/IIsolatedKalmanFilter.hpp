@@ -76,7 +76,7 @@ public:
   virtual bool apply_correction_at_t(Timestamp const&t, Eigen::MatrixXd const& Sigma_apri, Eigen::MatrixXd const Sigma_apos);
   ///////////////////////////////////////////////////////////////////////////////////
   virtual void remove_after_t(Timestamp const& t);
-
+  virtual void remove_from_t(Timestamp const& t);
 
 protected:
   virtual bool redo_updates_after_t(Timestamp const& t) override;

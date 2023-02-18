@@ -69,6 +69,12 @@ void IIsolatedKalmanFilterCorr::remove_after_t(const Timestamp &t) {
   HistCorr.remove_after_t(t);
 }
 
+void IIsolatedKalmanFilterCorr::remove_from_t(const Timestamp &t) {
+  IIsolatedKalmanFilter::remove_from_t(t);
+  HistCorr.remove_after_t(t);
+  HistCorr.remove_at_t(t);
+}
+
 void IIsolatedKalmanFilterCorr::set_horizon(const double t_hor) {
   IIsolatedKalmanFilter::set_horizon(t_hor);
   HistCorr.set_horizon(t_hor*2);
