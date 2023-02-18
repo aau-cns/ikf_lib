@@ -25,32 +25,52 @@ int main(int argc, char** argv)
   CLI::App app{app_name};
 
   bool handle_measurements_centralized = false;
-  app.add_option("--meas_centralized", handle_measurements_centralized, "specifies if measurements are maintained in handler or individual filter instances");
+  app.add_option("--meas_centralized", handle_measurements_centralized, "specifies if measurements are maintained in handler or individual filter instances", true);
 
   int N = 4; // number of filter instances
-  app.add_option("--num_instances", N, "number of filter instances");
+  app.add_option("--num_instances", N, "number of filter instances", true);
 
   int duration = 5; // number of filter instances
-  app.add_option("--duration", duration, "Duration of the trajectory [sec]");
+  app.add_option("--duration", duration, "Duration of the trajectory [sec]", true);
 
   bool first_private_only = true;
-  app.add_option("--first_private_only", first_private_only, "specifies if the first instance is obtaining private observations only");
+  app.add_option("--first_private_only", first_private_only, "specifies if the first instance is obtaining private observations only", true);
 
   bool joint_updates = true;
-  app.add_option("--joint_updates", joint_updates, "specifies if cyclic joint observations are performed (ID_J = (ID_I + 1) % num_instances)");
+  app.add_option("--joint_updates", joint_updates, "specifies if cyclic joint observations are performed (ID_J = (ID_I + 1) % num_instances)", true);
 
 
   int delay_private = 1;
-  app.add_option("--delay_private", delay_private, "number of steps private measurements are delayed ");
+  app.add_option("--delay_private", delay_private, "number of steps private measurements are delayed ", true);
 
   int delay_joint = 1;
-  app.add_option("--delay_joint", delay_joint, "number of steps joint measurements are delayed ");
+  app.add_option("--delay_joint", delay_joint, "number of steps joint measurements are delayed ", true);
 
   bool list_beliefs = false;
-  app.add_option("--list_beliefs", list_beliefs, "show a list of bliefs");
+  app.add_option("--list_beliefs", list_beliefs, "show a list of bliefs", true);
 
   bool show_plots = true; // number of filter instances
-  app.add_option("--show_plots", show_plots, "show plots of the estimated trajectories");
+  app.add_option("--show_plots", show_plots, "show plots of the estimated trajectories", true);
+
+  int seed = 123123;
+  app.add_option("--seed", seed, "seed of random number generator", true);
+
+  int freq = 100;
+  app.add_option("--frequency", freq, "frequency of propagations", true);
+
+  double omega = M_PI/2;
+  app.add_option("--omega", omega, "omega, angular frequency of harominc", true);
+
+  double std_dev_p = 0.05;
+  app.add_option("--std_dev_p", std_dev_p, "position measurement noise", true);
+
+  double std_dev_a = 0.05;
+  app.add_option("--std_dev_a", std_dev_a, "acceleration input noise", true);
+
+  double std_dev_p_rel = 0.05;
+  app.add_option("--std_dev_p_rel", std_dev_p_rel, "relative position measurement noise", true);
+
+
   CLI11_PARSE(app, argc, argv);
 
   int const num_instances = std::max(N, 1); // at least 1 is needed!
@@ -82,25 +102,22 @@ int main(int argc, char** argv)
 
 
   ikf::GaussianNoiseGen& gen = ikf::GaussianNoiseGen::instance();
-  gen.seed(123123);
+  gen.seed(seed);
 
   std::shared_ptr<ikf::IsolatedKalmanFilterHandler> ptr_Handler(new ikf::IsolatedKalmanFilterHandler(handle_measurements_centralized));
 
 
-  double const dt = 1.0/100; // Time step
+  double const dt = 1.0/std::max(1, freq); // Time step
   double const D = duration*1.0;
-  double const omega = M_PI/2;
-  double const std_dev_p = 0.05;
-  double const std_dev_a = 0.05;
-  double const std_dev_p_rel = 0.05;
 
 
-  std::cout << "Duration D: " << D << std::endl;
-  std::cout << "dt: " << dt << std::endl;
-  std::cout << "std_dev_p: " << std_dev_p << std::endl;
-  std::cout << "std_dev_a: " << std_dev_a << std::endl;
-  std::cout << "std_dev_p_rel: " << std_dev_a << std::endl;
-  std::cout << "omega: " << std_dev_a << std::endl;
+
+  std::cout << "* Duration D: " << D << std::endl;
+  std::cout << "* dt: " << dt << std::endl;
+  std::cout << "* std_dev_p: " << std_dev_p << std::endl;
+  std::cout << "* std_dev_a: " << std_dev_a << std::endl;
+  std::cout << "* std_dev_p_rel: " << std_dev_a << std::endl;
+  std::cout << "* omega: " << std_dev_a << std::endl;
 
 
   typedef std::shared_ptr<SimInstanceDelay> ptr_Instance;

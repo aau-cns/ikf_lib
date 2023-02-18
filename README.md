@@ -41,12 +41,19 @@ Usage: ./ikf_simple_cmdd [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit
-  --num_instances INT         number of filter instances
-  --first_private_only BOOLEAN
+  --num_instances INT=4       number of filter instances
+  --duration INT=5            Duration of the trajectory [sec]
+  --first_private_only BOOLEAN=1
                               specifies if the first instance is obtaining private observations only
-  --joint_updates BOOLEAN     specifies if cyclic joint observations are performed (ID_J = (ID_I + 1) % num_instances)
-  --list_beliefs BOOLEAN      show a list of bliefs
-  --show_plots BOOLEAN        show plots of the estimated trajectories
+  --joint_updates BOOLEAN=1   specifies if cyclic joint observations are performed (ID_J = (ID_I + 1) % num_instances)
+  --list_beliefs BOOLEAN=0    show a list of bliefs
+  --show_plots BOOLEAN=1      show plots of the estimated trajectories
+  --seed INT=123123           seed of random number generator
+  --frequency INT=100         frequency of propagations
+  --omega FLOAT=1.5708        omega, angular frequency of harominc
+  --std_dev_p FLOAT=0.05      position measurement noise
+  --std_dev_a FLOAT=0.05      acceleration input noise
+  --std_dev_p_rel FLOAT=0.05  relative position measurement noise
 ```
 
 ### ikf_delay_cmd
@@ -56,19 +63,27 @@ Implementation of the IKF supporting delayed measurements.
 ```
 build$ ./ikf_dealy_cmd -h
 ikf_delay_cmd
-Usage: ./ikf_delay_cmdd [OPTIONS]
+Usage: ./ikf_delay_cmd [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit
-  --meas_centralized BOOLEAN  specifies if measurements are maintained in handler or individual filter instances
-  --num_instances INT         number of filter instances
-  --first_private_only BOOLEAN
+  --meas_centralized BOOLEAN=0
+                              specifies if measurements are maintained in handler or individual filter instances
+  --num_instances INT=4       number of filter instances
+  --duration INT=5            Duration of the trajectory [sec]
+  --first_private_only BOOLEAN=1
                               specifies if the first instance is obtaining private observations only
-  --joint_updates BOOLEAN     specifies if cyclic joint observations are performed (ID_J = (ID_I + 1) % num_instances)
-  --delay_private INT         number of steps private measurements are delayed 
-  --delay_joint INT           number of steps joint measurements are delayed 
-  --list_beliefs BOOLEAN      show a list of bliefs
-  --show_plots BOOLEAN        show plots of the estimated trajectories
+  --joint_updates BOOLEAN=1   specifies if cyclic joint observations are performed (ID_J = (ID_I + 1) % num_instances)
+  --delay_private INT=1       number of steps private measurements are delayed 
+  --delay_joint INT=1         number of steps joint measurements are delayed 
+  --list_beliefs BOOLEAN=0    show a list of bliefs
+  --show_plots BOOLEAN=1      show plots of the estimated trajectories
+  --seed INT=123123           seed of random number generator
+  --frequency INT=100         frequency of propagations
+  --omega FLOAT=1.5708        omega, angular frequency of harominc
+  --std_dev_p FLOAT=0.05      position measurement noise
+  --std_dev_a FLOAT=0.05      acceleration input noise
+  --std_dev_p_rel FLOAT=0.05  relative position measurement noise
 ```
 
 ## How to "use" the Isolated Kalman Filtering framework
