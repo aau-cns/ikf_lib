@@ -19,13 +19,13 @@
 #ifndef LINEARIKF_HPP
 #define LINEARIKF_HPP
 #include "ikf/Estimator/IIsolatedKalmanFilter.hpp"
-#include "ikf/Estimator/IIsolatedKalmanFilterSimple.hpp"
+#include "ikf/Estimator/IIsolatedKalmanFilterCorr.hpp"
 #include <iostream>
 
 
-class LinearIKF_1D_const_acc: public ikf::IIsolatedKalmanFilterSimple {
+class LinearIKF_1D_const_acc: public ikf::IIsolatedKalmanFilterCorr {
 public:
-  LinearIKF_1D_const_acc(std::shared_ptr<ikf::IsolatedKalmanFilterHandler> pHandler, size_t const ID) : ikf::IIsolatedKalmanFilterSimple(pHandler, ID) {
+  LinearIKF_1D_const_acc(std::shared_ptr<ikf::IsolatedKalmanFilterHandler> pHandler, size_t const ID) : ikf::IIsolatedKalmanFilterCorr(pHandler, ID) {
     std::cout << "LinearIKF_1D_const_acc: 1D constant acceleration moving body (harmonic motion) ID=" << ID << std::endl;
   }
   virtual ~LinearIKF_1D_const_acc() {}

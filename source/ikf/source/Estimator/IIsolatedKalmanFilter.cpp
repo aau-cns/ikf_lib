@@ -27,7 +27,7 @@
 
 namespace ikf {
 
-IIsolatedKalmanFilter::IIsolatedKalmanFilter(std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler, const size_t ID, const bool handle_delayed_meas, const double horizon_sec) : IKalmanFilter(horizon_sec, handle_delayed_meas), ptr_Handler(ptr_Handler), HistCorr(horizon_sec), m_ID(ID) {
+IIsolatedKalmanFilter::IIsolatedKalmanFilter(std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler, const size_t ID, const bool handle_delayed_meas, const double horizon_sec) : IKalmanFilter(horizon_sec, handle_delayed_meas), ptr_Handler(ptr_Handler), m_ID(ID) {
 
 }
 
@@ -36,7 +36,6 @@ size_t IIsolatedKalmanFilter::ID() const { return m_ID; }
 
 void IIsolatedKalmanFilter::reset() {
   IKalmanFilter::reset();
-  HistCorr.clear();
   HistCrossCovFactors.clear();
 }
 
@@ -91,31 +90,8 @@ Eigen::MatrixXd IIsolatedKalmanFilter::get_CrossCovFact_at_t(const Timestamp &t,
   Eigen::MatrixXd mat;
   auto iter = HistCrossCovFactors.find(ID_J);
   if (iter != HistCrossCovFactors.end()) {
-    bool res = iter->second.get_at_t(t, mat);
-    if (!res) {
-
-      // forward propagate FCC from previous to current timestamp and insert it in the buffer!
-      Timestamp t_prev;
-      res = iter->second.get_before_t(t, t_prev);
-      if (res) {
-        res = iter->second.get_at_t(t_prev, mat);
-        Eigen::MatrixXd M_a_b = compute_correction(t_prev, t);
-        if (res && M_a_b.size() > 0 ) {
-          mat = M_a_b * mat;
-          set_CrossCovFact_at_t(t, ID_J, mat);
-        }
-        else {
-          std::cout << "IMMSF.get_CrossCovFact_at_t(): could not compute correction between t_prev=" << t_prev << " and t_curr=" << t << std::endl;
-        }
-      }
-      else {
-        std::cout << "IMMSF.get_CrossCovFact_at_t(): could not find elem for id=" << ID_J << " at t=" << t << std::endl;
-        std::cout << "IMMSF.get_CrossCovFact_at_t(): could not find elem for id=" << ID_J << " at t_prev=" << t_prev << std::endl;
-      }
-    }
+    iter->second.get_at_t(t, mat);
   }
-
-
   return mat;
 }
 
@@ -154,7 +130,6 @@ void IIsolatedKalmanFilter::propagate_CrossCovFact(const Timestamp &t_a, const T
 
 void IIsolatedKalmanFilter::remove_after_t(const Timestamp &t) {
   IKalmanFilter::remove_beliefs_after_t(t);
-  HistCorr.remove_after_t(t);
   for (auto& elem : HistCrossCovFactors){
     elem.second.remove_after_t(t);
   }
@@ -162,8 +137,6 @@ void IIsolatedKalmanFilter::remove_after_t(const Timestamp &t) {
 
 void IIsolatedKalmanFilter::set_horizon(const double t_hor) {
   IKalmanFilter::set_horizon(t_hor*2);
-  HistCorr.set_horizon(t_hor*2);
-
   // measurement horizon can be max half the horizon of beliefs!
   HistMeas.set_horizon(t_hor);
   for (auto& elem : HistCrossCovFactors){
@@ -171,95 +144,29 @@ void IIsolatedKalmanFilter::set_horizon(const double t_hor) {
   }
 }
 
-// Algorithm 3 in [1]
-void IIsolatedKalmanFilter::check_correction_horizon() {
-  double cur_horizon = HistCorr.horizon();
-  double half_horizon = HistCorr.max_horizon()*0.5;
-  if  (cur_horizon > half_horizon) {
-    // if the latest element of FCCs is about to fall outside the correction buffer's horizon
-    // propagate it to the middle of the buffer.
-    Timestamp oldest_t;
-    HistCorr.get_oldest_t(oldest_t);
-
-    Timestamp middle_t;
-    HistCorr.get_before_t(Timestamp(oldest_t.to_sec() + half_horizon), middle_t);
-
-    for(auto & HistCCF : HistCrossCovFactors) {
-      Timestamp latest_ccf_t;
-      if(HistCCF.second.get_latest_t(latest_ccf_t)) {
-        if(latest_ccf_t <= middle_t) {
-          RTV_EXPECT_TRUE_THROW(HistCorr.exist_at_t(latest_ccf_t), "No correction term found at t=" + latest_ccf_t.str());
-          Eigen::MatrixXd M_latest_to_mid = compute_correction(latest_ccf_t, middle_t);
-          Eigen::MatrixXd CCF_latest;
-          HistCCF.second.get_latest(CCF_latest);
-          HistCCF.second.insert(M_latest_to_mid * CCF_latest, middle_t);
-        }
-      }
-    }
-  }
-}
-
 void IIsolatedKalmanFilter::check_horizon() {
   IKalmanFilter::check_horizon();
 
-  // IMPORTANT: before the horizon is about to be shrinked!
-  check_correction_horizon();
-
-  HistCorr.check_horizon();
   for (auto& elem : HistCrossCovFactors){
     elem.second.check_horizon();
   }
 }
 
-// Algorithm 1 in [1]
-Eigen::MatrixXd IIsolatedKalmanFilter::compute_correction(const Timestamp &t_a, const Timestamp &t_b) const {
-  TStampedData<Eigen::MatrixXd> data_after_ta, data_tb;
 
-  bool exist_after_ta = HistCorr.get_after_t(t_a, data_after_ta);
-  bool exist_at_tb = HistCorr.get_at_t(t_b, data_tb.data);
-
-  Timestamp t_after_a = data_after_ta.stamp;
-  Timestamp t_b_found = t_b;
-
-  if (!exist_at_tb) {
-    exist_at_tb= HistCorr.get_before_t(t_b, data_tb);
-    t_b_found = data_tb.stamp;
-  }
-
-  if (exist_after_ta && exist_at_tb) {
-    int max_dim = std::max(data_after_ta.data.cols(), data_after_ta.data.rows());
-    Eigen::MatrixXd I  = Eigen::MatrixXd::Identity(max_dim, max_dim);
-    Eigen::MatrixXd M_a_b = HistCorr.accumulate_between_t1_t2(t_after_a, t_b_found, I,
-                                                              [](Eigen::MatrixXd const&A, Eigen::MatrixXd const&B){
-                                                                //Eigen::MatrixXd C(A.rows(), A.cols());
-                                                                //C = B*A;
-                                                                return B*A;
-                                                              });
-    return M_a_b;
-  }
-  else {
-    std::cout << "IMMF::compute_correction(): no element found for timestamps:[" << t_a << "," << t_b_found << "]" << std::endl;
-  }
-  return Eigen::MatrixXd();
-}
-
-// Eq. 8 in [1]
 bool IIsolatedKalmanFilter::add_correction_at_t(const Timestamp &t_a, const Timestamp &t_b, const Eigen::MatrixXd &Phi_a_b) {
-  bool res = RTV_EXPECT_TRUE_MSG(!HistCorr.exist_at_t(t_b), "correction term already exists at t_b:" + t_b.str() + "! First propagate, then update!");
-  if (res){
-    HistCorr.insert(Phi_a_b, t_b);
+  // apply correction to exisit cross-covariance factors at t
+  for(auto & HistCCF : HistCrossCovFactors) {
+    if(HistCCF.second.exist_at_t(t_a))
+    {
+      Eigen::MatrixXd ccf_IJ_t;
+      HistCCF.second.get_at_t(t_a, ccf_IJ_t);
+      HistCCF.second.insert(Phi_a_b*ccf_IJ_t, t_b);
+    }
   }
-  else {
-    // print recent correction terms:
-    print_HistCorr(10, true);
-  }
-  return res;
+  return true;
 }
 
-// Eq. 15, 21 in [1]
 bool IIsolatedKalmanFilter::apply_correction_at_t(const Timestamp &t, const Eigen::MatrixXd &Factor){
-  RTV_EXPECT_TRUE_MSG(Factor.cols() == Factor.rows(), "Factor must be a square matrix!");
-
   // apply correction to exisit cross-covariance factors at t
   for(auto & HistCCF : HistCrossCovFactors) {
     Timestamp latest_ccf_t;
@@ -269,17 +176,7 @@ bool IIsolatedKalmanFilter::apply_correction_at_t(const Timestamp &t, const Eige
       HistCCF.second.insert(Factor*ccf_IJ_t, t);
     }
   }
-  Eigen::MatrixXd mat;
-  if (HistCorr.get_at_t(t, mat)) {
-    mat = Factor * mat;
-    HistCorr.insert(mat, t);
-    return true;
-  }
-  else {
-    HistCorr.insert(Factor, t);
-    std::cout << "IMMF::apply_correction_at_t(): no element found for timestamps:[" << t << "]" << std::endl;
-    return false;
-  }
+  return true;
 }
 
 // Eq. 20 in [1]
@@ -288,20 +185,6 @@ bool IIsolatedKalmanFilter::apply_correction_at_t(const Timestamp &t, const Eige
   return apply_correction_at_t(t, Lambda);
 }
 
-void IIsolatedKalmanFilter::print_HistCorr(size_t max, bool reverse) {
-  size_t cnt = 0;
-  auto lambda = [&cnt, max](Eigen::MatrixXd const& i){
-    if(cnt < max) {
-      std::cout << "* " << i << std::endl;
-    }
-    cnt++;
-  };
-  if (!reverse) {
-    HistCorr.foreach(lambda);
-  } else {
-    HistCorr.foreach_reverse(lambda);
-  }
-}
 
 // Algorithm 7 in [1]
 ProcessMeasResult_t IIsolatedKalmanFilter::reprocess_measurement(const MeasData &m) {

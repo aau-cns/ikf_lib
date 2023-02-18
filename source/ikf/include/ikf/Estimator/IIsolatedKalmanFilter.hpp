@@ -43,21 +43,20 @@ public:
   virtual ~IIsolatedKalmanFilter() {}
 
   virtual size_t ID() const;
-  void reset();
-  virtual void initialize(ptr_belief bel_init);
-  virtual void initialize(ptr_belief bel_init, Timestamp const& t);
-  virtual void set_horizon(double const t_hor);
-  void print_HistCorr(size_t max=100, bool reverse=false);
+  void reset() override;
+  virtual void initialize(ptr_belief bel_init) override;
+  virtual void initialize(ptr_belief bel_init, Timestamp const& t) override;
+  virtual void set_horizon(double const t_hor) override;
 
   ///////////////////////////////////////////////////////////////////////////////////
   /// Trigger the filter:
   // Algorithm 7 in [1]
-  virtual ProcessMeasResult_t process_measurement(MeasData const& m);
+  virtual ProcessMeasResult_t process_measurement(MeasData const& m) override;
   ///////////////////////////////////////////////////////////////////////////////////
 
   ///////////////////////////////////////////////////////////////////////////////////
   /// inter-filter interface:
-  virtual bool redo_updates_after_t(Timestamp const& t);
+  virtual bool redo_updates_after_t(Timestamp const& t) override;
   virtual Eigen::MatrixXd get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J);
   void set_CrossCovFact_at_t(Timestamp const& t, size_t const unique_ID, Eigen::MatrixXd const& ccf);
   // Eq. 20 in [1]
@@ -81,11 +80,8 @@ protected:
 
 
   // Algorithm 3 in [1]
-  virtual void check_correction_horizon();
   virtual void check_horizon();
 
-  // Algorithm 1 in [1]
-  Eigen::MatrixXd compute_correction(Timestamp const& t_a, Timestamp const& t_b) const;
   // Eq. 8 in [1]
   virtual bool add_correction_at_t(const Timestamp &t_a,Timestamp const& t_b, Eigen::MatrixXd const& Phi_a_b);
   // Eq. 15, 21 in [1]
@@ -102,7 +98,7 @@ protected:
                          const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
 
   // KF:  Algorithm 4 in [1]
-  bool apply_private_observation(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t);
+  bool apply_private_observation(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t) override;
   // EKF: Algorithm 4 in [1]
   bool apply_private_observation(ptr_belief& bel_II_apri,const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R,
                                  const Eigen::VectorXd &r, const Timestamp &t);
@@ -127,7 +123,6 @@ protected:
 
   std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler;
   std::unordered_map<size_t, TTimeHorizonBuffer<Eigen::MatrixXd>> HistCrossCovFactors;
-  TTimeHorizonBuffer<Eigen::MatrixXd> HistCorr; //  TimeHorizonBuffer<Corrections>; Corrections := {Phi, Lambda Epsilon}
   size_t m_ID;
 }; // class DCSE_DAH
 
