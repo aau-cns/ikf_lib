@@ -39,38 +39,36 @@ void IIsolatedKalmanFilter::reset() {
   HistCrossCovFactors.clear();
 }
 
-
-
 // Algorithm 7 in [1]
 ProcessMeasResult_t IIsolatedKalmanFilter::process_measurement(const MeasData &m) {
-  // propagation and private -> to filter instance
-  // joint -> use ptr_Handler and two filter instances: The CIH must provide others belief and ccf
-  ProcessMeasResult_t res = reprocess_measurement(m);
 
   bool order_violated = is_order_violated(m);
   if (order_violated) {
+    ProcessMeasResult_t res;
     HistMeas.insert(m, m.t_m);
     TMultiHistoryBuffer<MeasData> meas_data = ptr_Handler->get_measurements_from_t(m.t_m);
     this->ptr_Handler->remove_beliefs_from_t(m.t_m);
-    meas_data.foreach([this](MeasData const& m) {
-      this->ptr_Handler->reprocess_measurement(m);
+    meas_data.foreach([this, &res](MeasData const& m_) {
+      res = this->ptr_Handler->reprocess_measurement(m_);
     });
+    return res; // return the last result...
   }
-  else if (m_handle_delayed_meas) {
+  else {
+    ProcessMeasResult_t res = reprocess_measurement(m);
     if (!res.rejected) {
       TMultiHistoryBuffer<MeasData> meas_data = ptr_Handler->get_measurements_after_t(m.t_m);
       if(meas_data.exist_after_t(m.t_m)) {
         this->ptr_Handler->remove_beliefs_after_t(m.t_m);
-        meas_data.foreach([this](MeasData const& m) {
-          this->ptr_Handler->reprocess_measurement(m);
+        meas_data.foreach([this](MeasData const& m_) {
+          this->ptr_Handler->reprocess_measurement(m_);
         });
       }
+    } else {
+      std::cout << "measurement rejected:\n " << m << std::endl;
     }
     HistMeas.insert(m, m.t_m);
+    return res;
   }
-
-
-  return res;
 }
 
 TMultiHistoryBuffer<MeasData> IIsolatedKalmanFilter::get_measurements_after_t(const Timestamp &t) {
@@ -105,8 +103,6 @@ bool IIsolatedKalmanFilter::redo_updates_after_t(const Timestamp &t) {
   remove_after_t(t);
   return IKalmanFilter::redo_updates_after_t(t);
 }
-
-
 
 bool IIsolatedKalmanFilter::get_CrossCovFact_at_t(const Timestamp &t, size_t ID_J, Eigen::MatrixXd &FFC){
   FFC = get_CrossCovFact_at_t(t, ID_J);
@@ -172,8 +168,6 @@ void IIsolatedKalmanFilter::remove_from_t(const Timestamp &t) {
 }
 
 bool IIsolatedKalmanFilter::is_order_violated(const MeasData &m) {
-  bool order_violated = false;
-
   if (m.obs_type != eObservationType::JOINT_OBSERVATION) {
     std::vector<MeasData> meas_arr;
 
@@ -187,19 +181,18 @@ bool IIsolatedKalmanFilter::is_order_violated(const MeasData &m) {
       for (MeasData & m_ : meas_arr) {
         if (m_.obs_type == eObservationType::PRIVATE_OBSERVATION ||
             m_.obs_type == eObservationType::JOINT_OBSERVATION ){
-          order_violated = true;
+          return true;
         }
       }
     } else if  (m.obs_type == eObservationType::PRIVATE_OBSERVATION) {
       for (MeasData & m_ : meas_arr) {
         if (m_.obs_type == eObservationType::JOINT_OBSERVATION) {
-          order_violated = true;
+          return true;
         }
       }
     }
   }
-
-  return order_violated;
+  return false;
 }
 
 void IIsolatedKalmanFilter::set_horizon(const double t_hor) {

@@ -117,8 +117,8 @@ TMultiHistoryBuffer<MeasData> IsolatedKalmanFilterHandler::get_measurements_from
   // NOTE: in the concurrent case (simulatnous case) we can choose for a priorzation of types.
 
   // first insert all PROPAGATION sorted
-  for (auto& elem : id_dict) {
-    TMultiHistoryBuffer<MeasData> meas = elem.second->get_measurements_from_t(t);
+  for (auto& instance : id_dict) {
+    TMultiHistoryBuffer<MeasData> meas = instance.second->get_measurements_from_t(t);
     if (!meas.empty()) {
       meas.foreach([&hist_meas](MeasData const& elem) {
         if (elem.obs_type == eObservationType::PROPAGATION && elem.obs_type != eObservationType::UNKNOWN ) {
@@ -129,8 +129,8 @@ TMultiHistoryBuffer<MeasData> IsolatedKalmanFilterHandler::get_measurements_from
   }
 
   // second insert all PRIVATE sorted
-  for (auto& elem : id_dict) {
-    TMultiHistoryBuffer<MeasData> meas = elem.second->get_measurements_from_t(t);
+  for (auto& instance : id_dict) {
+    TMultiHistoryBuffer<MeasData> meas = instance.second->get_measurements_from_t(t);
     if (!meas.empty()) {
       meas.foreach([&hist_meas](MeasData const& elem) {
         if (elem.obs_type == eObservationType::PRIVATE_OBSERVATION && elem.obs_type != eObservationType::UNKNOWN ) {
@@ -141,8 +141,8 @@ TMultiHistoryBuffer<MeasData> IsolatedKalmanFilterHandler::get_measurements_from
   }
 
   // third insert all JOINT sorted
-  for (auto& elem : id_dict) {
-    TMultiHistoryBuffer<MeasData> meas = elem.second->get_measurements_from_t(t);
+  for (auto& instance : id_dict) {
+    TMultiHistoryBuffer<MeasData> meas = instance.second->get_measurements_from_t(t);
     if (!meas.empty()) {
       meas.foreach([&hist_meas](MeasData const& elem) {
         if (elem.obs_type == eObservationType::JOINT_OBSERVATION && elem.obs_type != eObservationType::UNKNOWN ) {
@@ -268,26 +268,27 @@ void IsolatedKalmanFilterHandler::reset() {
 }
 
 bool IsolatedKalmanFilterHandler::is_order_violated(const MeasData &m) {
-  bool order_violated = false;
-  auto meas_arr = HistMeas.get_all_at_t(m.t_m);
+  if (m.obs_type != eObservationType::JOINT_OBSERVATION) {
+    auto meas_arr = HistMeas.get_all_at_t(m.t_m);
 
-  if (m.obs_type == eObservationType::PROPAGATION) {
-    auto meas_arr = HistMeas.get_all_at_t(m.t_m);
-    for (MeasData & m_ : meas_arr) {
-      if (m_.obs_type == eObservationType::PRIVATE_OBSERVATION ||
-          m_.obs_type == eObservationType::JOINT_OBSERVATION ){
-        order_violated = true;
+    if (m.obs_type == eObservationType::PROPAGATION) {
+      auto meas_arr = HistMeas.get_all_at_t(m.t_m);
+      for (MeasData & m_ : meas_arr) {
+        if (m_.obs_type == eObservationType::PRIVATE_OBSERVATION ||
+            m_.obs_type == eObservationType::JOINT_OBSERVATION ){
+          return true;
+        }
       }
-    }
-  } else if  (m.obs_type == eObservationType::PRIVATE_OBSERVATION) {
-    auto meas_arr = HistMeas.get_all_at_t(m.t_m);
-    for (MeasData & m_ : meas_arr) {
-      if (m_.obs_type == eObservationType::JOINT_OBSERVATION) {
-        order_violated = true;
+    } else if  (m.obs_type == eObservationType::PRIVATE_OBSERVATION) {
+      auto meas_arr = HistMeas.get_all_at_t(m.t_m);
+      for (MeasData & m_ : meas_arr) {
+        if (m_.obs_type == eObservationType::JOINT_OBSERVATION) {
+          return true;
+        }
       }
     }
   }
-  return order_violated;
+  return false;
 }
 
 
