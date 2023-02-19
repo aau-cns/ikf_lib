@@ -1,6 +1,13 @@
 # ikf_lib (Isolated Kalman Filtering C++ library) 
 
-An **Isolated Kalman Filtering** framework. 
+An **Isolated Kalman Filtering** framework with support out-of-sequence measurements and prioritization of propagation over private over joint measurements, to achieve best performance, which is still suboptimal due to the approximations made.
+Harsh conditions are circular joint measurements and concurrent measurements, as the order of measurements measurements at a specific point in time matters -- in contrast to the Kalman filter, where updates at a specific time can be processed in either order, as all information is available. 
+
+Properties can be summarized as follows:
+1. Execution order of **isolated** updates due to concurrent measurements matters. Preferable: propagation > private > joint. Not only per instance, but globally/ among all instances. (To achieve that information exchange is needed to detect a violation and to correct violated prioritizations). Further, if multiple joint observations are performed at a single time instance, an optimal order can be found (e.g. priortize common roots).
+1. Out-of-sequence / delayed measurememts, need to consider (1) the priority at the current timestamp among all instances and (2) all measurements from all instances need to be processed chronologically sorted and priortized synchronously, e.g., triggered from a interim master or central entity (instance handler).
+1. handling delayed measrements only accross participants is degrading the estimation performance and if a participant was participating in another joint obervation after the delayed one, this observation would be ignored (as the other interim master will not be triggered to redo updates)! Meaning this would only work if joint measurements would have a similar/equal delay and are not concurrent. 
+1. The isolated Kalman filter, in case of delayed measurements, is loosing it's attribute of beeing decoupled, as persistent all-to-all communication and a centralized fusion logic is needed!
 
 
 Find the lib impementation in `source/ikf` and the test directory in `source/tests/ikf-test`.
@@ -28,7 +35,7 @@ Change the option in [CompileOptions.cmake](./cmake/CompileOptions.cmake), if yo
 
 Example is based on constant accelation moving body model in 1D (see https://www.kalmanfilter.net/modeling.html). The body is moving in a harmonic way and the filter obtains as control input  noisy acceleration measurements for the state propagation. The filter is corrected via noisy position updates and relative position updates between bodies.   
 
-Please note that `ikf_simple_cmd` and `ikf_delay_cmd` should perform, up to the last measurement minus delay, equally (last delayed measurement are not processed in `ikf_delay_cmd`, thus depends on the set delay). See the provided Beliefs in the beginning in the terminal output.
+Please note that `ikf_simple_cmd` and `ikf_delay_cmd` should perform, up to the last measurement minus delay, equally (last delayed measurement are not processed in `ikf_delay_cmd`, thus depends on the set delay). See the provided Beliefs in the beginning in the terminal output (`--list_beliefs`).
 
 ### ikf_simple_cmd
 
@@ -59,6 +66,7 @@ Options:
 ### ikf_delay_cmd
 
 Implementation of the IKF supporting delayed measurements.
+Measurements can be maintained either in the IKF instances or in the IKF-Handler (`--meas_centralized`). Either should perform equal to the `ikf_delay_cmd`. 
 
 ```
 build$ ./ikf_dealy_cmd -h
