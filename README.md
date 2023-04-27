@@ -1,13 +1,14 @@
 # ikf_lib (Isolated Kalman Filtering C++ library) 
 
 An **Isolated Kalman Filtering** framework with support out-of-sequence measurements and prioritization of propagation over private over joint measurements, to achieve best performance, which is still suboptimal due to the approximations made.
-Harsh conditions are circular joint measurements and concurrent measurements, as the order of measurements measurements at a specific point in time matters -- in contrast to the Kalman filter, where updates at a specific time can be processed in either order, as all information is available. 
+Harsh conditions are circular joint measurements without private measurements, and concurrent measurements, as the order of measurements at a specific point in time matters -- in contrast to the Kalman filter, where updates at a specific time can be processed in either order, as all information is available.
 
 Properties can be summarized as follows:
-1. Execution order of **isolated** updates due to concurrent measurements matters. Preferable: propagation > private > joint. Not only per instance, but globally/ among all instances. (To achieve that information exchange is needed to detect a violation and to correct violated prioritizations). Further, if multiple joint observations are performed at a single time instance, an optimal order can be found (e.g. priortize common roots).
-1. Out-of-sequence / delayed measurememts, need to consider (1) the priority at the current timestamp among all instances and (2) all measurements from all instances need to be processed chronologically sorted and priortized synchronously, e.g., triggered from a interim master or central entity (instance handler).
-1. handling delayed measrements only accross participants is degrading the estimation performance and if a participant was participating in another joint obervation after the delayed one, this observation would be ignored (as the other interim master will not be triggered to redo updates)! Meaning this would only work if joint measurements would have a similar/equal delay and are not concurrent. 
-1. The isolated Kalman filter, in case of delayed measurements, is loosing it's attribute of beeing decoupled, as persistent all-to-all communication and a centralized fusion logic is needed!
+1. Execution order of **isolated** updates due to concurrent measurements matters. Preferable: propagation > private > joint. Not only per instance, but globally/ among all instances. (To achieve that, information exchange is needed to detect a violation and to correct violated priorities). Further, if multiple joint observations are performed at a single time instance, an optimal order can be found (e.g. prioritize common roots).
+1. Out-of-sequence / delayed measurememts, need to consider (1) the priority at the current timestamp among all instances and (2) all measurements from all instances need to be processed chronologically sorted and prioritized synchronously, e.g., triggered from a interim master or central entity (instance handler).
+1. handling delayed measurements only across participants is degrading the estimation performance and if a participant was participating in another joint observation after the delayed one, this observation would be ignored (as the other interim master will not be triggered to redo updates)! Meaning this would only work if joint measurements would have a similar/equal delay and are not concurrent. A naive solution is to redo all upates on all instances, or only among those who had joint updates (like an avalanche). 
+1. If cyclic joint measurements happen concurrently, e.g., H_{12}, H_{23}, H_{31} at t=1, then a tripple joint isolated observation is preferable over three isolated bi-joint observations, to reduce the effects of the approximations made in the individual joint observation.
+1. The isolated Kalman filter, in case of delayed measurements, is loosing it's attribute of being decoupled, as persistent all-to-all communication and a centralized fusion logic is needed! Therefore, we need to make **further approximations/assumptions**: Joint updates are more delayed than private updates. We ignore the concurrent order of private and joint updates and assume that updates reoccure frequently, such that the effect of priortizing concurrent measurements vanishes. We are not triggering redo updates synchronously and among all correlated instances. Starting from participants, we trigger all other later participants of joint updates (in the limit all instances). 
 
 
 Find the lib impementation in `source/ikf` and the test directory in `source/tests/ikf-test`.
@@ -35,7 +36,7 @@ Change the option in [CompileOptions.cmake](./cmake/CompileOptions.cmake), if yo
 
 Example is based on constant accelation moving body model in 1D (see https://www.kalmanfilter.net/modeling.html). The body is moving in a harmonic way and the filter obtains as control input  noisy acceleration measurements for the state propagation. The filter is corrected via noisy position updates and relative position updates between bodies.   
 
-Please note that `ikf_simple_cmd` and `ikf_delay_cmd` should perform, up to the last measurement minus delay, equally (last delayed measurement are not processed in `ikf_delay_cmd`, thus depends on the set delay). See the provided Beliefs in the beginning in the terminal output (`--list_beliefs`).
+Please note that `ikf_simple_cmd` and `ikf_delay_cmd` should perform, up to the last measurement minus delay, equally (last delayed measurement are not processed in `ikf_delay_cmd`, thus depends on the set delay). See the provided Beliefs in the beginning in the terminal output (`--list_beliefs`). In the simulation, each filter instance obtain measurements concurrently: ID0: propagation, private, and joint, the others: progation and joint observations. Globally seen, all propgations are provided first, then the updates. Meaning the simulation defines the order of updates, which in case of an Kalman filter would be irrelvant, while in the IKF, the order matters. 
 
 ### ikf_simple_cmd
 
@@ -106,6 +107,10 @@ If reprocessing would be triggered by an IKF instance,  that again sequentially 
 
 Due to isolated filtering, the estimation results depends on the order measurements are processed at a certain timestamp, e.g. at t=5 we have three concurrent measurements: propagation, private, and a joint measurement. If the private is performed after the joint measurement, the estimation result is worse as compared to centralized estimator, as the correction obtained by the private measurement is not influencing the other participating filter instance. Delayed measurement handling cannot compensate the compulsury prioritization, if private measurements are more delayed than joint observations, by just redoing measurements after that event. Therefore, all measurements including those from that event need to be reprocessed. 
 
+## TODO:
+
+* Support delayed updates between two prediction steps.
+* Redo-update avalanche after t0, by triggering all agents with interin joint measurements after t0 to redo their updates (currently all are redoing updates).
 
 ## Third party content:
 
