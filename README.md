@@ -1,6 +1,6 @@
 # ikf_lib (Isolated Kalman Filtering C++ library) 
 
-An **Isolated Kalman Filtering** framework with support out-of-sequence measurements and prioritization of propagation over private over joint measurements, to achieve best performance, which is still suboptimal due to the approximations made.
+An **Isolated Kalman Filtering** framework with support for out-of-sequence measurements and prioritization of propagation over private over joint measurements, to achieve best performance, which is still suboptimal due to the approximations made.
 Harsh conditions are circular joint measurements without private measurements, and concurrent measurements, as the order of measurements at a specific point in time matters -- in contrast to the Kalman filter, where updates at a specific time can be processed in either order, as all information is available.
 
 Properties can be summarized as follows:
@@ -12,7 +12,7 @@ Properties can be summarized as follows:
 
 
 Find the lib impementation in `source/ikf` and the test directory in `source/tests/ikf-test`.
-Find a commandline example tool in `source/examples/ikf_cmd`.
+Find a commandline example tool for non-delayed measurements in `source/examples/ikf_simple_cmd` and the same for delayed measurements in `source/examples/ikf_delay_cmd`.
 
 
 ## Build project
@@ -110,7 +110,7 @@ Due to isolated filtering, the estimation results depends on the order measureme
 ## TODO:
 
 * Support delayed updates between two prediction steps.
-* Redo-update avalanche after t0, by triggering all agents with interin joint measurements after t0 to redo their updates (currently all are redoing updates).
+* Redo-update avalanche for participants and post-correlated instances after t0, by triggering all agents with interin joint measurements after t0 to redo their updates (currently all are redoing updates).
 
 ## Third party content:
 
