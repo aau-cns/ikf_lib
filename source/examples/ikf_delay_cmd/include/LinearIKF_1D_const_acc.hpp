@@ -19,7 +19,6 @@
 #ifndef LINEARIKF_HPP
 #define LINEARIKF_HPP
 #include "ikf/Estimator/IIsolatedKalmanFilter.hpp"
-#include "ikf/Estimator/IIsolatedKalmanFilterCorr.hpp"
 #include <iostream>
 
 

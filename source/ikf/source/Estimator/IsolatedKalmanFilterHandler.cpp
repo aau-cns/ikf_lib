@@ -114,7 +114,7 @@ ProcessMeasResult_t IsolatedKalmanFilterHandler::process_measurement(const MeasD
 
 TMultiHistoryBuffer<MeasData> IsolatedKalmanFilterHandler::get_measurements_from_t(const Timestamp &t) {
   TMultiHistoryBuffer<MeasData>  hist_meas;
-  // NOTE: in the concurrent case (simulatnous case) we can choose for a priorzation of types.
+  // NOTE: in the concurrent case (simulatnous case) we can choose for a priorization of types.
 
   // first insert all PROPAGATION sorted
   for (auto& instance : id_dict) {
@@ -156,7 +156,7 @@ TMultiHistoryBuffer<MeasData> IsolatedKalmanFilterHandler::get_measurements_from
 
 TMultiHistoryBuffer<MeasData> IsolatedKalmanFilterHandler::get_measurements_after_t(const Timestamp &t) {
   TMultiHistoryBuffer<MeasData>  hist_meas;
-  // NOTE: in the concurrent case (simulatnous case) we can choose for a priorzation of types.
+  // NOTE: in the concurrent case (simulatnous case) we can choose for a priorization of types.
 
   // first insert all PROPAGATION sorted
   for (auto& elem : id_dict) {

@@ -27,6 +27,12 @@
 
 namespace ikf {
 
+
+///
+/// \brief The IsolatedKalmanFilterCorr class: A flavor of the IKF maintaining a history of correction terms instead of
+/// applying corrections directly on factorized cross-covariances. Motivation of MMSF-DAH over MMSF-DACC is described
+/// in [1]. With delayed measurements, the benefit of a common correction buffer vanished.
+///
 class IKF_API IIsolatedKalmanFilterCorr: public IIsolatedKalmanFilter {
 public:
   IIsolatedKalmanFilterCorr(std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler, size_t const ID, bool const handle_delayed_meas=true , double const horizon_sec=1.0);
