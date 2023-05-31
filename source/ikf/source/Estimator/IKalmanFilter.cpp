@@ -299,13 +299,13 @@ bool IKalmanFilter::apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Ei
   return false;
 }
 
-bool IKalmanFilter::apply_propagation(ptr_belief &bel_II_apri, const Eigen::VectorXd &mean_II_b, const Eigen::MatrixXd &Phi_II_ab,
+bool IKalmanFilter::apply_propagation(ptr_belief &bel_II_a, const Eigen::VectorXd &mean_II_b, const Eigen::MatrixXd &Phi_II_ab,
                                       const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b) {
-  if (KalmanFilter::check_dim(bel_II_apri->Sigma(),  Phi_II_ab, Q_II_ab)) {
-    Eigen::MatrixXd Sigma_II_b = KalmanFilter::covariance_propagation(bel_II_apri->Sigma(),
+  if (KalmanFilter::check_dim(bel_II_a->Sigma(),  Phi_II_ab, Q_II_ab)) {
+    Eigen::MatrixXd Sigma_II_b = KalmanFilter::covariance_propagation(bel_II_a->Sigma(),
                                                                       Phi_II_ab, Q_II_ab);
     // This is where the magic happens!
-    ptr_belief bel_b = bel_II_apri->clone(); //clone the state definiton!
+    ptr_belief bel_b = bel_II_a->clone(); //clone the state definiton!
 
     if (KalmanFilter::check_dim(mean_II_b, Sigma_II_b) && bel_b->set(mean_II_b, Sigma_II_b)) {
       bel_b->set_timestamp(t_b);
@@ -317,8 +317,24 @@ bool IKalmanFilter::apply_propagation(ptr_belief &bel_II_apri, const Eigen::Vect
     std::cout << "Could not set the propagated belief from t_a=" << t_a << " to t_b=" << t_b << "! Maybe dimension missmatch?" << std::endl;
     std::cout << "Phi_II_ab=" << Phi_II_ab << "\n";
     std::cout << "Q_II_ab=" << Q_II_ab << "\n";
-    std::cout << "Sigma_II_a=" << bel_II_apri->Sigma() << "\n";
-    std::cout << "mean_II_a=" << bel_II_apri->mean() << std::endl;
+    std::cout << "Sigma_II_a=" << bel_II_a->Sigma() << "\n";
+    std::cout << "mean_II_a=" << bel_II_a->mean() << std::endl;
+  }
+  return false;
+}
+
+bool ikf::IKalmanFilter::apply_propagation(ikf::ptr_belief bel_II_b, const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b) {
+  if (KalmanFilter::check_dim(bel_II_b->Sigma(),  Phi_II_ab, Q_II_ab)) {
+    bel_II_b->set_timestamp(t_b);
+    set_belief_at_t(bel_II_b, t_b);
+    return true;
+  }
+  else {
+    std::cout << "Could not set the propagated belief from t_a=" << t_a << " to t_b=" << t_b << "! Maybe dimension missmatch?" << std::endl;
+    std::cout << "Phi_II_ab=" << Phi_II_ab << "\n";
+    std::cout << "Q_II_ab=" << Q_II_ab << "\n";
+    std::cout << "Sigma_II_b=" << bel_II_b->Sigma() << "\n";
+    std::cout << "mean_II_b=" << bel_II_b->mean() << std::endl;
   }
   return false;
 }

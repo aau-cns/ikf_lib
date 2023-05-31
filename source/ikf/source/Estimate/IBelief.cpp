@@ -23,19 +23,21 @@ namespace ikf {
 
 IBelief::IBelief() {}
 
+/*
 IBelief::IBelief(Eigen::VectorXd mean, Eigen::MatrixXd Sigma, Timestamp timestamp) :
     m_mean(mean), m_Sigma(Sigma), m_timestamp(timestamp) {
   m_ns_dim = m_mean.rows();
   m_es_dim = m_Sigma.rows();
 }
+*/
 
 IBelief::~IBelief() {}
 
-Eigen::VectorXd IBelief::mean() {
+const Eigen::VectorXd& IBelief::mean() const {
   return m_mean;
 }
 
-Eigen::MatrixXd IBelief::Sigma() {
+const Eigen::MatrixXd &IBelief::Sigma() const {
   return m_Sigma;
 }
 

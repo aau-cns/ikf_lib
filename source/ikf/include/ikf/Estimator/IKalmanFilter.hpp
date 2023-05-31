@@ -18,8 +18,9 @@
 ******************************************************************************/
 #ifndef I_KALMAN_FILTER_HPP
 #define I_KALMAN_FILTER_HPP
-#include "ikf/Container/TMultiHistoryBuffer.hpp"
 #include <ikf/ikf_api.h>
+#include "ikf/Container/TMultiHistoryBuffer.hpp"
+
 #include <ikf/Estimator/ProcessMeasResult_t.hpp>
 #include <ikf/Measurement/MeasData.hpp>
 #include <ikf/Estimate/IBelief.hpp>
@@ -79,7 +80,10 @@ protected:
   // KF:
   virtual  bool apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
   // EKF: if linearizing about bel_II_apri
-  virtual  bool apply_propagation(ptr_belief& bel_II_apri, const Eigen::VectorXd &mean_II_b, const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
+  virtual  bool apply_propagation(ptr_belief& bel_II_a, const Eigen::VectorXd &mean_II_b, const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
+
+  virtual  bool apply_propagation(ptr_belief bel_II_b, const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
+
 
   // KF:
   virtual bool apply_private_observation(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t);
@@ -92,6 +96,7 @@ protected:
   TTimeHorizonBuffer<MeasData> HistMeasPropagation;
   double max_time_horizon_sec;
   bool m_handle_delayed_meas = true;  // specifies, if the instance maintains a history of past measurements or not
+
 
 }; // class IKalmanFilter
 

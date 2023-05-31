@@ -71,7 +71,7 @@ KalmanFilter::CorrectionResult_t KalmanFilter::correction_step(const Eigen::Matr
 
 bool KalmanFilter::check_dim(const Eigen::VectorXd &mean, const Eigen::MatrixXd &Sigma) {
   if ( (mean.cols() != 1) || (mean.rows() != Sigma.rows()) || (Sigma.rows() != Sigma.cols()) ) {
-    std::cout << "IKalmanFilter::check_dim(): dimensionality miss match of mean and Sigma " << utils::get_shape(mean) << " and the Q" << utils::get_shape(Sigma) << std::endl;
+    std::cout << "KalmanFilter::check_dim(): dimensionality miss match of mean " << utils::get_shape(mean) << " and the Sigma" << utils::get_shape(Sigma) << std::endl;
     return false;
   }
   return true;
@@ -81,11 +81,11 @@ bool KalmanFilter::check_dim(const Eigen::MatrixXd &Sigma_apri, const Eigen::Mat
   bool good = true;
 
   if ((Sigma_apri.rows() != Q.rows()) || (Sigma_apri.rows() != Q.cols())) {
-    std::cout << "IKalmanFilter::check_dim(): dimensionality miss match of Sigma_apri " << utils::get_shape(Sigma_apri) << " and the Q" << utils::get_shape(Q) << std::endl;
+    std::cout << "KalmanFilter::check_dim(): dimensionality miss match of Sigma_apri " << utils::get_shape(Sigma_apri) << " and the Q" << utils::get_shape(Q) << std::endl;
     good = false;
   }
   if ((Sigma_apri.rows() != Phi.rows()) || (Sigma_apri.rows() != Phi.cols())) {
-    std::cout << "IKalmanFilter::check_dim(): dimensionality miss match of Sigma_apri " << utils::get_shape(Sigma_apri) << " and the Phi" << utils::get_shape(Phi) << std::endl;
+    std::cout << "KalmanFilter::check_dim(): dimensionality miss match of Sigma_apri " << utils::get_shape(Sigma_apri) << " and the Phi" << utils::get_shape(Phi) << std::endl;
     good = false;
   }
   return good;
@@ -94,19 +94,19 @@ bool KalmanFilter::check_dim(const Eigen::MatrixXd &Sigma_apri, const Eigen::Mat
 bool KalmanFilter::check_dim(const Eigen::MatrixXd &H, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Eigen::MatrixXd &Sigma) {
   bool good = true;
   if (H.cols() != Sigma.rows()) {
-    std::cout << "IKalmanFilter::check_dim(): dimensionality miss match of H"<< utils::get_shape(H) << "and the covaraince Sigma " << utils::get_shape(Sigma) << std::endl;
+    std::cout << "KalmanFilter::check_dim(): dimensionality miss match of H"<< utils::get_shape(H) << "and the covaraince Sigma " << utils::get_shape(Sigma) << std::endl;
     good = false;
   }
   if (H.rows() != r.rows()) {
-    std::cout << "IKalmanFilter::check_dim(): dimensionality miss match of H"<< utils::get_shape(H) << "and the residual/innovation r " << utils::get_shape(r) << std::endl;
+    std::cout << "KalmanFilter::check_dim(): dimensionality miss match of H"<< utils::get_shape(H) << "and the residual/innovation r " << utils::get_shape(r) << std::endl;
     good = false;
   }
   if ((r.cols() != 1) || (r.rows() != H.rows())) {
-    std::cout << "IKalmanFilter::check_dim(): residual must be a colum vector! r"<< utils::get_shape(r) << std::endl;
+    std::cout << "KalmanFilter::check_dim(): residual must be a colum vector! r"<< utils::get_shape(r) << std::endl;
     good = false;
   }
   if ((H.rows() != R.rows()) || (H.rows() != R.cols())) {
-    std::cout << "IKalmanFilter::check_dim(): dimensionality miss match of H " << utils::get_shape(H) << " and the R" << utils::get_shape(R) << std::endl;
+    std::cout << "KalmanFilter::check_dim(): dimensionality miss match of H " << utils::get_shape(H) << " and the R" << utils::get_shape(R) << std::endl;
     good = false;
   }
   return good;

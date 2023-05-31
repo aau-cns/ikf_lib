@@ -27,7 +27,7 @@ class IKF_API LinearBelief: public IBelief {
   // IBelief interface
 public:
   LinearBelief();
-  LinearBelief(Eigen::VectorXd mean, Eigen::MatrixXd Sigma, Timestamp t);
+  //LinearBelief(Eigen::VectorXd mean, Eigen::MatrixXd Sigma, Timestamp t);
   ~LinearBelief();
 
   ////////////////////////////////////////////////////////////

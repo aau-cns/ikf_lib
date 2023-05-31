@@ -2,15 +2,15 @@
 include(ExternalProject)
 
 if(NOT Eigen_VERSION)
-  set( Eigen_VERSION "3.2" )
+  set( Eigen_VERSION "3.4" )
 endif()
 
 if (NOT TARGET Eigen)
   include(ExternalProject)
+
   externalproject_add(Eigen-ext
       PREFIX ${CMAKE_BINARY_DIR}/Eigen
-      GIT_REPOSITORY "https://gitlab.com/libeigen/eigen.git"
-      GIT_TAG "ed5cd0a4d16e12daa1bef608628c103e67969d63"
+      URL https://gitlab.com/libeigen/eigen/-/archive/${Eigen_VERSION}/eigen-${Eigen_VERSION}.tar
       CMAKE_ARGS
       ${CROSS_COMPILE}
       -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/Eigen

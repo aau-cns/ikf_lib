@@ -20,7 +20,7 @@
 #define KALMANFILTER_HPP
 #include <ikf/ikf_api.h>
 #include <iostream>
-#include <eigen3/Eigen/Eigen>
+#include <Eigen/Dense>
 
 
 namespace ikf {

@@ -16,12 +16,12 @@
 *
 * You can contact the author at <roland.jung@aau.at>
 ******************************************************************************/
-#ifndef MMSF_BELIEF_HPP
-#define MMSF_BELIEF_HPP
+#ifndef IKF_BELIEF_HPP
+#define IKF_BELIEF_HPP
 #include <ikf/ikf_api.h>
 #include <memory>
 #include <iomanip>      // std::setprecision
-#include <eigen3/Eigen/Eigen>
+#include <Eigen/Dense>
 #include <ikf/Container/Timestamp.hpp>
 
 namespace ikf {
@@ -41,10 +41,10 @@ enum class IKF_API  eInitStrategies {
 class IKF_API IBelief {
 public:
   IBelief();
-  IBelief(Eigen::VectorXd mean, Eigen::MatrixXd Sigma, Timestamp timestamp);
+  //IBelief(Eigen::VectorXd mean, Eigen::MatrixXd Sigma, Timestamp timestamp);
   virtual ~IBelief();
-  virtual Eigen::VectorXd mean();
-  virtual Eigen::MatrixXd Sigma();
+  virtual const Eigen::VectorXd& mean() const;
+  virtual const Eigen::MatrixXd& Sigma() const;
   virtual void mean(const Eigen::VectorXd &vec);
   virtual void Sigma(const Eigen::MatrixXd &Cov);
   virtual bool set(const Eigen::VectorXd &mean, const Eigen::MatrixXd &Sigma);
@@ -80,13 +80,17 @@ public:
   ////////////////////////////////////////////////////////
   ///
 
-  friend std::ostream& operator<< (std::ostream& out, const IBelief& obj) {
+  virtual void print(std::ostream& out) const {
     out << "* IBelief:";
     out << std::left;
-    out << " t=" << std::setw(16) << obj.m_timestamp.str();
-    out << ", mean=" << std::setprecision(4) <<  obj.m_mean.transpose();
-    out << ", diag(Sigma)=" << std::setprecision(4) << obj.m_Sigma.diagonal().transpose();
+    out << " t=" << std::setw(16) << m_timestamp.str();
+    out << ", mean=" << std::setprecision(4) <<  m_mean.transpose();
+    out << ", diag(Sigma)=" << std::setprecision(4) << m_Sigma.diagonal().transpose();
     out << std::internal;
+  }
+
+  friend std::ostream& operator<< (std::ostream& out, const IBelief& obj) {
+    obj.print(out);
     return out;
   }
 protected:
@@ -100,5 +104,5 @@ protected:
 
 typedef std::shared_ptr<IBelief> ptr_belief;
 
-}
-#endif // BELIEF_HPP
+} // ns ikf
+#endif // IKF_BELIEF_HPP

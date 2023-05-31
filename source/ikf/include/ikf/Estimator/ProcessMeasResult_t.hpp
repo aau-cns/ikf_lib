@@ -19,7 +19,7 @@
 #ifndef PROCESSMEASRESULT_T_HPP
 #define PROCESSMEASRESULT_T_HPP
 #include <string>
-#include <eigen3/Eigen/Eigen>
+#include <Eigen/Dense>
 
 
 namespace ikf {

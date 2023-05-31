@@ -19,10 +19,11 @@
 #ifndef NORMALIZEDINNOVATIONSQUARED_HPP
 #define NORMALIZEDINNOVATIONSQUARED_HPP
 #include <ikf/ikf_api.h>
-#include <eigen3/Eigen/Eigen>
+
 #include <map>
 #include <vector>
 //#include <boost/math/distributions/chi_squared.hpp>
+#include <Eigen/Dense>
 #include <ikf/utils/eigen_utils.hpp>
 
 #define SMALL_NIS_LOOKUP_TABLE 1

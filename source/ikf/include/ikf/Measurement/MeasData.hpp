@@ -18,12 +18,12 @@
 ******************************************************************************/
 #ifndef MEASDATA_HPP
 #define MEASDATA_HPP
-#include <eigen3/Eigen/Eigen>
+#include <unordered_map>
 #include <memory>
 #include <iomanip>      // std::setprecision
 #include <ikf/Container/TTimeHorizonBuffer.hpp>
 #include <ikf/utils/RTVerification.hpp>
-#include <unordered_map>
+#include <Eigen/Dense>
 
 namespace ikf
 {
@@ -44,6 +44,9 @@ namespace ikf
     Eigen::VectorXd z; // measurement at t_m
     Eigen::MatrixXd R; // measurement covariance at t_m
 
+    bool has_meas_noise() {
+      return R.size();
+    }
     friend std::ostream& operator<< (std::ostream& out, const MeasData& obj)
     {
       out << "MeasData:";
@@ -54,7 +57,7 @@ namespace ikf
       out << ", meas_type=" << std::left << std::setw(20) << obj.meas_type;
       out << ", meta info="<< std::left << std::setw(12) << obj.meta_info;
       out << ", obs. type=" << std::left  << std::setw(2) << (int)obj.obs_type;
-      out << ", z=" << std::setprecision(4) <<  obj.z;
+      out << ", z=" << std::setprecision(4) <<  obj.z.transpose();
       out << ", R=" << std::setprecision(4) << obj.R.diagonal().transpose();
       out << std::internal;
       return out;

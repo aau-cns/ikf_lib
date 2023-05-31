@@ -19,7 +19,7 @@
 #ifndef EIGEN_UTILS_HPP
 #define EIGEN_UTILS_HPP
 #include <ikf/ikf_api.h>
-#include <eigen3/Eigen/Eigen>
+#include <Eigen/Dense>
 
 namespace ikf{
 namespace utils {
@@ -71,6 +71,22 @@ static std::string get_shape(const Eigen::EigenBase<Derived>& x)
   std::ostringstream oss;
   oss  << "[" << x.rows() << "x" << x.cols() << "]";
   return oss.str();
+}
+
+template <typename Derived=double>
+static inline std::string print(Eigen::Quaternion<Derived> const& q)
+{
+  std::stringstream str;
+  str << " (w,x,y,z) " << q.w() << " " << q.x() << " " << q.y() << " " << q.z();
+  return str.str();
+}
+
+template <typename Derived=double>
+static inline std::string print(Eigen::Matrix<Derived, 3, 1> const& p)
+{
+  std::stringstream str;
+  str << " (x,y,z) " << p.x() << " " << p.y() << " " << p.z();
+  return str.str();
 }
 
 } // namespace utils
