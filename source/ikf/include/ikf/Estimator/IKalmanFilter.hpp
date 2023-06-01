@@ -56,6 +56,7 @@ public:
   virtual void initialize(ptr_belief bel_init, Timestamp const& t);
   virtual void set_horizon(double const t_hor);
   virtual void reset();
+  virtual bool insert_measurement(MeasData const& m, Timestamp const& t);
 
   virtual bool redo_updates_after_t(Timestamp const& t);
   Timestamp current_t() const;

@@ -49,6 +49,8 @@ public:
   virtual void initialize(ptr_belief bel_init, Timestamp const& t) override;
   virtual void set_horizon(double const t_hor) override;
 
+  virtual bool insert_measurement(MeasData const& m, Timestamp const& t) override;
+
   ///////////////////////////////////////////////////////////////////////////////////
   /// Trigger the filter:
   // Algorithm 7 in [1]

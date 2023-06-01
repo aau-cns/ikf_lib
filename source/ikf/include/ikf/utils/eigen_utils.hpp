@@ -54,6 +54,9 @@ Eigen::MatrixXd IKF_API horcat(const Eigen::MatrixXd &H_II, const Eigen::MatrixX
 Eigen::MatrixXd IKF_API vertcat(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ);
 
 Eigen::VectorXd IKF_API vertcat_vec(const Eigen::VectorXd &v_II, const Eigen::VectorXd &v_JJ);
+
+Eigen::VectorXd IKF_API horcat_vec(const Eigen::VectorXd &v_II, const Eigen::VectorXd &v_JJ);
+
 ///
 /// \brief stabilize_covariance
 /// \param Sigma

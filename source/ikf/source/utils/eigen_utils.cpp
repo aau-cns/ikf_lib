@@ -41,7 +41,7 @@ bool utils::is_positive_semidefinite(const Eigen::MatrixXd &A) {
 Eigen::MatrixXd utils::horcat(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ) {
   RTV_EXPECT_TRUE_THROW(H_II.rows() == H_JJ.rows(), "dimension missmatch!");
 
-  Eigen::MatrixXd C(H_II.rows(), H_JJ.cols()+H_JJ.cols());
+  Eigen::MatrixXd C(H_II.rows(), H_II.cols()+H_JJ.cols());
   C.leftCols(H_II.cols()) = H_II;
   C.rightCols(H_JJ.cols()) = H_JJ;
   return C;
@@ -60,6 +60,15 @@ Eigen::VectorXd utils::vertcat_vec(const Eigen::VectorXd &v_II, const Eigen::Vec
   RTV_EXPECT_TRUE_THROW(v_II.cols() == v_JJ.cols(), "dimension missmatch!");
 
   Eigen::VectorXd C(v_II.rows()+v_JJ.rows(), v_JJ.cols());
+  C << v_II,
+      v_JJ;
+  return C;
+}
+
+Eigen::VectorXd utils::horcat_vec(const Eigen::VectorXd &v_II, const Eigen::VectorXd &v_JJ) {
+  RTV_EXPECT_TRUE_THROW(v_II.rows() == v_JJ.rows(), "dimension missmatch!");
+
+  Eigen::VectorXd C(v_II.rows(), v_II.cols()+v_JJ.cols());
   C << v_II,
       v_JJ;
   return C;

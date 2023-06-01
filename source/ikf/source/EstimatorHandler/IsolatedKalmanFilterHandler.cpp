@@ -60,6 +60,13 @@ std::vector<size_t> IsolatedKalmanFilterHandler::get_instance_ids() {
 
 bool IsolatedKalmanFilterHandler::handle_delayed_meas() const { return m_handle_delayed_meas; }
 
+bool ikf::IsolatedKalmanFilterHandler::insert_measurement(const MeasData &m, const Timestamp &t) {
+  if(m_handle_delayed_meas) {
+    HistMeas.insert(m, t);
+  }
+  return m_handle_delayed_meas;
+}
+
 void IsolatedKalmanFilterHandler::sort_measurements_from_t(const Timestamp &t) {
   Timestamp t_latest;
   if(HistMeas.get_latest_t(t_latest)) {
@@ -208,6 +215,8 @@ bool IsolatedKalmanFilterHandler::redo_updates_from_t(const Timestamp &t) {
   remove_beliefs_from_t(t);
   Timestamp t_last;
   if (HistMeas.get_latest_t(t_last)) {
+    std::cout << "IsolatedKalmanFilterHandler::redo_updates_from_t() t=" << t << ", t_last=" << t_last << std::endl;
+
     if (t == t_last) {
       auto vec = HistMeas.get_all_at_t(t);
       for (MeasData &m : vec) {
@@ -226,6 +235,7 @@ bool IsolatedKalmanFilterHandler::redo_updates_after_t(const Timestamp &t) {
   remove_beliefs_after_t(t);
   Timestamp t_after, t_last;
   if (HistMeas.get_after_t(t, t_after) &&  HistMeas.get_latest_t(t_last)) {
+    std::cout << "IsolatedKalmanFilterHandler::redo_updates_after_t() t_after=" << t_after << ", t_last=" << t_last << std::endl;
     if (t_after == t_last) {
       auto vec = HistMeas.get_all_at_t(t_after);
       for (MeasData &m : vec) {

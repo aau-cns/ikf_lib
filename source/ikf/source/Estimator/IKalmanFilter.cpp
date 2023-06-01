@@ -57,7 +57,7 @@ ProcessMeasResult_t IKalmanFilter::process_measurement(const MeasData &m) {
     if (!res.rejected && HistMeas.exist_after_t(m.t_m)) {
       redo_updates_after_t(m.t_m);
     }
-    HistMeas.insert(m, m.t_m);
+    insert_measurement(m, m.t_m);
   }
 
   // needed for inter-properation interpolation
@@ -72,6 +72,7 @@ bool IKalmanFilter::redo_updates_after_t(const Timestamp &t) {
   remove_beliefs_after_t(t);
   Timestamp t_after, t_last;
   if (HistMeas.get_after_t(t, t_after) &&  HistMeas.get_latest_t(t_last)) {
+    std::cout << "IKalmanFilter::redo_updates_after_t() t_after=" << t_after << ", t_last=" << t_last << std::endl;
     if (t_after == t_last) {
       MeasData m;
       HistMeas.get_at_t(t_after, m);
@@ -167,7 +168,8 @@ bool IKalmanFilter::get_belief_at_t(const Timestamp &t, ptr_belief &bel, const i
       case eGetBeliefStrategy::LINEAR_INTERPOL_BELIEF:
       {
         TStampedData<ptr_belief> stamped_bel_prev, stamped_bel_after;
-        if(HistBelief.get_before_t(t, stamped_bel_prev) && HistBelief.get_after_t(t, stamped_bel_after)) {
+        if(HistBelief.get_before_t(t, stamped_bel_prev) && HistBelief.get_after_t(t, stamped_bel_after))
+        {
 
           // bounded between two beliefs
           double const i = (t.to_sec() - stamped_bel_prev.stamp.to_sec())/(stamped_bel_after.stamp.to_sec() - stamped_bel_prev.stamp.to_sec());
@@ -196,6 +198,14 @@ bool IKalmanFilter::get_belief_at_t(const Timestamp &t, ptr_belief &bel, const i
 
             ikf::ProcessMeasResult_t res = progapation_measurement(pseudo_meas_b);
 
+            HistMeasPropagation.insert(pseudo_meas_b, t);
+
+            // HOOK for child classes (IsolatedKalmanFilter)
+            if(!RTV_EXPECT_TRUE_MSG(insert_measurement(pseudo_meas_b, t), "IKalmanFilter::get_belief_at_t(): Pseudo measurement cannot be added at t=" + t.str()))
+            {
+              return false;
+            }
+
             // if not rejected, it will insert a new element into HistBeliefs
             return !res.rejected && HistBelief.get_at_t(t, bel);
           }
@@ -208,6 +218,7 @@ bool IKalmanFilter::get_belief_at_t(const Timestamp &t, ptr_belief &bel, const i
           // no proprioceptive measurements available!
           return false;
         }
+        break;
       }
       case eGetBeliefStrategy::PREDICT_BELIEF:
       {
@@ -215,7 +226,12 @@ bool IKalmanFilter::get_belief_at_t(const Timestamp &t, ptr_belief &bel, const i
         bool res =  predict_to(t);
         return res && HistBelief.get_at_t(t, bel);
       }
+      default:
+      {
+        return false;
+      }
     }
+    return false;
   } else {
     // exact blief exists!s
     return HistBelief.get_at_t(t, bel);
@@ -257,6 +273,16 @@ Eigen::MatrixXd IKalmanFilter::get_Sigma_at_t(const Timestamp &t) const {
 
 void IKalmanFilter::reset() {
   HistBelief.clear();
+}
+
+bool IKalmanFilter::insert_measurement(const MeasData &m, const Timestamp &t) {
+  if(m_handle_delayed_meas) {
+    HistMeas.insert(m, t);
+//    if(m.obs_type == eObservationType::PROPAGATION) {
+//      HistMeasPropagation.insert(m,t);
+//    }
+  }
+  return m_handle_delayed_meas;
 }
 
 void IKalmanFilter::remove_beliefs_after_t(const Timestamp &t) {
@@ -414,6 +440,7 @@ bool IKalmanFilter::apply_private_observation(ptr_belief &bel_II_apri, const Eig
   }
   return !res.rejected;
 }
+
 
 
 

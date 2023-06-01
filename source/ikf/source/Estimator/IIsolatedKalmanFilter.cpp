@@ -204,6 +204,15 @@ void IIsolatedKalmanFilter::set_horizon(const double t_hor) {
   }
 }
 
+bool IIsolatedKalmanFilter::insert_measurement(const MeasData &m, const Timestamp &t) {
+  if(m_handle_delayed_meas) {
+    HistMeas.insert(m, t);
+    return true;
+  } else {
+    return ptr_Handler->insert_measurement(m, t);
+  }
+}
+
 void IIsolatedKalmanFilter::check_horizon() {
   IKalmanFilter::check_horizon();
 

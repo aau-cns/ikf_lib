@@ -39,6 +39,8 @@ public:
   std::vector<size_t> get_instance_ids();
   bool handle_delayed_meas() const;
 
+  virtual bool insert_measurement(MeasData const& m, Timestamp const& t);
+
   void sort_measurements_from_t(Timestamp const& t);
 
 
