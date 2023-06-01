@@ -17,11 +17,11 @@ namespace ikf{
 namespace utils {
 
   //template<typename Derived=double>
-  double rad2deg(double const rad) {
+  static inline double rad2deg(double const rad) {
     return rad * (180/M_PI);
   }
   //template<typename Derived=double>
-  double deg2rad(double const deg) {
+  static inline double deg2rad(double const deg) {
     return deg * (M_PI/180);
   }
 

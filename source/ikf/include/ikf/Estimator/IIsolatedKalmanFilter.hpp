@@ -26,6 +26,7 @@
 #include <ikf/ikf_api.h>
 #include <ikf/Container/Timestamp.hpp>
 #include <ikf/Container/TTimeHorizonBuffer.hpp>
+#include <ikf/Estimator/KalmanFilter.hpp>
 #include <ikf/Estimator/IKalmanFilter.hpp>
 
 namespace ikf {
@@ -110,19 +111,19 @@ protected:
   virtual  bool apply_propagation(ptr_belief bel_II_b, const Eigen::MatrixXd &Phi_II_ab, const Timestamp &t_a, const Timestamp &t_b);
 
   // KF:  Algorithm 4 in [1]
-  bool apply_private_observation(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t) override;
+  bool apply_private_observation(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) override;
   // EKF: Algorithm 4 in [1]
   bool apply_private_observation(ptr_belief& bel_II_apri,const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R,
-                                 const Eigen::VectorXd &r, const Timestamp &t);
+                                 const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg);
 
   // KF: Algorithm 6 in [1]
   bool apply_joint_observation(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ,
-                               const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t);
+                               const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t, const KalmanFilter::CorrectionCfg_t& cfg);
 
   // EKF: Algorithm 6 in [1]
   bool apply_joint_observation(ptr_belief& bel_I_apri, ptr_belief& bel_J_apri, const size_t ID_I, const size_t ID_J,
                                const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ, const Eigen::MatrixXd &R,
-                               const Eigen::VectorXd &r, const Timestamp &t);
+                               const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg);
 
 
   static Eigen::MatrixXd stack_Sigma(const Eigen::MatrixXd &Sigma_II, const Eigen::MatrixXd &Sigma_JJ, const Eigen::MatrixXd &Sigma_IJ);
@@ -138,8 +139,9 @@ protected:
   size_t m_ID;
 
 
-}; // class DCSE_DAH
+}; // class IIsolatedKalmanFilter
 
+typedef std::shared_ptr<IIsolatedKalmanFilter> ptr_IKF;
 
 }
 

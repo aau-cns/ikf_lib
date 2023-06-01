@@ -45,9 +45,10 @@ namespace ikf
     Eigen::VectorXd z; // measurement at t_m
     Eigen::MatrixXd R; // measurement covariance at t_m
 
-    bool has_meas_noise() {
+    bool has_meas_noise() const {
       return R.size();
     }
+
     friend std::ostream& operator<< (std::ostream& out, const MeasData& obj)
     {
       out << "MeasData:";

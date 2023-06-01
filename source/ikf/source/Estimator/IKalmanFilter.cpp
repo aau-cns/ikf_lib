@@ -395,17 +395,16 @@ bool ikf::IKalmanFilter::apply_propagation(ikf::ptr_belief bel_II_b, const Eigen
 //}
 
 bool IKalmanFilter::apply_private_observation(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R,
-                                                const Eigen::VectorXd &z, const Timestamp &t){
+                                                const Eigen::VectorXd &z, const Timestamp &t, const ikf::KalmanFilter::CorrectionCfg_t &cfg){
   ptr_belief bel_apri;
   if (get_belief_at_t(t, bel_apri)) {
     Eigen::VectorXd r = z - H_II * bel_apri->mean();
-    return apply_private_observation(bel_apri, H_II, R, r);
+    return apply_private_observation(bel_apri, H_II, R, r, cfg);
   }
   return false;
 }
 
-bool IKalmanFilter::apply_private_observation(ptr_belief &bel_II_apri, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &r) {
-  KalmanFilter::CorrectionCfg_t cfg;
+bool IKalmanFilter::apply_private_observation(ptr_belief &bel_II_apri, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const ikf::KalmanFilter::CorrectionCfg_t &cfg) {
   KalmanFilter::CorrectionResult_t res;
   res = KalmanFilter::correction_step(H_II, R, r, bel_II_apri->Sigma(), cfg);
 

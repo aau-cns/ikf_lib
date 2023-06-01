@@ -20,7 +20,7 @@
 #define I_KALMAN_FILTER_HPP
 #include <ikf/ikf_api.h>
 #include "ikf/Container/TMultiHistoryBuffer.hpp"
-
+#include <ikf/Estimator/KalmanFilter.hpp>
 #include <ikf/Estimator/ProcessMeasResult_t.hpp>
 #include <ikf/Measurement/MeasData.hpp>
 #include <ikf/Estimate/IBelief.hpp>
@@ -95,9 +95,9 @@ protected:
 
 
   // KF:
-  virtual bool apply_private_observation(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t);
+  virtual bool apply_private_observation(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg);
   // EKF: if linearizing about bel_II_apri
-  virtual bool apply_private_observation(ptr_belief& bel_II_apri, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &r);
+  virtual bool apply_private_observation(ptr_belief& bel_II_apri, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const KalmanFilter::CorrectionCfg_t &cfg);
 
 
   TTimeHorizonBuffer<ptr_belief> HistBelief;
@@ -105,6 +105,7 @@ protected:
   TTimeHorizonBuffer<MeasData> HistMeasPropagation;
   double max_time_horizon_sec;
   bool m_handle_delayed_meas = true;  // specifies, if the instance maintains a history of past measurements or not
+  KalmanFilter::CorrectionCfg_t m_CorrCfg; // specifies the default correction config.
 
 
 }; // class IKalmanFilter

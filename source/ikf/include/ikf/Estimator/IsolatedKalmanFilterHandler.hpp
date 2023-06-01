@@ -27,7 +27,7 @@ namespace ikf {
 
 class IKF_API IsolatedKalmanFilterHandler {
 
-  typedef std::shared_ptr<IIsolatedKalmanFilter> ptr_IKF;
+
 public:
   IsolatedKalmanFilterHandler(bool const handle_delayed=true, double const horizon_sec=1.0);
   ~IsolatedKalmanFilterHandler() = default;

@@ -39,6 +39,8 @@ set(headers
     include/ikf/EstimatorStd/KalmanFilterStd.hpp
     include/ikf/EstimatorStd/IsolatedKalmanFilterStd.hpp
     include/ikf/EstimatorStd/IKFHandlerStd.hpp
+
+    #include/ikf/Estimator/IDiCoFilter.hpp
     include/ikf/Estimator/IIsolatedKalmanFilter.hpp
     include/ikf/Estimator/IIsolatedKalmanFilterCorr.hpp
     include/ikf/Estimator/IsolatedKalmanFilterHandler.hpp
@@ -46,6 +48,7 @@ set(headers
     include/ikf/Container/TStampedData.hpp
     include/ikf/Container/THistoryBuffer.hpp
     include/ikf/utils/QuaternionUtils.hpp
+    include/ikf/utils/math.hpp
     ${include_local_path}/helper.hpp
     ${include_local_path}/utils.hpp
 )
@@ -59,12 +62,16 @@ set(sources
     source/Estimator/KalmanFilter.cpp
     source/Estimator/NormalizedInnovationSquared.cpp
     source/Estimator/IKalmanFilter.cpp
+    #source/Estimator/IDiCoFilter.cpp
     source/Estimator/IIsolatedKalmanFilter.cpp
     source/Estimator/IIsolatedKalmanFilterCorr.cpp
-    source/Estimator/IsolatedKalmanFilterHandler.cpp
+
     source/EstimatorStd/KalmanFilterStd.cpp
     source/EstimatorStd/IsolatedKalmanFilterStd.cpp
     source/EstimatorStd/IKFHandlerStd.cpp
+
+    #source/EstimatorHandler/IDiCoFilterHandler.cpp
+    source/EstimatorHandler/IsolatedKalmanFilterHandler.cpp
 )
 
 # Group source files
