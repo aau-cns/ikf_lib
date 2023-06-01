@@ -77,15 +77,22 @@ bool KalmanFilter::check_dim(const Eigen::VectorXd &mean, const Eigen::MatrixXd 
   return true;
 }
 
-bool KalmanFilter::check_dim(const Eigen::MatrixXd &Sigma_apri, const Eigen::MatrixXd &Phi, const Eigen::MatrixXd &Q) {
+bool ikf::KalmanFilter::check_dim(const Eigen::MatrixXd &Sigma_apri, const Eigen::MatrixXd &Phi) {
   bool good = true;
+  if ((Sigma_apri.rows() != Phi.rows()) || (Sigma_apri.rows() != Phi.cols())) {
+    std::cout << "KalmanFilter::check_dim(): dimensionality miss match of Sigma_apri " << utils::get_shape(Sigma_apri) << " and the Phi" << utils::get_shape(Phi) << std::endl;
+    good = false;
+  }
+
+
+  return good;
+}
+
+bool KalmanFilter::check_dim(const Eigen::MatrixXd &Sigma_apri, const Eigen::MatrixXd &Phi, const Eigen::MatrixXd &Q) {
+  bool good = check_dim(Sigma_apri, Phi);
 
   if ((Sigma_apri.rows() != Q.rows()) || (Sigma_apri.rows() != Q.cols())) {
     std::cout << "KalmanFilter::check_dim(): dimensionality miss match of Sigma_apri " << utils::get_shape(Sigma_apri) << " and the Q" << utils::get_shape(Q) << std::endl;
-    good = false;
-  }
-  if ((Sigma_apri.rows() != Phi.rows()) || (Sigma_apri.rows() != Phi.cols())) {
-    std::cout << "KalmanFilter::check_dim(): dimensionality miss match of Sigma_apri " << utils::get_shape(Sigma_apri) << " and the Phi" << utils::get_shape(Phi) << std::endl;
     good = false;
   }
   return good;

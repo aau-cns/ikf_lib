@@ -107,7 +107,7 @@ protected:
   bool apply_propagation(ptr_belief& bel_II_apri, const Eigen::VectorXd &mean_II_b, const Eigen::MatrixXd &Phi_II_ab,
                          const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
 
-  virtual  bool apply_propagation(ptr_belief bel_II_b, const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
+  virtual  bool apply_propagation(ptr_belief bel_II_b, const Eigen::MatrixXd &Phi_II_ab, const Timestamp &t_a, const Timestamp &t_b);
 
   // KF:  Algorithm 4 in [1]
   bool apply_private_observation(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t) override;

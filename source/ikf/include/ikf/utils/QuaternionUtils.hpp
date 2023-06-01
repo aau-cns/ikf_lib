@@ -28,6 +28,13 @@ namespace ikf
         }
       }
 
+      static Eigen::Quaterniond theta2quat(Eigen::Vector3d theta)  {
+        Eigen::Quaterniond q_theta(1.0, 0.5*theta(0), 0.5*theta(1), 0.5*theta(2));
+        q_theta.normalize();
+
+        return q_theta;
+      }
+
   };
 
 } //namespace ikf

@@ -35,6 +35,7 @@ namespace ikf
   };
 
   struct MeasData {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     Timestamp t_m; // true measurement timestamp
     Timestamp t_p; // actual processing timestamp
     size_t id_sensor = 0;
@@ -61,6 +62,22 @@ namespace ikf
       out << ", R=" << std::setprecision(4) << obj.R.diagonal().transpose();
       out << std::internal;
       return out;
+    }
+
+    static MeasData lin_interpolate(MeasData const& m_a, MeasData const& m_c, Timestamp const& t_b) {
+      RTV_EXPECT_TRUE_MSG((m_a.id_sensor == m_c.id_sensor), "wrong sensor IDs!");
+      RTV_EXPECT_TRUE_MSG((m_a.obs_type == m_c.obs_type), "wrong observation types!");
+
+      double const dt_ac = m_c.t_m.to_sec() - m_a.t_m.to_sec();
+      double const dt_ab = t_b.to_sec() - m_a.t_m.to_sec();
+      double const ratio = dt_ab /dt_ac;
+
+      MeasData m_b = m_a;
+      m_b.t_m = t_b;
+      m_b.t_p = t_b;
+      m_b.z = m_a.z + (m_c.z - m_a.z)*ratio;
+      m_b.R = m_a.R + (m_c.R - m_a.R)*ratio;
+      return m_b;
     }
 
   };

@@ -62,6 +62,7 @@ public:
 
 
   static bool check_dim(Eigen::VectorXd const& mean, Eigen::MatrixXd const& Sigma);
+  static bool check_dim(Eigen::MatrixXd const& Sigma_apri, Eigen::MatrixXd const& Phi);
   static bool check_dim(Eigen::MatrixXd const& Sigma_apri, Eigen::MatrixXd const& Phi, Eigen::MatrixXd const& Q);
   static bool check_dim(Eigen::MatrixXd const& H, Eigen::MatrixXd const& R, Eigen::VectorXd const& r,
                         Eigen::MatrixXd const& Sigma);

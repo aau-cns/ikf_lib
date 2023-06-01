@@ -28,6 +28,14 @@
 
 namespace ikf {
 
+enum class eGetBeliefStrategy {
+  EXACT = 0,   // a belief is expected at a given timestamp
+  CLOSEST = 1,  // if exist, return the closes belief in HistBelief (if any)
+  LINEAR_INTERPOL_BELIEF = 2, // if exist, interpolate between two beliefs and add them to the HistBelief, else PREDICT_BELIEF
+  LINEAR_INTERPOL_MEAS = 3, // if exist, interpolate between proprioceptive measurements linearly and perform a pseudo prediction step.
+  PREDICT_BELIEF = 4, // if KF has a prediction model, a belief is predicted
+};
+
 ///
 /// \brief The IKalmanFilter class
 /// Supporting delayed/ out-of-order/sequence measurements. In order to reprocess measurements, they need to be
@@ -53,8 +61,10 @@ public:
   Timestamp current_t() const;
   ptr_belief current_belief() const;
   bool exist_belief_at_t(Timestamp const& t) const;
+
   ptr_belief get_belief_at_t(Timestamp const& t) const;
-  bool get_belief_at_t(Timestamp const& t, ptr_belief& bel);
+  ptr_belief get_belief_at_t(Timestamp const& t, eGetBeliefStrategy const type);
+  bool get_belief_at_t(Timestamp const& t, ptr_belief& bel, eGetBeliefStrategy const type=eGetBeliefStrategy::EXACT);
   void set_belief_at_t(ptr_belief const& bel, Timestamp const&t);
   bool get_belief_before_t(Timestamp const&t, ptr_belief& bel, Timestamp &t_before);
   Eigen::VectorXd get_mean_at_t(Timestamp const &t) const;
@@ -65,6 +75,7 @@ public:
 protected:
   ///////////////////////////////////////////////////////////////////////////////////
   /// pure virtual method
+  virtual bool predict_to(const ikf::Timestamp &t_b) = 0; // predict from a previous belief to t_b using the stochastic system's model (in case there is one)
   virtual ProcessMeasResult_t progapation_measurement(MeasData const& m) = 0;
   virtual ProcessMeasResult_t local_private_measurement(MeasData const& m) = 0;
   /// pure virtual method
@@ -75,14 +86,12 @@ protected:
   virtual void check_horizon();
 
   virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
-  virtual bool propagate_from_to(const Timestamp &t_a, const Timestamp &t_b);
-
   // KF:
   virtual  bool apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
   // EKF: if linearizing about bel_II_apri
   virtual  bool apply_propagation(ptr_belief& bel_II_a, const Eigen::VectorXd &mean_II_b, const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
 
-  virtual  bool apply_propagation(ptr_belief bel_II_b, const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
+  virtual  bool apply_propagation(ptr_belief bel_II_b, const Eigen::MatrixXd &Phi_II_ab,  const Timestamp &t_a, const Timestamp &t_b);
 
 
   // KF:

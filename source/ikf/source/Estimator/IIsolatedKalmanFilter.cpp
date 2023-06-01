@@ -290,8 +290,8 @@ bool IIsolatedKalmanFilter::apply_propagation(ptr_belief &bel_II_apri, const Eig
   return false;
 }
 
-bool ikf::IIsolatedKalmanFilter::apply_propagation(ptr_belief bel_II_b, const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b) {
-  if (IKalmanFilter::apply_propagation(bel_II_b, Phi_II_ab, Q_II_ab, t_a, t_b)) {
+bool ikf::IIsolatedKalmanFilter::apply_propagation(ptr_belief bel_II_b, const Eigen::MatrixXd &Phi_II_ab, const Timestamp &t_a, const Timestamp &t_b) {
+  if (IKalmanFilter::apply_propagation(bel_II_b, Phi_II_ab, t_a, t_b)) {
     if (add_correction_at_t(t_a, t_b, Phi_II_ab)) {
       check_horizon();
       return true;

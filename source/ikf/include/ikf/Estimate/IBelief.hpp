@@ -18,10 +18,10 @@
 ******************************************************************************/
 #ifndef IKF_BELIEF_HPP
 #define IKF_BELIEF_HPP
-#include <ikf/ikf_api.h>
 #include <memory>
 #include <iomanip>      // std::setprecision
 #include <Eigen/Dense>
+#include <ikf/ikf_api.h>
 #include <ikf/Container/Timestamp.hpp>
 
 namespace ikf {
@@ -40,6 +40,7 @@ enum class IKF_API  eInitStrategies {
 
 class IKF_API IBelief {
 public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   IBelief();
   //IBelief(Eigen::VectorXd mean, Eigen::MatrixXd Sigma, Timestamp timestamp);
   virtual ~IBelief();
@@ -65,6 +66,8 @@ public:
   ////////////////////////////////////////////////////////////
   //// PURE VIRTUAL:
   virtual std::shared_ptr<IBelief> clone() = 0;
+
+
   virtual std::shared_ptr<IBelief> interpolate(std::shared_ptr<IBelief> obj_a,
                                                        std::shared_ptr<IBelief> obj_b,
                                                        double const i) = 0; //  returns a new object!
