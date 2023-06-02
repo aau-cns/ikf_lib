@@ -117,7 +117,7 @@ public:
 
   std::set<int64_t> get_timestamps_between_t1_t2(Timestamp const& t1, Timestamp const& t2) const {
     std::set<int64_t> stamps;
-    if (t1 < t2 && size() > 0) {
+    if (t1 <= t2 && size() > 0) {
       auto __first = lower_bound(t1);
       auto __last = upper_bound(t2);
       for(; __first != __last; ++__first) {
@@ -129,7 +129,7 @@ public:
 
   template<typename Operation>
   inline void foreach_between_t1_t2(Timestamp const& t1, Timestamp const& t2, Operation op ) {
-    if (t1 < t2 && size() > 0) {
+    if (t1 <= t2 && size() > 0) {
       std::set<int64_t> stamps = get_timestamps_between_t1_t2(t1, t2);
       for(auto iter = stamps.begin(); iter != stamps.end(); iter++) {
         //std::pair <typename std::multimap<int64_t,T>::iterator, typename std::multimap<int64_t,T>::iterator> ret;
