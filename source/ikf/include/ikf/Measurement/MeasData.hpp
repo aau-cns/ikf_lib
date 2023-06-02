@@ -34,6 +34,22 @@ namespace ikf
     JOINT_OBSERVATION = 3,
   };
 
+  static inline std::string to_string(eObservationType const ot) {
+    switch(ot) {
+      case eObservationType::UNKNOWN:
+        return "UNKNOWN";
+      case eObservationType::PROPAGATION:
+        return "PROP";
+      case eObservationType::PRIVATE_OBSERVATION:
+        return "PRIV";
+      case eObservationType::JOINT_OBSERVATION:
+        return "JOINT";
+      default:
+        break;
+
+    }
+    return "";
+  }
   struct MeasData {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     Timestamp t_m; // true measurement timestamp
