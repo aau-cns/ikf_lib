@@ -49,6 +49,9 @@ set(headers
     include/ikf/Container/THistoryBuffer.hpp
     include/ikf/utils/QuaternionUtils.hpp
     include/ikf/utils/math.hpp
+    include/ikf/utils/IO.hpp
+    include/ikf/utils/Rate.hpp
+    include/ikf/utils/CyclicThread.hpp
     ${include_local_path}/helper.hpp
     ${include_local_path}/utils.hpp
 )
@@ -56,6 +59,9 @@ set(headers
 set(sources
  source/utils/eigen_utils.cpp
  source/utils/RandValGenerator.cpp
+ source/utils/IO.cpp
+ source/utils/Rate.cpp
+ source/utils/CyclicThread.cpp
     source/Containers/Timestamp.cpp
     source/Estimate/IBelief.cpp
     source/Estimate/LinearBelief.cpp
