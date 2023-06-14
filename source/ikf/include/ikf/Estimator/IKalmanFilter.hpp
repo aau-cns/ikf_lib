@@ -73,6 +73,7 @@ public:
   void print_HistMeas(size_t max=100, bool reverse=false);
   void print_HistBelief(size_t max=100, bool reverse=false);
 
+  bool get_prop_meas_at_t(Timestamp const& t, MeasData &m);
 protected:
   ///////////////////////////////////////////////////////////////////////////////////
   /// pure virtual method

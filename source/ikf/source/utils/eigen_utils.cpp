@@ -65,12 +65,29 @@ Eigen::VectorXd utils::vertcat_vec(const Eigen::VectorXd &v_II, const Eigen::Vec
   return C;
 }
 
+Eigen::VectorXd utils::vertcat_vec(const Eigen::VectorXd &v_II, const Eigen::VectorXd &v_JJ, const Eigen::VectorXd &v_KK) {
+  RTV_EXPECT_TRUE_THROW(v_II.cols() == v_JJ.cols(), "dimension missmatch!");
+  RTV_EXPECT_TRUE_THROW(v_II.cols() == v_KK.cols(), "dimension missmatch!");
+  Eigen::VectorXd C(v_II.rows()+v_JJ.rows()+v_KK.rows(), v_JJ.cols());
+  C << v_II, v_JJ, v_KK;
+  return C;
+
+}
 Eigen::VectorXd utils::horcat_vec(const Eigen::VectorXd &v_II, const Eigen::VectorXd &v_JJ) {
   RTV_EXPECT_TRUE_THROW(v_II.rows() == v_JJ.rows(), "dimension missmatch!");
 
   Eigen::VectorXd C(v_II.rows(), v_II.cols()+v_JJ.cols());
   C << v_II,
       v_JJ;
+  return C;
+}
+
+Eigen::VectorXd utils::horcat_vec(const Eigen::VectorXd &v_II, const Eigen::VectorXd &v_JJ, const Eigen::VectorXd &v_KK) {
+  RTV_EXPECT_TRUE_THROW(v_II.rows() == v_JJ.rows(), "dimension missmatch!");
+  RTV_EXPECT_TRUE_THROW(v_II.rows() == v_KK.rows(), "dimension missmatch!");
+
+  Eigen::VectorXd C(v_II.rows(), v_II.cols()+v_JJ.cols()+v_KK.cols());
+  C << v_II, v_JJ, v_KK;
   return C;
 }
 
@@ -83,6 +100,10 @@ Eigen::MatrixXd utils::stabilize_covariance(const Eigen::MatrixXd &Sigma, const 
 Eigen::MatrixXd utils::symmetrize_covariance(const Eigen::MatrixXd &Sigma) {
   return 0.5*(Sigma + Sigma.transpose());
 }
+
+
+
+
 
 
 } // ns mmsf

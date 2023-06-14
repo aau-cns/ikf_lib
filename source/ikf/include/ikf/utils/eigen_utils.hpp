@@ -43,6 +43,8 @@ static std::vector<scalar> to_vector(Eigen::Array<scalar, 1, Eigen::Dynamic> con
 }
 
 
+
+
 bool IKF_API negative_diag(Eigen::MatrixXd const& A);
 
 bool IKF_API is_symmetric(Eigen::MatrixXd const& A);
@@ -54,9 +56,12 @@ Eigen::MatrixXd IKF_API horcat(const Eigen::MatrixXd &H_II, const Eigen::MatrixX
 Eigen::MatrixXd IKF_API vertcat(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ);
 
 Eigen::VectorXd IKF_API vertcat_vec(const Eigen::VectorXd &v_II, const Eigen::VectorXd &v_JJ);
+Eigen::VectorXd IKF_API vertcat_vec(const Eigen::VectorXd &v_II, const Eigen::VectorXd &v_JJ,
+                                    const Eigen::VectorXd &v_KK);
 
 Eigen::VectorXd IKF_API horcat_vec(const Eigen::VectorXd &v_II, const Eigen::VectorXd &v_JJ);
-
+Eigen::VectorXd IKF_API horcat_vec(const Eigen::VectorXd &v_II, const Eigen::VectorXd &v_JJ,
+                                   const Eigen::VectorXd &v_KK);
 ///
 /// \brief stabilize_covariance
 /// \param Sigma

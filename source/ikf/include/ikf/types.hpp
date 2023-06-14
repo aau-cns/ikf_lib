@@ -28,6 +28,8 @@ namespace ikf
   typedef Eigen::Matrix<Precision_t,3,1> Vector3_t;
   typedef Eigen::Matrix<Precision_t,3,3> Mat3_t;
   typedef Eigen::Matrix<Precision_t,4,4> Mat4_t;
+  typedef Eigen::Matrix<Precision_t,6,6> Mat6_t;
+  typedef Eigen::Matrix<Precision_t,9,9> Mat9_t;
 
 
   class IKF_API IFormatable

@@ -329,13 +329,21 @@ void IKalmanFilter::print_HistBelief(size_t max, bool reverse) {
   }
 }
 
+bool ikf::IKalmanFilter::get_prop_meas_at_t(const Timestamp &t, MeasData &m) {
+  if(HistMeasPropagation.exist_at_t(t)) {
+    HistMeasPropagation.get_at_t(t, m);
+    return true;
+  }
+  return false;
+}
+
 ProcessMeasResult_t IKalmanFilter::reprocess_measurement(const MeasData &m) {
   ProcessMeasResult_t res;
   res.rejected = true;
   switch(m.obs_type) {
     case eObservationType::PROPAGATION:
       {
-        res = progapation_measurement(m);
+      res = progapation_measurement(m);
 
         // needed for inter-properation interpolation (replace in case of re-do updates
         HistMeasPropagation.insert(m, m.t_m);

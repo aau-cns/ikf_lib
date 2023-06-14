@@ -50,6 +50,7 @@ namespace ikf
     }
     return "";
   }
+
   struct MeasData {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     Timestamp t_m; // true measurement timestamp
