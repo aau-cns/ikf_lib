@@ -26,6 +26,7 @@ namespace utils {
 
 template<typename scalar>
 static std::vector<scalar> to_vector(Eigen::Array<scalar, Eigen::Dynamic, 1> const & vec) {
+  // allocate and deep copy
   std::vector<scalar> v(vec.rows());
   for(size_t i = 0; i < static_cast<size_t>(vec.rows()); i++) {
     v.at(i) = vec(i);
@@ -35,6 +36,7 @@ static std::vector<scalar> to_vector(Eigen::Array<scalar, Eigen::Dynamic, 1> con
 
 template<typename scalar>
 static std::vector<scalar> to_vector(Eigen::Array<scalar, 1, Eigen::Dynamic> const & vec) {
+  // allocate and deep copy
   std::vector<scalar> v(vec.cols());
   for(size_t i = 0; i < static_cast<size_t>(vec.cols()); i++) {
     v.at(i) = vec(i);
@@ -42,7 +44,46 @@ static std::vector<scalar> to_vector(Eigen::Array<scalar, 1, Eigen::Dynamic> con
   return v;
 }
 
+template<typename scalar>
+Eigen::Array<scalar, Eigen::Dynamic, 1> from_vector(std::vector<scalar> const & vec)
+{
+  // allocate and deep copy
+  Eigen::VectorXd v(vec.size());
+  for(size_t i = 0; i < vec.size(); i++) {
+    v(i) = vec.at(i);
+  }
+  return v;
+}
 
+template<typename scalar>
+Eigen::Matrix<scalar, Eigen::Dynamic, Eigen::Dynamic> toEigenMatrix(std::vector<std::vector<scalar>> const & mat)
+{
+  // allocate and deep copy
+  size_t rows = mat.size();
+  size_t cols = 1;
+  if(rows) {
+    cols = mat[0].size();
+  }
+
+  Eigen::MatrixXd m(rows, cols);
+  for(size_t r = 0; r < rows;  r++) {
+    for(size_t c = 0; c < cols;  c++) {
+      m(r, c) = mat.at(r).at(c);
+    }
+  }
+  return m;
+}
+
+template<typename scalar>
+std::vector<std::vector<scalar>> fromEigenMatrix(Eigen::Matrix<scalar, Eigen::Dynamic, Eigen::Dynamic> const & M)
+{
+  std::vector<std::vector<scalar>> m;
+  m.resize(M.rows(), std::vector<scalar>(M.cols(), 0));
+  for(size_t i = 0; i < m.size(); i++)
+    for(size_t j = 0; j < m.front().size(); j++)
+      m[i][j] = M(i,j);
+  return m;
+}
 
 
 bool IKF_API negative_diag(Eigen::MatrixXd const& A);
