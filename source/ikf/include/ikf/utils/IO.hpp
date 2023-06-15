@@ -39,7 +39,7 @@ namespace utils
       os << " " << *ii;
     }
 
-    os << " ]";
+    os << "]";
     return os;
   }
 
@@ -70,7 +70,7 @@ namespace utils
       return out;
     }
 
-    static std::string getFirstTokenAndReset(std::ifstream& os, std::string const delim = " ");
+    static std::string getFirstTokenAndReset(std::ifstream& os, std::string const delim = ",");
 
     typedef std::vector<std::string> vTokens;
     static void getTokens(vTokens& tokens, std::string const& str, std::string const delim);

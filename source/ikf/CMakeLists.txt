@@ -33,27 +33,27 @@ set(include_local_path "${CMAKE_CURRENT_SOURCE_DIR}/include_local/${target}")
 set(source_path  "${CMAKE_CURRENT_SOURCE_DIR}/source")
 
 set(headers
-    include/ikf/types.hpp
-    include/ikf/Estimate/IBelief.hpp
-    include/ikf/Estimate/LinearBelief.hpp
-    include/ikf/EstimatorStd/KalmanFilterStd.hpp
-    include/ikf/EstimatorStd/IsolatedKalmanFilterStd.hpp
-    include/ikf/EstimatorStd/IKFHandlerStd.hpp
+ include/ikf/types.hpp
+ include/ikf/Estimate/IBelief.hpp
+ include/ikf/Estimate/LinearBelief.hpp
+ include/ikf/EstimatorStd/KalmanFilterStd.hpp
+ include/ikf/EstimatorStd/IsolatedKalmanFilterStd.hpp
+ include/ikf/EstimatorStd/IKFHandlerStd.hpp
 
-    #include/ikf/Estimator/IDiCoFilter.hpp
-    include/ikf/Estimator/IIsolatedKalmanFilter.hpp
-    include/ikf/Estimator/IIsolatedKalmanFilterCorr.hpp
-    include/ikf/Estimator/IsolatedKalmanFilterHandler.hpp
-    include/ikf/Container/Timestamp.hpp
-    include/ikf/Container/TStampedData.hpp
-    include/ikf/Container/THistoryBuffer.hpp
-    include/ikf/utils/QuaternionUtils.hpp
-    include/ikf/utils/math.hpp
-    include/ikf/utils/IO.hpp
-    include/ikf/utils/Rate.hpp
-    include/ikf/utils/CyclicThread.hpp
-    ${include_local_path}/helper.hpp
-    ${include_local_path}/utils.hpp
+ #include/ikf/Estimator/IDiCoFilter.hpp
+ include/ikf/Estimator/IIsolatedKalmanFilter.hpp
+ include/ikf/Estimator/IIsolatedKalmanFilterCorr.hpp
+ include/ikf/Estimator/IsolatedKalmanFilterHandler.hpp
+ include/ikf/Container/Timestamp.hpp
+ include/ikf/Container/TStampedData.hpp
+ include/ikf/Container/THistoryBuffer.hpp
+ include/ikf/utils/QuaternionUtils.hpp
+ include/ikf/utils/math.hpp
+ include/ikf/utils/IO.hpp
+ include/ikf/utils/Rate.hpp
+ include/ikf/utils/CyclicThread.hpp
+ ${include_local_path}/helper.hpp
+ ${include_local_path}/utils.hpp
 )
 
 set(sources
@@ -62,22 +62,24 @@ set(sources
  source/utils/IO.cpp
  source/utils/Rate.cpp
  source/utils/CyclicThread.cpp
-    source/Containers/Timestamp.cpp
-    source/Estimate/IBelief.cpp
-    source/Estimate/LinearBelief.cpp
-    source/Estimator/KalmanFilter.cpp
-    source/Estimator/NormalizedInnovationSquared.cpp
-    source/Estimator/IKalmanFilter.cpp
-    #source/Estimator/IDiCoFilter.cpp
-    source/Estimator/IIsolatedKalmanFilter.cpp
-    source/Estimator/IIsolatedKalmanFilterCorr.cpp
+ source/utils/CSVTool.cpp
 
-    source/EstimatorStd/KalmanFilterStd.cpp
-    source/EstimatorStd/IsolatedKalmanFilterStd.cpp
-    source/EstimatorStd/IKFHandlerStd.cpp
+ source/Containers/Timestamp.cpp
+ source/Estimate/IBelief.cpp
+ source/Estimate/LinearBelief.cpp
+ source/Estimator/KalmanFilter.cpp
+ source/Estimator/NormalizedInnovationSquared.cpp
+ source/Estimator/IKalmanFilter.cpp
+ #source/Estimator/IDiCoFilter.cpp
+ source/Estimator/IIsolatedKalmanFilter.cpp
+ source/Estimator/IIsolatedKalmanFilterCorr.cpp
 
-    #source/EstimatorHandler/IDiCoFilterHandler.cpp
-    source/EstimatorHandler/IsolatedKalmanFilterHandler.cpp
+ source/EstimatorStd/KalmanFilterStd.cpp
+ source/EstimatorStd/IsolatedKalmanFilterStd.cpp
+ source/EstimatorStd/IKFHandlerStd.cpp
+
+ #source/EstimatorHandler/IDiCoFilterHandler.cpp
+ source/EstimatorHandler/IsolatedKalmanFilterHandler.cpp
 )
 
 # Group source files
