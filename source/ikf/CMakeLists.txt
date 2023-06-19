@@ -65,6 +65,7 @@ set(sources
  source/utils/CSVTool.cpp
 
  source/Containers/Timestamp.cpp
+ source/Measurement/MeasData.cpp
  source/Estimate/IBelief.cpp
  source/Estimate/LinearBelief.cpp
  source/Estimator/KalmanFilter.cpp

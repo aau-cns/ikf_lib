@@ -18,6 +18,7 @@
 ******************************************************************************/
 #ifndef MEASDATA_HPP
 #define MEASDATA_HPP
+#include <ikf/ikf_api.h>
 #include <unordered_map>
 #include <memory>
 #include <iomanip>      // std::setprecision
@@ -27,31 +28,16 @@
 
 namespace ikf
 {
-  enum class eObservationType {
+  enum class IKF_API eObservationType {
     UNKNOWN = 0,
     PROPAGATION = 1,
     PRIVATE_OBSERVATION = 2,
     JOINT_OBSERVATION = 3,
   };
 
-  static inline std::string to_string(eObservationType const ot) {
-    switch(ot) {
-      case eObservationType::UNKNOWN:
-        return "UNKNOWN";
-      case eObservationType::PROPAGATION:
-        return "PROP";
-      case eObservationType::PRIVATE_OBSERVATION:
-        return "PRIV";
-      case eObservationType::JOINT_OBSERVATION:
-        return "JOINT";
-      default:
-        break;
+  std::string IKF_API to_string(eObservationType const ot);
 
-    }
-    return "";
-  }
-
-  struct MeasData {
+  struct IKF_API MeasData {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     Timestamp t_m; // true measurement timestamp
     Timestamp t_p; // actual processing timestamp
@@ -60,45 +46,20 @@ namespace ikf
     std::string meta_info;
     eObservationType obs_type = eObservationType::UNKNOWN;
     Eigen::VectorXd z; // measurement at t_m
-    Eigen::MatrixXd R; // measurement covariance at t_m
+    Eigen::MatrixXd R; // measurement covariance at t_m (as vector or matrix -> call get_R()
 
-    bool has_meas_noise() const {
-      return R.size();
-    }
+    bool has_meas_noise() const;
 
-    friend std::ostream& operator<< (std::ostream& out, const MeasData& obj)
-    {
-      out << "MeasData:";
-      out << std::left;
-      out << " t_m=" << std::setw(16) << obj.t_m.str();
-      out << ", t_p=" << std::setw(16) << obj.t_p.str();
-      out << ", ID=" << std::setw(3)<< obj.id_sensor;
-      out << ", meas_type=" << std::left << std::setw(20) << obj.meas_type;
-      out << ", meta info="<< std::left << std::setw(12) << obj.meta_info;
-      out << ", obs. type=" << std::left  << std::setw(2) << (int)obj.obs_type;
-      out << ", z=" << std::setprecision(4) <<  obj.z.transpose();
-      out << ", R=" << std::setprecision(4) << obj.R.diagonal().transpose();
-      out << std::internal;
-      return out;
-    }
+    Eigen::MatrixXd get_R();
 
-    static MeasData lin_interpolate(MeasData const& m_a, MeasData const& m_c, Timestamp const& t_b) {
-      RTV_EXPECT_TRUE_MSG((m_a.id_sensor == m_c.id_sensor), "wrong sensor IDs!");
-      RTV_EXPECT_TRUE_MSG((m_a.obs_type == m_c.obs_type), "wrong observation types!");
+    friend std::ostream& operator<< (std::ostream& out, const MeasData& obj);
 
-      double const dt_ac = m_c.t_m.to_sec() - m_a.t_m.to_sec();
-      double const dt_ab = t_b.to_sec() - m_a.t_m.to_sec();
-      double const ratio = dt_ab /dt_ac;
-
-      MeasData m_b = m_a;
-      m_b.t_m = t_b;
-      m_b.t_p = t_b;
-      m_b.z = m_a.z + (m_c.z - m_a.z)*ratio;
-      m_b.R = m_a.R + (m_c.R - m_a.R)*ratio;
-      return m_b;
-    }
+    static MeasData lin_interpolate(MeasData const& m_a, MeasData const& m_c, Timestamp const& t_b);
 
   };
+
+  // INFO: needs be declared outside again to apply the IKF_API visibility attribute!
+  IKF_API std::ostream&  operator<<(std::ostream& os, const MeasData&);
 
 
 }
