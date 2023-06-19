@@ -33,7 +33,7 @@ namespace utils
     }
     else
     {
-      std::cout << "unable to open file: " << file_name;
+      std::cout << "ikf::utils::IO: unable to open file: " << file_name;
     }
 
     return vgmf_files;
@@ -391,7 +391,7 @@ namespace utils
 
         if(!dirExist(baseDir))
         {
-          std::cerr << "something went wrong creating dir: " << baseDir << std::endl;
+          std::cerr << "ikf::utils::IO: something went wrong creating dir: " << baseDir << std::endl;
           return false;
         }
       }
@@ -415,7 +415,7 @@ namespace utils
 
       if(!dirExist(baseDir))
       {
-        std::cerr << "something went wrong creating dir: " << baseDir << std::endl;
+        std::cerr << "ikf::utils::IO: something went wrong creating dir: " << baseDir << std::endl;
         return false;
       }
     }
