@@ -23,14 +23,14 @@ namespace ikf {
   {
     if (!ikf::utils::IO::fileExists(file_path))
     {
-      std::cout << "[Warning] File " << file_path << " does not exist." << std::endl;
+      std::cout << "CSVTool::read_csv(): file " << file_path << " does not exist." << std::endl;
       return false;
     }
 
     std::ifstream  file_;
     file_.open(file_path);
     if(!file_.is_open() || file_.eof()) {
-      std::cout << "read_csv(): Error: CSV file is empty or was not opened!" << std::endl;
+      std::cout << "CSVTool::read_csv(): Error: CSV file is empty or was not opened!" << std::endl;
       return false;
     }
     // Check for header
@@ -38,7 +38,7 @@ namespace ikf {
 
     if (first_value_row < 1)
     {
-      std::cout << "read_csv(): Error: No header in CSV file" << std::endl;
+      std::cout << "CSVTool::read_csv(): Error: No header in CSV file" << std::endl;
       return false;
     }
 
@@ -88,7 +88,7 @@ namespace ikf {
 
       // check if row was corrupted, if so, overwrite current line with the next one
       if(column_counter != (int)header_map.size()) {
-        std::cout << "read_csv(): Warning: corrupted row=" << parsed_row_counter << " will be skipped!" << std::endl;
+        std::cout << "CSVTool::read_csv(): Warning: corrupted row=" << parsed_row_counter << " will be skipped!" << std::endl;
       }
       else {
         line_counter++;
@@ -110,7 +110,7 @@ namespace ikf {
   {
     std::fstream file_;
     if(!utils::IO::openFile(filename, file_)) {
-      std::cout << "[Warning] File " << filename << " could not be created/opend." << std::endl;
+      std::cout << "CSVTool::write_csv(): file " << filename << " could not be created/opend." << std::endl;
       return false;
     }
 
@@ -121,7 +121,7 @@ namespace ikf {
     }
 
     if(IDs.empty()) {
-      std::cout << "[Warning] No data for " << filename << " ." << std::endl;
+      std::cout << "CSVTool::write_csv(): No data for " << filename << " ." << std::endl;
       return true;
     }
 
