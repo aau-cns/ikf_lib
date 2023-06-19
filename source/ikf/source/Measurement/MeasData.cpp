@@ -53,9 +53,14 @@ std::ostream &operator<<(std::ostream &out, const MeasData &obj)
   out << ", meas_type=" << std::left << std::setw(20) << obj.meas_type;
   out << ", meta info="<< std::left << std::setw(12) << obj.meta_info;
   out << ", obs. type=" << std::left  << std::setw(2) << to_string(obj.obs_type);
-  out << ", z=" << std::setprecision(4) <<  obj.z.transpose();
-  out << ", R=" << std::setprecision(4) << obj.R.diagonal().transpose();
-  out << std::internal;
+  out << ", z=[" << std::setprecision(4) <<  obj.z.transpose() <<"]";
+  out << ", diag(R)=[" << std::setprecision(4);
+  if(obj.R.cols() == 1) {
+    out << obj.R.transpose();
+  } else {
+    out << obj.R.diagonal().transpose();
+  }
+  out << "]" <<std::internal;
   return out;
 }
 
