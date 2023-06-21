@@ -60,6 +60,8 @@ std::vector<size_t> IsolatedKalmanFilterHandler::get_instance_ids() {
 
 bool IsolatedKalmanFilterHandler::handle_delayed_meas() const { return m_handle_delayed_meas; }
 
+double ikf::IsolatedKalmanFilterHandler::horizon_sec() const { return m_horzion_sec; }
+
 bool ikf::IsolatedKalmanFilterHandler::insert_measurement(const MeasData &m, const Timestamp &t) {
   if(m_handle_delayed_meas) {
     HistMeas.insert(m, t);

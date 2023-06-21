@@ -38,6 +38,7 @@ public:
   bool exists(const size_t ID);
   std::vector<size_t> get_instance_ids();
   bool handle_delayed_meas() const;
+  double horizon_sec() const;
 
   virtual bool insert_measurement(MeasData const& m, Timestamp const& t);
 
