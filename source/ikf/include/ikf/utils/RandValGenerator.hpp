@@ -21,6 +21,7 @@
 ******************************************************************************/
 #ifndef RANDVALGENERATOR_HPP
 #define RANDVALGENERATOR_HPP
+#include <algorithm>
 #include <ikf/ikf_api.h>
 #include <random>
 
@@ -61,6 +62,31 @@ private:
   mutable std::normal_distribution<double> distribution; //{0,node._std_range_m};
 };
 
+
+class IKF_API RandomSampler
+{
+public:
+  static RandomSampler& instance();
+  RandomSampler(RandomSampler const&) = delete;
+  void operator=(RandomSampler const&) = delete;
+
+  template<typename T>
+  std::vector<T> sample(std::vector<T> const& vec, size_t const N) const{
+    std::vector<T> out;
+    out.reserve(N);
+    std::sample(vec.begin(), vec.end(), std::back_inserter(out),
+                N, gen);
+
+    return out;
+  }
+
+
+private:
+  RandomSampler();
+  //std::random_device rd;//{};
+  mutable std::mt19937 gen; //{rd()};
+  mutable std::normal_distribution<double> distribution; //{0,node._std_range_m};
+};
 
 } // ns mmsf
 

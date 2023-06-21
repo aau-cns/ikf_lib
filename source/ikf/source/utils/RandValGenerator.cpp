@@ -43,6 +43,16 @@ std::vector<double> GaussianNoiseGen::randn(const size_t N) const {
   return xs;
 }
 
+RandomSampler &RandomSampler::instance()
+{
+  static RandomSampler g; // Guaranteed to be destroyed.
+      // Instantiated on first use.
+  return g;
+
+}
+
+RandomSampler::RandomSampler() : gen((std::random_device())()) {}
+
 
 
 
