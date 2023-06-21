@@ -249,6 +249,21 @@ namespace utils
     }
   }
 
+  std::string IO::getLastDirName(const std::string &path)
+  {
+    std::string file_dir(path);
+    std::string::size_type idx      = file_dir.rfind('/');
+
+    if(idx != std::string::npos)
+    {
+      return std::string(file_dir.substr(idx + 1, file_dir.length()));
+    }
+    else
+    {
+      return std::string();
+    }
+  }
+
   bool IO::createDirectory(const std::string &dirName)
   {
     std::string sPath  = dirName;

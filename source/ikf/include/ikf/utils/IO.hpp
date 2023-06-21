@@ -96,6 +96,7 @@ namespace utils
 
     static std::string getFileParentDirName(const std::string& filename);
 
+    static std::string getLastDirName(const std::string &path);
 
     static bool createDirectory(const std::string& dirName);
 
