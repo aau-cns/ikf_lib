@@ -39,8 +39,8 @@ namespace ikf
 
   struct IKF_API MeasData {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    Timestamp t_m; // true measurement timestamp
-    Timestamp t_p; // actual processing timestamp
+    Timestamp t_m; // true measurement timestamp from moment of perception
+    Timestamp t_p; // actual processing timestamp for simulation
     size_t id_sensor = 0;
     std::string meas_type;
     std::string meta_info;

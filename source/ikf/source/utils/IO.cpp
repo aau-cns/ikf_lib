@@ -373,6 +373,49 @@ namespace utils
     closedir(dir);
   }
 
+  void ikf::utils::IO::getDirsInDirectory(std::vector<std::string> &out, const std::string &directory) {
+    out.clear();
+
+    if(!dirExist(directory))
+    {
+      return;
+    }
+
+    DIR           *dir;
+    struct dirent *ent;
+    struct stat   st;
+
+    dir = opendir(directory.c_str());
+
+
+    while((ent = readdir(dir)) != NULL)
+    {
+      const std::string file_name      = ent->d_name;
+      const std::string full_file_name = directory + "/" + file_name;
+
+      if(file_name[0] == '.')
+      {
+        continue;
+      }
+
+      if(stat(full_file_name.c_str(), &st) == -1)
+      {
+        continue;
+      }
+
+      const bool is_directory = (st.st_mode & S_IFDIR) != 0;
+
+      if(is_directory)
+
+      {
+        out.push_back(full_file_name);
+      }
+
+    }
+
+    closedir(dir);
+  }
+
   bool IO::openFile(const std::string &filename, std::fstream &f)
   {
 

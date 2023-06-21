@@ -107,6 +107,9 @@ namespace utils
                                            const std::string& directory,
                                            std::string extension = ""); // getFilesInDirectory
 
+    static void getDirsInDirectory(std::vector<std::string>& out,
+                                   const std::string& directory);
+
     static bool openFile(const std::string& filename, std::fstream& f);
 
     static bool createDirectoryFull(const std::string& baseDir);
