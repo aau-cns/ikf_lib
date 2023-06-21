@@ -149,12 +149,30 @@ namespace ikf
       void remove_after_t(double const t);
 
       friend std::ostream& operator<< (std::ostream& out, const THistoryBuffer<T>& obj)  {
-          out << "THistoryBuffer: len=" << obj.size() << std::endl;
-          for (auto const& elem : obj.buffer_)
-          {
-              out << "* t=" << elem.first << ", data=" << elem.second << "\n";
+        out << "THistoryBuffer: len=" << obj.size() << std::endl;
+        for (auto const& elem : obj.buffer_)
+        {
+            out << "* t=" << elem.first << ", data=" << elem.second << "\n";
+        }
+        return out;
+      }
+
+      void print(std::ostream& out, size_t const N = 0) {
+        size_t len = N;
+        if(N == 0) {
+            len = size();
+        }
+
+        size_t cnt = 0;
+        for (auto const& elem : buffer_)
+        {
+          if(cnt < len) {
+            out << "* t=" << elem.first << ", data=" << elem.second << "\n";
+          } else {
+            break;
           }
-          return out;
+          cnt++;
+        }
       }
     protected:
       friend std::ostream;

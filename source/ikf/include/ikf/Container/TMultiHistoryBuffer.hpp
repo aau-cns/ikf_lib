@@ -192,6 +192,25 @@ public:
     }
     return out;
   }
+
+  void print(std::ostream& out, size_t const N = 0) {
+    size_t len = N;
+    if(N == 0) {
+      len = size();
+    }
+
+    size_t cnt = 0;
+    for (auto const& elem : buffer_)
+    {
+      if(cnt < len) {
+        out << "* t=" << elem.first << ", data=" << elem.second << "\n";
+      } else {
+        break;
+      }
+      cnt++;
+    }
+  }
+
 protected:
   friend std::ostream;
   TContainer buffer_;
