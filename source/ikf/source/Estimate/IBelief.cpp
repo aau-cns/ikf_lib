@@ -74,6 +74,12 @@ const Timestamp &IBelief::timestamp() const { return m_timestamp; }
 
 void IBelief::set_timestamp(const Timestamp &t) { m_timestamp = t; }
 
+void IBelief::set_options(const BeliefOptions &o) {
+  m_options = o;
+}
+
+const BeliefOptions &IBelief::options() const { return m_options; }
+
 void IBelief::apply_init_strategy(std::shared_ptr<IBelief> &bel_0, const eInitStrategies type, const int seed) {
   if (seed != 0) {
     // set the seed of the random variable generator to something...

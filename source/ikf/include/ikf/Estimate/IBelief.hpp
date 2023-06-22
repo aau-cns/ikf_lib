@@ -60,8 +60,8 @@ public:
   virtual Timestamp const& timestamp() const;
   virtual void set_timestamp(Timestamp const& t);
 
-  //virtual BeliefOptions const& options() const;
-  //virtual void set_options(BeliefOptions const& o);
+  virtual BeliefOptions const& options() const;
+  virtual void set_options(BeliefOptions const& o);
 
   ////////////////////////////////////////////////////////////
   //// PURE VIRTUAL:
@@ -102,7 +102,7 @@ protected:
   size_t m_es_dim = 0;
   size_t m_ns_dim = 0;
   Timestamp m_timestamp;
-  //BeliefOptions m_options;
+  BeliefOptions m_options;
 };
 
 typedef std::shared_ptr<IBelief> ptr_belief;

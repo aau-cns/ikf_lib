@@ -20,6 +20,7 @@
 #define EIGEN_UTILS_HPP
 #include <ikf/ikf_api.h>
 #include <Eigen/Dense>
+#include <iostream>
 
 namespace ikf{
 namespace utils {
@@ -73,6 +74,43 @@ Eigen::Matrix<scalar, Eigen::Dynamic, Eigen::Dynamic> toEigenMatrix(std::vector<
   }
   return m;
 }
+
+template<typename scalar>
+Eigen::Quaternion<scalar> toEigenQuat(Eigen::MatrixX<scalar> const& m) {
+  Eigen::Quaternion<scalar> q;
+  if(m.rows() == 4 && m.cols() == 1)
+  {
+    q.w() = m(0);
+    q.x() = m(1);
+    q.y() = m(2);
+    q.z() = m(3);
+  } else {
+    std::cout << "eigen_utils::toEigenQuat(): conversion of " << m << " failed!" << std::endl;
+  }
+  return q;
+}
+
+
+template<typename scalar>
+Eigen::Quaternion<scalar> toEigenQuat(Eigen::Vector4<scalar> const& vec) {
+  Eigen::Quaternion<scalar> q;
+  q.w() = vec(0);
+  q.x() = vec(1);
+  q.y() = vec(2);
+  q.z() = vec(3);
+  return q;
+}
+
+template<typename scalar>
+Eigen::Vector4<scalar> fromEigenQuat(Eigen::Quaternion<scalar> const& q) {
+  Eigen::Vector4<scalar> vec;
+  vec(0) = q.w();
+  vec(1) = q.x();
+  vec(2) = q.y();
+  vec(3) = q.z();
+  return q;
+}
+
 
 template<typename scalar>
 std::vector<std::vector<scalar>> fromEigenMatrix(Eigen::Matrix<scalar, Eigen::Dynamic, Eigen::Dynamic> const & M)
