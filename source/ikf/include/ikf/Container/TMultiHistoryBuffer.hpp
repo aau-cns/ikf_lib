@@ -142,7 +142,7 @@ public:
   }
 
   template<typename Operation>
-  inline void foreach(Operation op ) {
+  inline void foreach(Operation op ) const {
     auto __first = buffer_.begin();
     auto __last =  buffer_.end();
     for(; __first != __last; ++__first) {
@@ -151,7 +151,7 @@ public:
   }
 
   template<typename Operation>
-  inline void foreach_reverse(Operation op ) {
+  inline void foreach_reverse(Operation op ) const {
     auto __first = buffer_.rbegin();
     auto __last =  buffer_.rend();
     for(; __first != __last; ++__first) {
