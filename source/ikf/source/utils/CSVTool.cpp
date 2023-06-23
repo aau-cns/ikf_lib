@@ -186,7 +186,8 @@ namespace ikf {
     std::string line;
     while (std::getline(file_, line))
     {
-      if (std::isdigit(line[line.find_first_not_of(" \t")]))
+      char c = line[line.find_first_not_of(" \t")];
+      if (std::isdigit(c) || c == '-' || c == '+') // or starts with negative/positive sign!!!
       {
         break;
       }
