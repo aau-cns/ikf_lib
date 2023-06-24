@@ -52,6 +52,8 @@ set(headers
  include/ikf/utils/IO.hpp
  include/ikf/utils/Rate.hpp
  include/ikf/utils/CyclicThread.hpp
+ include/ikf/utils/ProgressBar.hpp
+
  ${include_local_path}/helper.hpp
  ${include_local_path}/utils.hpp
 )
@@ -63,6 +65,7 @@ set(sources
  source/utils/Rate.cpp
  source/utils/CyclicThread.cpp
  source/utils/CSVTool.cpp
+ source/utils/ProgressBar.cpp
 
  source/Containers/Timestamp.cpp
  source/Measurement/MeasData.cpp
