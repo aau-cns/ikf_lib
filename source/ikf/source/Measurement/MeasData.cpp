@@ -34,7 +34,7 @@ bool MeasData::has_meas_noise() const {
   return R.size();
 }
 
-Eigen::MatrixXd MeasData::get_R() {
+Eigen::MatrixXd MeasData::get_R() const {
   if(R.cols() == 1) {
     return R.asDiagonal();
   } else {

@@ -47,8 +47,6 @@ void ProgressBar::update(const size_t i) {
   nextRenderPoint = std::min(nextRenderPoint + increment, numSteps);
 
 
-
-
   if(i >= numSteps) {
     // Done
     std::cout << "[" << endMsg ;

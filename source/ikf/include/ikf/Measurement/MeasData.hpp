@@ -50,7 +50,7 @@ namespace ikf
 
     bool has_meas_noise() const;
 
-    Eigen::MatrixXd get_R();
+    Eigen::MatrixXd get_R() const;
 
     friend std::ostream& operator<< (std::ostream& out, const MeasData& obj);
 
