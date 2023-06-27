@@ -118,6 +118,7 @@ ProcessMeasResult_t IsolatedKalmanFilterHandler::process_measurement(const MeasD
     }
     HistMeas.insert(m, m.t_m);
   }
+  HistMeas.check_horizon();
   return res;
 }
 

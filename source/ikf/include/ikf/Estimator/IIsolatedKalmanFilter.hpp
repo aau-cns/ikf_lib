@@ -93,7 +93,7 @@ protected:
 
 
   // Algorithm 3 in [1]
-  virtual void check_horizon();
+  virtual void check_horizon() override;
 
   // Eq. 8 in [1]
   virtual bool add_correction_at_t(const Timestamp &t_a,Timestamp const& t_b, Eigen::MatrixXd const& Phi_a_b);
