@@ -71,7 +71,8 @@ namespace ikf {
       std::string token;
       int column_counter = 0;
 
-      double item;
+      double d_item;
+
       while (std::getline(row_stream, token, delim))
       {
         if(column_counter >= (int)header_map.size()) {
@@ -81,8 +82,11 @@ namespace ikf {
         }
 
         std::istringstream is(token);
-        is >> item;
-        csv_data[header_map[column_counter]][line_counter]=(item);
+        if(is >> d_item) {
+          csv_data[header_map[column_counter]][line_counter]=(d_item);
+        } else {
+          std::cout << "read_csv(): Warning: could not parse item: " << token << " as double, at #line="  << line_counter << std::endl;
+        }
         ++column_counter;
       }
 
