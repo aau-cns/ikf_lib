@@ -408,6 +408,18 @@ void IIsolatedKalmanFilter::split_Sigma(Eigen::MatrixXd const& Sigma, size_t con
   Sigma_IJ = Sigma.topRightCorner(dim_I, dim_J);
 }
 
+void ikf::IIsolatedKalmanFilter::split_Sigma(const Eigen::MatrixXd &Sigma, const size_t dim_I, const size_t dim_J, const size_t dim_K, Eigen::MatrixXd &Sigma_II, Eigen::MatrixXd &Sigma_JJ, Eigen::MatrixXd &Sigma_KK, Eigen::MatrixXd &Sigma_IJ, Eigen::MatrixXd &Sigma_IK, Eigen::MatrixXd &Sigma_JK) {
+  RTV_EXPECT_TRUE_THROW(dim_I > 0 && dim_J > 0 && dim_K > 0, "Dimension insvalid");
+  RTV_EXPECT_TRUE_THROW((Sigma.rows() == (long)(dim_I + dim_J + dim_K)) && (Sigma.cols() == (long)(dim_I + dim_J + dim_K)), "dimension missmatch!");
+
+  Sigma_II = Sigma.topLeftCorner(dim_I, dim_I);
+  Sigma_JJ = Sigma.block(dim_I, dim_I, dim_J, dim_J);
+  Sigma_IJ = Sigma.block(0, dim_I, dim_I, dim_J);
+  Sigma_IK = Sigma.topRightCorner(dim_I, dim_K);
+  Sigma_JK = Sigma.block(dim_I, dim_I+dim_J, dim_J, dim_K);
+  Sigma_KK = Sigma.bottomRightCorner(dim_K, dim_K);
+}
+
 
 // Algorithm 6 in [1]
 Eigen::MatrixXd IIsolatedKalmanFilter::stack_apri_covariance(ptr_belief &bel_I_apri, ptr_belief &bel_J_apri,
@@ -419,9 +431,27 @@ Eigen::MatrixXd IIsolatedKalmanFilter::stack_apri_covariance(ptr_belief &bel_I_a
   }
   else {
     // Not correlated!
-    Sigma_IJ = Sigma_IJ.Zero(bel_I_apri->Sigma().rows(), bel_J_apri->Sigma().cols());
+    Sigma_IJ = Sigma_IJ.Zero(bel_I_apri->es_dim(), bel_J_apri->es_dim());
     return stack_Sigma(bel_I_apri->Sigma(), bel_J_apri->Sigma(), Sigma_IJ);
   }
+}
+
+Eigen::MatrixXd ikf::IIsolatedKalmanFilter::stack_apri_covariance(ptr_belief &bel_I_apri, ptr_belief &bel_J_apri, ptr_belief &bel_K_apri, const size_t ID_I, const size_t ID_J, const size_t ID_K, const Timestamp &t) {
+
+  // stack individual's covariances:
+  Eigen::MatrixXd Sigma_apri_22 = stack_apri_covariance(bel_I_apri, bel_J_apri, ID_I, ID_J, t);
+
+  Eigen::MatrixXd Sigma_IK = get_Sigma_IJ_at_t(ID_I, ID_K, t);
+  if (!Sigma_IK.size()) {
+    Sigma_IK = Sigma_IK.Zero(bel_I_apri->es_dim(), bel_K_apri->es_dim());
+  }
+  Eigen::MatrixXd Sigma_JK = get_Sigma_IJ_at_t(ID_J, ID_K, t);
+  if (!Sigma_JK.size()) {
+    Sigma_JK = Sigma_JK.Zero(bel_J_apri->es_dim(), bel_K_apri->es_dim());
+  }
+
+  Eigen::MatrixXd Sigma_2K_apri = utils::vertcat(Sigma_IK, Sigma_JK);
+  return stack_Sigma(Sigma_apri_22, bel_K_apri->Sigma(), Sigma_2K_apri);
 }
 
 //  Eq (1) and Algorithm 6 in [1]
@@ -520,6 +550,52 @@ bool IIsolatedKalmanFilter::apply_joint_observation(ptr_belief &bel_I_apri, ptr_
     bel_I_apri->correct(res.delta_mean.topLeftCorner(dim_I, 1), Sigma_II_apos);
     bel_J_apri->correct(res.delta_mean.bottomRightCorner(dim_J, 1), Sigma_JJ_apos);
 
+  }
+  return !res.rejected;
+}
+
+bool ikf::IIsolatedKalmanFilter::apply_joint_observation(ptr_belief &bel_I_apri, ptr_belief &bel_J_apri, ptr_belief &bel_K_apri, const size_t ID_I, const size_t ID_J, const size_t ID_K, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ, const Eigen::MatrixXd &H_KK, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
+  RTV_EXPECT_TRUE_THROW(ID_I == m_ID, "ID_I missmatch! wrong interim master");
+
+
+  // stack the measurement sensitivity matrix (again...):
+  Eigen::MatrixXd H_joint = utils::horcat(H_II, H_JJ, H_KK);
+
+  // stack individual's covariances:
+  Eigen::MatrixXd Sigma_apri = utils::stabilize_covariance(stack_apri_covariance(bel_I_apri, bel_J_apri, bel_K_apri, ID_I, ID_J, ID_K, t));
+  RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_apri), "Joint apri covariance is not PSD at t=" + t.str());
+
+  KalmanFilter::CorrectionResult_t res;
+  res = KalmanFilter::correction_step(H_joint, R, r, Sigma_apri, cfg);
+  if (!res.rejected) {
+    size_t dim_I = bel_I_apri->Sigma().rows();
+    size_t dim_J = bel_J_apri->Sigma().rows();
+    size_t dim_K = bel_K_apri->Sigma().rows();
+
+    Eigen::MatrixXd Sigma_II_apos, Sigma_JJ_apos, Sigma_KK_apos;
+    Eigen::MatrixXd Sigma_IJ_apos, Sigma_IK_apos, Sigma_JK_apos;
+    split_Sigma(res.Sigma_apos, dim_I, dim_J, dim_K,
+                Sigma_II_apos, Sigma_JJ_apos, Sigma_KK_apos,
+                Sigma_IJ_apos, Sigma_IK_apos, Sigma_JK_apos);
+
+    // IMPORTANT: keep order! before setting cross-covariance factors and beliefs implace!
+    // 1) add correction terms in the appropriate correction buffers!
+    apply_correction_at_t(t, bel_I_apri->Sigma(), Sigma_II_apos);
+    ptr_Handler->get(ID_J)->apply_correction_at_t(t, bel_J_apri->Sigma(), Sigma_JJ_apos);
+    ptr_Handler->get(ID_K)->apply_correction_at_t(t, bel_K_apri->Sigma(), Sigma_KK_apos);
+
+
+
+
+    // 2) set a corrected factorized a posterioiry cross-covariance
+    set_Sigma_IJ_at_t(ID_I, ID_J, Sigma_IJ_apos, t);
+    set_Sigma_IJ_at_t(ID_I, ID_K, Sigma_IK_apos, t);
+    ptr_Handler->get(ID_J)->set_Sigma_IJ_at_t(ID_J, ID_K, Sigma_JK_apos, t);
+
+    // 3) correct beliefs implace!
+    bel_I_apri->correct(res.delta_mean.topLeftCorner(dim_I, 1), Sigma_II_apos);
+    bel_J_apri->correct(res.delta_mean.block(dim_I, 0, dim_J, 1), Sigma_JJ_apos);
+    bel_K_apri->correct(res.delta_mean.bottomRightCorner(dim_K, 1), Sigma_KK_apos);
   }
   return !res.rejected;
 }

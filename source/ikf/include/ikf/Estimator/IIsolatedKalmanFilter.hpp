@@ -130,11 +130,26 @@ protected:
                                const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg);
 
 
+  bool apply_joint_observation(ptr_belief& bel_I_apri, ptr_belief& bel_J_apri, ptr_belief& bel_K_apri,
+                               const size_t ID_I, const size_t ID_J, const size_t ID_K,
+                               const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ, const Eigen::MatrixXd &H_KK,
+                               const Eigen::MatrixXd &R, const Eigen::VectorXd &r,
+                               const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg);
+
   static Eigen::MatrixXd stack_Sigma(const Eigen::MatrixXd &Sigma_II, const Eigen::MatrixXd &Sigma_JJ, const Eigen::MatrixXd &Sigma_IJ);
   static void split_Sigma(Eigen::MatrixXd const& Sigma, size_t const dim_I, size_t const dim_J, Eigen::MatrixXd& Sigma_II, Eigen::MatrixXd& Sigma_JJ, Eigen::MatrixXd& Sigma_IJ);
 
+    static void split_Sigma(Eigen::MatrixXd const& Sigma, size_t const dim_I, size_t const dim_J, size_t const dim_K,
+                          Eigen::MatrixXd& Sigma_II, Eigen::MatrixXd& Sigma_JJ, Eigen::MatrixXd& Sigma_KK,
+                          Eigen::MatrixXd& Sigma_IJ, Eigen::MatrixXd& Sigma_IK, Eigen::MatrixXd& Sigma_JK);
+
   Eigen::MatrixXd stack_apri_covariance(ptr_belief& bel_I_apri, ptr_belief& bel_J_apri, const size_t ID_I, const size_t ID_J,
                                         Timestamp const& t);
+
+  Eigen::MatrixXd stack_apri_covariance(ptr_belief& bel_I_apri, ptr_belief& bel_J_apri, ptr_belief& bel_K_apri,
+                                        const size_t ID_I, const size_t ID_J, const size_t ID_K,
+                                        Timestamp const& t);
+
   Eigen::MatrixXd get_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, Timestamp const& t);
   void set_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd &Sigma_IJ, const Timestamp &t);
 
