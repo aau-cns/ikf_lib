@@ -132,8 +132,11 @@ bool IKF_API is_positive_semidefinite(Eigen::MatrixXd const& A);
 
 Eigen::MatrixXd IKF_API horcat(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ);
 Eigen::MatrixXd IKF_API horcat(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ, const Eigen::MatrixXd &H_KK);
+Eigen::MatrixXd IKF_API horcat(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ, const Eigen::MatrixXd &H_KK, const Eigen::MatrixXd &H_LL);
+
 Eigen::MatrixXd IKF_API vertcat(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ);
 Eigen::MatrixXd IKF_API vertcat(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ, const Eigen::MatrixXd &H_KK);
+Eigen::MatrixXd IKF_API vertcat(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ, const Eigen::MatrixXd &H_KK, const Eigen::MatrixXd &H_LL);
 
 
 
