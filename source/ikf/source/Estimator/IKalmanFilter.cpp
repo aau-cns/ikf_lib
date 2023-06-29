@@ -18,6 +18,8 @@
 ******************************************************************************/
 #include <ikf/Estimator/IKalmanFilter.hpp>
 #include <ikf/Estimator/KalmanFilter.hpp>
+#include <ikf/utils/eigen_utils.hpp>
+
 namespace ikf {
 
 IKalmanFilter::IKalmanFilter(const double horizon_sec_, const bool handle_delayed_meas) : HistBelief(horizon_sec_), HistMeas(horizon_sec_), HistMeasPropagation(horizon_sec_), max_time_horizon_sec(horizon_sec_), m_handle_delayed_meas(handle_delayed_meas) {
@@ -383,6 +385,9 @@ bool IKalmanFilter::apply_propagation(ptr_belief &bel_II_a, const Eigen::VectorX
   if (KalmanFilter::check_dim(bel_II_a->Sigma(),  Phi_II_ab, Q_II_ab)) {
     Eigen::MatrixXd Sigma_II_b = KalmanFilter::covariance_propagation(bel_II_a->Sigma(),
                                                                       Phi_II_ab, Q_II_ab);
+
+    //RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_II_b), "[ERROR] Not PSD: Covariance propagted to t_b=" + t_b.str());
+
     // This is where the magic happens!
     ptr_belief bel_b = bel_II_a->clone(); //clone the state definiton!
 
@@ -404,6 +409,8 @@ bool IKalmanFilter::apply_propagation(ptr_belief &bel_II_a, const Eigen::VectorX
 
 bool ikf::IKalmanFilter::apply_propagation(ikf::ptr_belief bel_II_b, const Eigen::MatrixXd &Phi_II_ab, const Timestamp &t_a, const Timestamp &t_b) {
   if (KalmanFilter::check_dim(bel_II_b->Sigma(),  Phi_II_ab)) {
+    //RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(bel_II_b->Sigma()), "[ERROR] Not PSD: Covariance propagted to t_b=" + t_b.str());
+
     bel_II_b->set_timestamp(t_b);
     set_belief_at_t(bel_II_b, t_b);
     return true;

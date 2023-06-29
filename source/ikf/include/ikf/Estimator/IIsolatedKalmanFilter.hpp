@@ -118,6 +118,8 @@ protected:
   bool apply_private_observation(ptr_belief& bel_II_apri,const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R,
                                  const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg);
 
+  bool apply_private_observation(ptr_belief& bel_II_apri, const size_t ID_I,const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg);
+
   // KF: Algorithm 6 in [1]
   bool apply_joint_observation(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ,
                                const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t, const KalmanFilter::CorrectionCfg_t& cfg);

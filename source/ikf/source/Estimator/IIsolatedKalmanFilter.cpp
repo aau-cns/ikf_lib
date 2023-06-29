@@ -355,8 +355,33 @@ bool IIsolatedKalmanFilter::apply_private_observation(ptr_belief &bel_II_apri, c
       return false;
     }
   }
-  return false;;
+  return false;
 
+}
+
+bool ikf::IIsolatedKalmanFilter::apply_private_observation(ptr_belief &bel_II_apri, const size_t ID_I, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
+  bool is_psd = RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(bel_II_apri->Sigma()), "Apri covariance is not PSD at t=" + t.str());
+  if(!is_psd) {
+    bel_II_apri->Sigma(utils::stabilize_covariance(bel_II_apri->Sigma()));
+  }
+  RTV_EXPECT_TRUE_THROW(ptr_Handler->exists(ID_I), "IKF instances do not exists!");
+
+  KalmanFilter::CorrectionResult_t res;
+  res = KalmanFilter::correction_step(H_II, R, r, bel_II_apri->Sigma(), cfg);
+
+  if (!res.rejected) {
+    RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(res.Sigma_apos), "Apos covariance is not PSD at t=" + t.str());
+
+    // correction strategy: IMPORTANT: before setting the belief implace!
+    if (ptr_Handler->get(ID_I)->apply_correction_at_t(t, res.U)) {
+
+      bel_II_apri->correct(res.delta_mean, res.Sigma_apos);
+      return true;
+    } else {
+      return false;
+    }
+  }
+  return false;
 }
 
 
