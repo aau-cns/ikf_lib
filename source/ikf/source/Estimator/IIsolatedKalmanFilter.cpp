@@ -667,19 +667,26 @@ bool ikf::IIsolatedKalmanFilter::apply_joint_observation(ptr_belief &bel_I_apri,
 
     // IMPORTANT: keep order! before setting cross-covariance factors and beliefs implace!
     // 1) add correction terms in the appropriate correction buffers!
-    apply_correction_at_t(t, bel_I_apri->Sigma(), Sigma_II_apos);
+    ptr_Handler->get(ID_I)->apply_correction_at_t(t, bel_I_apri->Sigma(), Sigma_II_apos);
     ptr_Handler->get(ID_J)->apply_correction_at_t(t, bel_J_apri->Sigma(), Sigma_JJ_apos);
     ptr_Handler->get(ID_K)->apply_correction_at_t(t, bel_K_apri->Sigma(), Sigma_KK_apos);
+    ptr_Handler->get(ID_L)->apply_correction_at_t(t, bel_L_apri->Sigma(), Sigma_LL_apos);
 
     // 2) set a corrected factorized a posterioiry cross-covariance
     set_Sigma_IJ_at_t(ID_I, ID_J, Sigma_IJ_apos, t);
     set_Sigma_IJ_at_t(ID_I, ID_K, Sigma_IK_apos, t);
+    set_Sigma_IJ_at_t(ID_I, ID_L, Sigma_IL_apos, t);
+
     ptr_Handler->get(ID_J)->set_Sigma_IJ_at_t(ID_J, ID_K, Sigma_JK_apos, t);
+    ptr_Handler->get(ID_J)->set_Sigma_IJ_at_t(ID_J, ID_L, Sigma_JL_apos, t);
+
+    ptr_Handler->get(ID_K)->set_Sigma_IJ_at_t(ID_K, ID_L, Sigma_KL_apos, t);
 
     // 3) correct beliefs implace!
     bel_I_apri->correct(res.delta_mean.topLeftCorner(dim_I, 1), Sigma_II_apos);
     bel_J_apri->correct(res.delta_mean.block(dim_I, 0, dim_J, 1), Sigma_JJ_apos);
-    bel_K_apri->correct(res.delta_mean.bottomRightCorner(dim_K, 1), Sigma_KK_apos);
+    bel_K_apri->correct(res.delta_mean.block(dim_I+dim_J, 0, dim_K, 1), Sigma_KK_apos);
+    bel_L_apri->correct(res.delta_mean.bottomRightCorner(dim_L, 1), Sigma_LL_apos);
   }
   return !res.rejected;
 }
