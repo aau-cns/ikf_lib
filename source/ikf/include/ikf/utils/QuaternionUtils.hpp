@@ -28,11 +28,17 @@ namespace ikf
         }
       }
 
-      static Eigen::Quaterniond theta2quat(Eigen::Vector3d theta)  {
+      static Eigen::Quaterniond theta2quat(Eigen::Vector3d const& theta)  {
         Eigen::Quaterniond q_theta(1.0, 0.5*theta(0), 0.5*theta(1), 0.5*theta(2));
         q_theta.normalize();
 
         return q_theta;
+      }
+
+      static Eigen::Vector3d quat2theta(Eigen::Quaterniond const&q)  {
+        Eigen::Vector3d theta;
+        theta << q.x()*2.0, q.y()*2.0, q.z()*2.0;
+        return theta;
       }
 
   };

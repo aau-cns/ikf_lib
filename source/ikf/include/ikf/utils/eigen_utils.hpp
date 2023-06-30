@@ -90,6 +90,20 @@ Eigen::Quaternion<scalar> toEigenQuat(Eigen::MatrixX<scalar> const& m) {
   return q;
 }
 
+template<typename scalar>
+Eigen::Quaternion<scalar> toEigenQuat(Eigen::VectorX<scalar> const& m) {
+  Eigen::Quaternion<scalar> q;
+  if(m.rows() == 4 && m.cols() == 1)
+  {
+    q.w() = m(0);
+    q.x() = m(1);
+    q.y() = m(2);
+    q.z() = m(3);
+  } else {
+    std::cout << "eigen_utils::toEigenQuat(): conversion of " << m << " failed!" << std::endl;
+  }
+  return q;
+}
 
 template<typename scalar>
 Eigen::Quaternion<scalar> toEigenQuat(Eigen::Vector4<scalar> const& vec) {
@@ -108,7 +122,7 @@ Eigen::Vector4<scalar> fromEigenQuat(Eigen::Quaternion<scalar> const& q) {
   vec(1) = q.x();
   vec(2) = q.y();
   vec(3) = q.z();
-  return q;
+  return vec;
 }
 
 
