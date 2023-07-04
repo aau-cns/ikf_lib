@@ -33,6 +33,8 @@ set(include_local_path "${CMAKE_CURRENT_SOURCE_DIR}/include_local/${target}")
 set(source_path  "${CMAKE_CURRENT_SOURCE_DIR}/source")
 
 set(headers
+ include/ikf/Logger/Logger.hpp
+
  include/ikf/types.hpp
  include/ikf/Estimate/IBelief.hpp
  include/ikf/Estimate/LinearBelief.hpp
@@ -47,8 +49,8 @@ set(headers
  include/ikf/Container/Timestamp.hpp
  include/ikf/Container/TStampedData.hpp
  include/ikf/Container/THistoryBuffer.hpp
- include/ikf/utils/QuaternionUtils.hpp
  include/ikf/utils/math.hpp
+ include/ikf/utils/QuaternionUtils.hpp
  include/ikf/utils/IO.hpp
  include/ikf/utils/Rate.hpp
  include/ikf/utils/CyclicThread.hpp
@@ -59,7 +61,10 @@ set(headers
 )
 
 set(sources
+ source/Logger/Logger.cpp
+
  source/utils/eigen_utils.cpp
+ source/utils/math.cpp
  source/utils/RandValGenerator.cpp
  source/utils/IO.cpp
  source/utils/Rate.cpp
@@ -189,6 +194,7 @@ target_link_libraries(${target}
     PUBLIC
     ${DEFAULT_LIBRARIES}
     Eigen
+    spdlog::spdlog
     #kindr
     #Sophus
     #Boost
@@ -196,6 +202,7 @@ target_link_libraries(${target}
 
     INTERFACE
     $<BUILD_INTERFACE:Eigen>
+    $<BUILD_INTERFACE:spdlog::spdlog>
 #    $<BUILD_INTERFACE:kindr>
 #    $<BUILD_INTERFACE:Sophus>
 #    $<BUILD_INTERFACE:matplot_imp>

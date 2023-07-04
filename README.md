@@ -16,6 +16,11 @@ Properties of the paradigm can be summarized as follows:
 Find the libary impementation in `source/ikf` and the test directory in `source/tests/ikf-test`.
 Find a commandline example tool for non-delayed measurements in `source/examples/ikf_simple_cmd` and the same for delayed measurements in `source/examples/ikf_delay_cmd`.
 
+## Prerequisite
+
+```
+sudo apt install libspdlog-dev
+```
 
 ## Build project
 
@@ -116,6 +121,7 @@ Due to isolated filtering, the estimation results depends on the order measureme
 
 ## Third party content:
 
+* [spdlog](https://github.com/gabime/spdlog)
 * [eigenmvn](https://github.com/beniz/eigenmvn)
 * [matplotplusplus](https://github.com/alandefreitas/matplotplusplus)
 * [CLI11](https://github.com/CLIUtils/CLI11)
