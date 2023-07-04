@@ -14,7 +14,7 @@
 #include <iomanip>
 
 namespace ikf {
-namespace utilities
+namespace utils
 {
   class RTV
   {
@@ -87,44 +87,44 @@ namespace utilities
 
   }; // class RTV
 
-} // namespace utilities
+} // namespace utils
 
 
 
 // only verification of condition
 #define RTV_EXPECT_TRUE(condition) \
-  utilities::RTV::Verify(condition, #condition, 0, true, __FILE__, __LINE__)
+  utils::RTV::Verify(condition, #condition, 0, true, __FILE__, __LINE__)
 
 #define RTV_EXPECT_FALSE(condition) \
-utilities::RTV::Verify(condition, #condition, 0, false, __FILE__, __LINE__)
+utils::RTV::Verify(condition, #condition, 0, false, __FILE__, __LINE__)
 
 #define RTV_EXPECT_TRUE_MSG(condition, msg) \
-  utilities::RTV::Verify(condition, #condition, msg, true, __FILE__, __LINE__)
+  utils::RTV::Verify(condition, #condition, msg, true, __FILE__, __LINE__)
 
 #define RTV_EXPECT_FALSE_MSG(condition, msg) \
-utilities::RTV::Verify(condition, #condition, msg, false, __FILE__, __LINE__)
+utils::RTV::Verify(condition, #condition, msg, false, __FILE__, __LINE__)
 
 // throws exception if invalid
 #define RTV_EXPECT_TRUE_THROW(condition, msg) \
-  utilities::RTV::Verify(condition, #condition, msg, true, __FILE__, __LINE__, true)
+  utils::RTV::Verify(condition, #condition, msg, true, __FILE__, __LINE__, true)
 
 // returns the result of the verification
 #define RTV_EXPECT_TRUE_RET(condition, msg) \
-  return utilities::RTV::Verify(condition, #condition, msg, true, __FILE__, __LINE__);
+  return utils::RTV::Verify(condition, #condition, msg, true, __FILE__, __LINE__);
 
 #define RTV_EXPECT_TRUE_RET_(condition) \
-  return utilities::RTV::Verify(condition, #condition, 0, true, __FILE__, __LINE__);
+  return utils::RTV::Verify(condition, #condition, 0, true, __FILE__, __LINE__);
 
 // returns false if invalid
 #define RTV_EXPECT_TRUE_CONDRET(condition, msg) \
-  if(!utilities::RTV::Verify(condition, #condition, msg, true, __FILE__, __LINE__)) return false;
+  if(!utils::RTV::Verify(condition, #condition, msg, true, __FILE__, __LINE__)) return false;
 
 
 #define RTV_EXPECT_TRUE_CONDRET_(condition) \
-  if(!utilities::RTV::Verify(condition, #condition, 0, true, __FILE__, __LINE__)) return false;
+  if(!utils::RTV::Verify(condition, #condition, 0, true, __FILE__, __LINE__)) return false;
 
 #define RTV_EXPECT_TRUE_CONDRET2_(condition) \
-  if(!utilities::RTV::Verify(condition, #condition, 0, true, __FILE__, __LINE__)) return;
+  if(!utils::RTV::Verify(condition, #condition, 0, true, __FILE__, __LINE__)) return;
 
 } // namespace ikf
 #endif // RTVERIFICATION_H

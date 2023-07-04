@@ -1,30 +1,33 @@
 /******************************************************************************
-* FILENAME:     math.hpp
+* FILENAME:     math.cpp
 * PURPOSE:      %{Cpp:License:ClassName}
 * AUTHOR:       jungr
 * MAIL:         roland.jung@ieee.org
 * VERSION:      v0.0.1
-* CREATION:     31.05.2023
+* CREATION:     03.07.2023
 *
 *  Copyright (C) 2023
 *  All rights reserved. See the LICENSE file for details.
 ******************************************************************************/
-#ifndef MATH_HPP
-#define MATH_HPP
-#include <math.h>
-#include <ikf/ikf_api.h>
-#include <Eigen/Dense>
+#include <ikf/utils/math.hpp>
 
-namespace ikf{
+namespace ikf {
 namespace utils {
 
-  //template<typename Derived=double>
-  double IKF_API rad2deg(double const rad);
-  //template<typename Derived=double>
-  double IKF_API deg2rad(double const deg);
+double rad2deg(const double rad) {
+  return rad * (180/M_PI);
+}
 
-  Eigen::Matrix3d IKF_API skew(const Eigen::Vector3d& v);
+double deg2rad(const double deg) {
+  return deg * (M_PI/180);
+}
+
+Eigen::Matrix3d skew(const Eigen::Vector3d &v) {
+  Eigen::Matrix3d M;
+  M << 0, -v(2), v(1), v(2), 0, -v(0), -v(1), v(0), 0;
+  return M;
+}
+
 
 } // ns utils
 } // ns ikf
-#endif // MATH_HPP
