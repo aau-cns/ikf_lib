@@ -23,9 +23,12 @@ namespace ikf
 class IKF_API Logger {
 public:
 
+  // logs everyting (trace) to a file, logs warnings+ to the console
   static std::string ikf_logger_name();
-  // this logger needs to be registered! spdlog::register_logger(ikf_logger());
+
+  // logs everyting (trace) to a file, logs warnings+ to the console
   static std::shared_ptr<spdlog::logger> ikf_logger();
+
   // creates and registeres a new logger given the sinks
   static std::shared_ptr<spdlog::logger> setup_logger(std::vector<spdlog::sink_ptr> sinks);
 

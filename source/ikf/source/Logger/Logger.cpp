@@ -20,53 +20,61 @@ std::string Logger::ikf_logger_name() {
 }
 
 std::shared_ptr<spdlog::logger> Logger::ikf_logger() {
-  auto logger = spdlog::get(ikf_logger_name());
-  if(!logger)
+  auto logger_ptr = spdlog::get(ikf_logger_name());
+  if(!logger_ptr)
   {
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     console_sink->set_level(spdlog::level::warn);
     console_sink->set_pattern("[ikf_log] [%^%l%$] %v");
 
-    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/ikf_log.txt", true);
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/ikf_log.txt", false);
     file_sink->set_level(spdlog::level::trace);
 
     std::vector<spdlog::sink_ptr> sinks;
     sinks.push_back(console_sink);
     sinks.push_back(file_sink);
 
-    logger = std::make_shared<spdlog::logger>(ikf_logger_name(), std::begin(sinks), std::end(sinks));
-    logger->flush_on(spdlog::level::err);
-    logger->set_level(spdlog::level::trace);
+    logger_ptr = std::make_shared<spdlog::logger>(ikf_logger_name(), std::begin(sinks), std::end(sinks));
+
+    // force a flush when errors are detected:
+    logger_ptr->flush_on(spdlog::level::err);
+
+    // IMPORTANT: set the logger level to the lowest level of the sinks!
+    logger_ptr->set_level(spdlog::level::trace);
+
+    spdlog::register_logger(logger_ptr);
   }
-  return logger;
+  return logger_ptr;
 }
 
 std::shared_ptr<spdlog::logger> Logger::setup_logger(std::vector<spdlog::sink_ptr> sinks)
 {
-  auto logger = spdlog::get(ikf_logger_name());
-  if(!logger)
+  if(sinks.size() > 0)
   {
-    if(sinks.size() > 0)
-    {
-      logger = std::make_shared<spdlog::logger>(ikf_logger_name(),
+    auto logger_ptr= spdlog::get(ikf_logger_name());
+    if(logger_ptr) {
+      logger_ptr->flush();
+      spdlog::drop(ikf_logger_name());
+    }
+
+    logger_ptr = std::make_shared<spdlog::logger>(ikf_logger_name(),
                                                 std::begin(sinks),
                                                 std::end(sinks));
-    }
-    else
-    {
-      logger = ikf_logger();
-    }
-    spdlog::register_logger(logger);
-  }
-  else if(sinks.size()) {
-    spdlog::drop(ikf_logger_name());
-    logger = std::make_shared<spdlog::logger>(ikf_logger_name(),
-                                              std::begin(sinks),
-                                              std::end(sinks));
-    spdlog::register_logger(logger);
-  }
 
-  return logger;
+    // force a flush when errors are detected:
+    logger_ptr->flush_on(spdlog::level::err);
+
+    // IMPORTANT: set the logger level to the lowest level of the sinks!
+    logger_ptr->set_level(spdlog::level::trace);
+    spdlog::register_logger(logger_ptr);
+    return logger_ptr;
+  } else {
+    auto logger_ptr = spdlog::get(ikf_logger_name());
+    if(!logger_ptr) {
+      logger_ptr = ikf_logger();
+    }
+    return logger_ptr;
+  }
 }
 
 void Logger::log_trace(std::string message) {
