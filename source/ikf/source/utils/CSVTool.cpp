@@ -11,6 +11,7 @@
 ******************************************************************************/
 #include <ikf/utils/CSVTool.hpp>
 #include <ikf/utils/IO.hpp>
+#include <ikf/Logger/Logger.hpp>
 #include <sstream>
 #include <iomanip>
 #include <iostream>
@@ -23,14 +24,14 @@ namespace ikf {
   {
     if (!ikf::utils::IO::fileExists(file_path))
     {
-      std::cout << "CSVTool::read_csv(): file " << file_path << " does not exist." << std::endl;
+      Logger::ikf_logger()->warn("CSVTool::read_csv(): file " + file_path + " does not exist.");
       return false;
     }
 
     std::ifstream  file_;
     file_.open(file_path);
     if(!file_.is_open() || file_.eof()) {
-      std::cout << "CSVTool::read_csv(): Error: CSV file is empty or was not opened!" << std::endl;
+      Logger::ikf_logger()->warn("CSVTool::read_csv(): Error: CSV file is empty or was not opened!");
       return false;
     }
     // Check for header
@@ -38,7 +39,7 @@ namespace ikf {
 
     if (first_value_row < 1)
     {
-      std::cout << "CSVTool::read_csv(): Error: No header in CSV file" << std::endl;
+      Logger::ikf_logger()->warn("CSVTool::read_csv(): Error: No header in CSV file");
       return false;
     }
 
@@ -76,7 +77,7 @@ namespace ikf {
       while (std::getline(row_stream, token, delim))
       {
         if(column_counter >= (int)header_map.size()) {
-          std::cout << "read_csv(): Warning: too many entries in row!" << std::endl;
+          Logger::ikf_logger()->warn("read_csv(): Warning: too many entries in row!");
           ++column_counter; // to indicate a corrupted row
           break;
         }
@@ -85,14 +86,14 @@ namespace ikf {
         if(is >> d_item) {
           csv_data[header_map[column_counter]][line_counter]=(d_item);
         } else {
-          std::cout << "read_csv(): Warning: could not parse item: " << token << " as double, at #line="  << line_counter << std::endl;
+          Logger::ikf_logger()->warn("read_csv(): Warning: could not parse item: " + token + " as double, at #line=" + std::to_string(line_counter));
         }
         ++column_counter;
       }
 
       // check if row was corrupted, if so, overwrite current line with the next one
       if(column_counter != (int)header_map.size()) {
-        std::cout << "CSVTool::read_csv(): Warning: corrupted row=" << parsed_row_counter << " will be skipped!" << std::endl;
+        Logger::ikf_logger()->warn("CSVTool::read_csv(): Warning: corrupted row=" + std::to_string(parsed_row_counter) + " will be skipped!");
       }
       else {
         line_counter++;
@@ -114,7 +115,7 @@ namespace ikf {
   {
     std::fstream file_;
     if(!utils::IO::openFile(filename, file_)) {
-      std::cout << "CSVTool::write_csv(): file " << filename << " could not be created/opend." << std::endl;
+      Logger::ikf_logger()->error("CSVTool::write_csv(): file " + filename + " could not be created/opend.");
       return false;
     }
 
@@ -125,7 +126,7 @@ namespace ikf {
     }
 
     if(IDs.empty()) {
-      std::cout << "CSVTool::write_csv(): No data for " << filename << " ." << std::endl;
+      Logger::ikf_logger()->warn("CSVTool::write_csv(): No data for " + filename);
       return true;
     }
 

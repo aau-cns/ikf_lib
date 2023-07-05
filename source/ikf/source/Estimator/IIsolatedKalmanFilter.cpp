@@ -23,6 +23,7 @@
 #include <ikf/Estimator/IsolatedKalmanFilterHandler.hpp>
 #include <ikf/Estimator/KalmanFilter.hpp>
 #include <ikf/utils/eigen_utils.hpp>
+#include <ikf/Logger/Logger.hpp>
 
 
 namespace ikf {
@@ -64,7 +65,7 @@ ProcessMeasResult_t IIsolatedKalmanFilter::process_measurement(const MeasData &m
         });
       }
     } else {
-      std::cout << "measurement rejected:\n " << m << std::endl;
+      Logger::ikf_logger()->info("measurement rejected:\n " + m.str());
     }
     HistMeas.insert(m, m.t_m);
     return res;
@@ -124,7 +125,7 @@ Eigen::MatrixXd IIsolatedKalmanFilter::get_CrossCovFact_before_t(const Timestamp
   if (iter != HistCrossCovFactors.end()) {
     bool res = iter->second.get_before_t(t, mat);
     if (!res) {
-      std::cout << "IMMSF.get_CrossCovFact_before_t(): could not find elem for id=" << unique_ID << " at t=" << t << std::endl;
+      Logger::ikf_logger()->info("IMMSF.get_CrossCovFact_before_t(): could not find elem for id=" + std::to_string(unique_ID) + " at t=" + t.str());
     }
   }
   return mat;
@@ -278,7 +279,9 @@ bool IIsolatedKalmanFilter::apply_propagation(const Eigen::MatrixXd &Phi_II_ab, 
       return true;
     }
     else {
-      std::cout << "Could not set the correction factor Phi_II_ab=" << Phi_II_ab << std::endl;
+      std::stringstream ss;
+      ss << Phi_II_ab;
+      Logger::ikf_logger()->warn("Could not set the correction factor Phi_II_ab=" + ss.str());
     }
   }
   return false;
@@ -293,7 +296,9 @@ bool IIsolatedKalmanFilter::apply_propagation(ptr_belief &bel_II_apri, const Eig
       return true;
     }
     else {
-      std::cout << "Could not set the correction factor Phi_II_ab=" << Phi_II_ab << std::endl;
+      std::stringstream ss;
+      ss << Phi_II_ab;
+      Logger::ikf_logger()->warn("Could not set the correction factor Phi_II_ab=" + ss.str());
     }
   }
   return false;
@@ -306,7 +311,9 @@ bool ikf::IIsolatedKalmanFilter::apply_propagation(ptr_belief bel_II_b, const Ei
       return true;
     }
     else {
-      std::cout << "Could not set the correction factor Phi_II_ab=" << Phi_II_ab << std::endl;
+      std::stringstream ss;
+      ss << Phi_II_ab;
+      Logger::ikf_logger()->warn("Could not set the correction factor Phi_II_ab=" + ss.str());
     }
   }
   return false;

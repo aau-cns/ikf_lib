@@ -17,12 +17,12 @@
 * You can contact the author at <roland.jung@aau.at>
 ******************************************************************************/
 #include <ikf/Estimator/IsolatedKalmanFilterHandler.hpp>
-
+#include <ikf/Logger/Logger.hpp>
 namespace ikf {
 
 IsolatedKalmanFilterHandler::IsolatedKalmanFilterHandler(const bool handle_delayed, const double horizon_sec) : m_handle_delayed_meas(handle_delayed), HistMeas(horizon_sec), m_horzion_sec(horizon_sec) {
   if (handle_delayed) {
-    std::cout << "IsolatedKalmanFilterHandler will handle delayed measurements, therefore call it's process_measurement method!" << std::endl;
+    Logger::ikf_logger()->info("IsolatedKalmanFilterHandler will handle delayed measurements, therefore call it's process_measurement method!");
   }
 }
 
@@ -218,7 +218,7 @@ bool IsolatedKalmanFilterHandler::redo_updates_from_t(const Timestamp &t) {
   remove_beliefs_from_t(t);
   Timestamp t_last;
   if (HistMeas.get_latest_t(t_last)) {
-    std::cout << "IsolatedKalmanFilterHandler::redo_updates_from_t() t=" << t << ", t_last=" << t_last << std::endl;
+    Logger::ikf_logger()->info("IsolatedKalmanFilterHandler::redo_updates_from_t() t=" + t.str() + ", t_last=" + t_last.str());
 
     if (t == t_last) {
       auto vec = HistMeas.get_all_at_t(t);
@@ -238,7 +238,7 @@ bool IsolatedKalmanFilterHandler::redo_updates_after_t(const Timestamp &t) {
   remove_beliefs_after_t(t);
   Timestamp t_after, t_last;
   if (HistMeas.get_after_t(t, t_after) &&  HistMeas.get_latest_t(t_last)) {
-    std::cout << "IsolatedKalmanFilterHandler::redo_updates_after_t() t_after=" << t_after << ", t_last=" << t_last << std::endl;
+    Logger::ikf_logger()->info("IsolatedKalmanFilterHandler::redo_updates_after_t() t_after=" + t_after.str() + ", t_last=" + t_last.str());
     if (t_after == t_last) {
       auto vec = HistMeas.get_all_at_t(t_after);
       for (MeasData &m : vec) {

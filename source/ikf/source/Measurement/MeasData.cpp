@@ -80,6 +80,12 @@ MeasData MeasData::lin_interpolate(const MeasData &m_a, const MeasData &m_c, con
   return m_b;
 }
 
+std::string MeasData::str() const {
+  std::stringstream ss;
+  ss << *this;
+  return ss.str();
+}
+
 
 
 } // ns ikf

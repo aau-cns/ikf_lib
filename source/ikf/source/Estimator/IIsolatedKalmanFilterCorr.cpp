@@ -21,6 +21,8 @@
 *  [1] Jung, Roland and Weiss, Stephan, "Modular Multi-Sensor Fusion: A Collaborative State Estimation Perspective", IEEE Robotics and Automation Letters, DOI: 10.1109/LRA.2021.3096165, 2021.
 ******************************************************************************/
 #include <ikf/Estimator/IIsolatedKalmanFilterCorr.hpp>
+#include <ikf/Logger/Logger.hpp>
+
 namespace  ikf {
 
 IIsolatedKalmanFilterCorr::IIsolatedKalmanFilterCorr(std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler, const size_t ID, const bool handle_delayed_meas, const double horizon_sec) : IIsolatedKalmanFilter(ptr_Handler, ID, handle_delayed_meas, horizon_sec), HistCorr(horizon_sec) {}
@@ -50,12 +52,12 @@ Eigen::MatrixXd IIsolatedKalmanFilterCorr::get_CrossCovFact_at_t(const Timestamp
           set_CrossCovFact_at_t(t, ID_J, mat);
         }
         else {
-          std::cout << "IKF::get_CrossCovFact_at_t(): could not compute correction between t_prev=" << t_prev << " and t_curr=" << t << std::endl;
+          Logger::ikf_logger()->info("IKF::get_CrossCovFact_at_t(): could not compute correction between t_prev=" + t_prev.str() + " and t_curr=" +  t.str());
         }
       }
       else {
-        std::cout << "IKF::get_CrossCovFact_at_t(): could not find elem for id=" << ID_J << " at t=" << t << std::endl;
-        std::cout << "IKF::get_CrossCovFact_at_t(): could not find elem for id=" << ID_J << " at t_prev=" << t_prev << std::endl;
+        Logger::ikf_logger()->info("IKF::get_CrossCovFact_at_t(): could not find elem for id=" + std::to_string(ID_J) +" at t="      + t.str());
+        Logger::ikf_logger()->info("IKF::get_CrossCovFact_at_t(): could not find elem for id=" + std::to_string(ID_J) +" at t_prev=" + t_prev.str());
       }
     }
   }
@@ -139,7 +141,7 @@ Eigen::MatrixXd IIsolatedKalmanFilterCorr::compute_correction(const Timestamp &t
     return M_a_b;
   }
   else {
-    std::cout << "IKF::compute_correction(): no element found for timestamps:[" << t_a << "," << t_b_found << "]" << std::endl;
+    Logger::ikf_logger()->warn("IKF::compute_correction(): no element found for timestamps:[" + t_a.str() + "," + t_b_found.str() + "]");
   }
   return Eigen::MatrixXd();
 }
@@ -178,7 +180,7 @@ bool IIsolatedKalmanFilterCorr::apply_correction_at_t(const Timestamp &t, const 
   }
   else {
     HistCorr.insert(Factor, t);
-    std::cout << "IKF::apply_correction_at_t(): no element found for timestamps:[" << t << "]" << std::endl;
+    Logger::ikf_logger()->info("IKF::apply_correction_at_t(): no element found for timestamps:[" + t.str() + "]");
     return false;
   }
 }
@@ -192,7 +194,9 @@ void IIsolatedKalmanFilterCorr::print_HistCorr(size_t max, bool reverse) {
   size_t cnt = 0;
   auto lambda = [&cnt, max](Eigen::MatrixXd const& i){
     if(cnt < max) {
-      std::cout << "* " << i << std::endl;
+      std::stringstream ss;
+      ss << i;
+      Logger::ikf_logger()->trace("* " + ss.str());;
     }
     cnt++;
   };

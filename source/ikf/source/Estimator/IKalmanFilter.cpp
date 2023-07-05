@@ -19,6 +19,7 @@
 #include <ikf/Estimator/IKalmanFilter.hpp>
 #include <ikf/Estimator/KalmanFilter.hpp>
 #include <ikf/utils/eigen_utils.hpp>
+#include <ikf/Logger/Logger.hpp>
 
 namespace ikf {
 
@@ -74,7 +75,7 @@ bool IKalmanFilter::redo_updates_after_t(const Timestamp &t) {
   remove_beliefs_after_t(t);
   Timestamp t_after, t_last;
   if (HistMeas.get_after_t(t, t_after) &&  HistMeas.get_latest_t(t_last)) {
-    std::cout << "IKalmanFilter::redo_updates_after_t() t_after=" << t_after << ", t_last=" << t_last << std::endl;
+    Logger::ikf_logger()->trace("IKalmanFilter::redo_updates_after_t() t_after=" + t_after.str() + ", t_last=" + t_last.str());
     if (t_after == t_last) {
       MeasData m;
       HistMeas.get_at_t(t_after, m);
@@ -111,7 +112,7 @@ bool IKalmanFilter::exist_belief_at_t(const Timestamp &t) const {
 ptr_belief ikf::IKalmanFilter::get_belief_at_t(const Timestamp &t) const {
   ptr_belief bel;
   if (!HistBelief.get_at_t(t, bel)) {
-    std::cout << "IKalmanFilter::get_belief_at_t: could not find belief at t=" << t << std::endl;
+    Logger::ikf_logger()->info("IKalmanFilter::get_belief_at_t: could not find belief at t=" + t.str());
   }
   return bel;
 }
@@ -120,7 +121,7 @@ ptr_belief ikf::IKalmanFilter::get_belief_at_t(const Timestamp &t) const {
 ptr_belief IKalmanFilter::get_belief_at_t(const Timestamp &t, const ikf::eGetBeliefStrategy type) {
   ptr_belief bel;
   if (!get_belief_at_t(t, bel, type)) {
-    std::cout << "IKalmanFilter::get_belief_at_t: could not find belief at t=" << t << std::endl;
+    Logger::ikf_logger()->info("IKalmanFilter::get_belief_at_t: could not find belief at t=" + t.str());
   }
   return bel;
 }
@@ -304,7 +305,9 @@ void IKalmanFilter::print_HistMeas(size_t max, bool reverse) {
   size_t cnt = 0;
   auto lambda = [&cnt, max](MeasData const& i){
     if(cnt < max) {
-      std::cout << "* " << i << std::endl;
+      std::stringstream ss;
+      ss << "* " << i;
+      Logger::ikf_logger()->info(ss.str());
     }
     cnt++;
   };
@@ -320,7 +323,9 @@ void IKalmanFilter::print_HistBelief(size_t max, bool reverse) {
   size_t cnt = 0;
   auto lambda = [&cnt, max](ptr_belief const& i){
     if(cnt < max) {
-      std::cout << (*i.get()) << std::endl;
+      std::stringstream ss;
+      ss << (*i.get()) ;
+      Logger::ikf_logger()->info(ss.str());
     }
     cnt++;
   };
@@ -375,7 +380,7 @@ bool IKalmanFilter::apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Ei
     }
   }
   else {
-    std::cout << "No belief at t_a=" + t_a.str() + "! Did you forgot to initialize the filter?" << std::endl;
+    Logger::ikf_logger()->warn("No belief at t_a=" + t_a.str() + "! Did you forgot to initialize the filter?");
   }
   return false;
 }
@@ -398,11 +403,13 @@ bool IKalmanFilter::apply_propagation(ptr_belief &bel_II_a, const Eigen::VectorX
     }
   }
   else {
-    std::cout << "Could not set the propagated belief from t_a=" << t_a << " to t_b=" << t_b << "! Maybe dimension missmatch?" << std::endl;
-    std::cout << "Phi_II_ab=" << Phi_II_ab << "\n";
-    std::cout << "Q_II_ab=" << Q_II_ab << "\n";
-    std::cout << "Sigma_II_a=" << bel_II_a->Sigma() << "\n";
-    std::cout << "mean_II_a=" << bel_II_a->mean() << std::endl;
+    std::stringstream ss;
+    ss << "Could not set the propagated belief from t_a=" << t_a << " to t_b=" << t_b << "! Maybe dimension missmatch?" << std::endl;
+    ss << "Phi_II_ab=" << Phi_II_ab << "\n";
+    ss << "Q_II_ab=" << Q_II_ab << "\n";
+    ss << "Sigma_II_a=" << bel_II_a->Sigma() << "\n";
+    ss << "mean_II_a=" << bel_II_a->mean();
+    Logger::ikf_logger()->error(ss.str());
   }
   return false;
 }
@@ -416,10 +423,12 @@ bool ikf::IKalmanFilter::apply_propagation(ikf::ptr_belief bel_II_b, const Eigen
     return true;
   }
   else {
-    std::cout << "Could not set the propagated belief from t_a=" << t_a << " to t_b=" << t_b << "! Maybe dimension missmatch?" << std::endl;
-    std::cout << "Phi_II_ab=" << Phi_II_ab << "\n";
-    std::cout << "Sigma_II_b=" << bel_II_b->Sigma() << "\n";
-    std::cout << "mean_II_b=" << bel_II_b->mean() << std::endl;
+    std::stringstream ss;
+    ss << "Could not set the propagated belief from t_a=" << t_a << " to t_b=" << t_b << "! Maybe dimension missmatch?" << std::endl;
+    ss << "Phi_II_ab=" << Phi_II_ab << "\n";
+    ss << "Sigma_II_b=" << bel_II_b->Sigma() << "\n";
+    ss << "mean_II_b=" << bel_II_b->mean() << std::endl;
+    Logger::ikf_logger()->error(ss.str());
   }
   return false;
 }

@@ -1,17 +1,24 @@
 /******************************************************************************
 * FILENAME:     RTVerification.hpp
 * PURPOSE:
-* AUTHOR:       Roland Jung (jungr-ait@github)
-*
+* AUTHOR:       Roland Jung
+* MAIL:         roland.jung@ieee.org
+* VERSION:      v0.0.1
 *  Copyright (C)
 *  All rights reserved.
 ******************************************************************************/
-#ifndef RTVERIFICATION_HPP
-#define RTVERIFICATION_HPP
+#ifndef IKF_RTVERIFICATION_HPP
+#define IKF_RTVERIFICATION_HPP
 #include <stdexcept>
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+
+#define RTVERIFICATION_USE_LOGGER 1
+
+#if RTVERIFICATION_USE_LOGGER
+  #include <ikf/Logger/Logger.hpp>
+#endif
 
 namespace ikf {
 namespace utils
@@ -41,11 +48,18 @@ namespace utils
 
         if(bFail)
         {
+#if RTVERIFICATION_USE_LOGGER
+          Logger::ikf_logger()->error(ss.str());
+#endif // RTVERIFICATION_USE_LOGGER
           throw std::runtime_error(ss.str());
         }
         else
         {
+#if RTVERIFICATION_USE_LOGGER
+          Logger::ikf_logger()->error(ss.str());
+#else
           std::cout << ss.str() << std::endl;
+#endif // RTVERIFICATION_USE_LOGGER
           return false;
         }
       }
@@ -73,11 +87,18 @@ namespace utils
 
         if(bFail)
         {
+#if RTVERIFICATION_USE_LOGGER
+          Logger::ikf_logger()->error(ss.str());
+#endif // RTVERIFICATION_USE_LOGGER
           throw std::runtime_error(ss.str());
         }
         else
         {
-          std::cout << ss.str()  << std::endl;
+#if RTVERIFICATION_USE_LOGGER
+          Logger::ikf_logger()->error(ss.str());
+#else
+          std::cout << ss.str() << std::endl;
+#endif // RTVERIFICATION_USE_LOGGER
           return false;
         }
       }

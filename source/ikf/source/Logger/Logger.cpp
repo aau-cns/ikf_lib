@@ -10,7 +10,9 @@
 *  All rights reserved. See the LICENSE file for details.
 ******************************************************************************/
 #include <ikf/Logger/Logger.hpp>
+#include <sstream>      // std::stringstream, std::stringbuf
 #include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/daily_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 namespace ikf {
@@ -27,7 +29,12 @@ std::shared_ptr<spdlog::logger> Logger::ikf_logger() {
     console_sink->set_level(spdlog::level::warn);
     console_sink->set_pattern("[ikf_log] [%^%l%$] %v");
 
-    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/ikf_log.txt", false);
+    // TODO: maybe use dedicated thirdparty lib: https://github.com/HowardHinnant/date
+    std::time_t now_c = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::tm now_tm = *std::localtime(&now_c);
+    std::stringstream ss;
+    ss << "logs/ikf_log_" << now_tm.tm_year << "-" << now_tm.tm_mon << "-" <<  now_tm.tm_mday << "-" <<  now_tm.tm_hour << "-" <<  now_tm.tm_min << "-" <<  now_tm.tm_sec << ".txt";
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(ss.str(), false);
     file_sink->set_level(spdlog::level::trace);
 
     std::vector<spdlog::sink_ptr> sinks;

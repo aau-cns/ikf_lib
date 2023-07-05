@@ -10,7 +10,7 @@
 *  All rights reserved. See the LICENSE file for details.
 ******************************************************************************/
 #include <ikf/utils/IO.hpp>
-
+#include <ikf/Logger/Logger.hpp>
 namespace ikf
 {
 namespace utils
@@ -33,7 +33,7 @@ namespace utils
     }
     else
     {
-      std::cout << "ikf::utils::IO: unable to open file: " << file_name;
+      Logger::ikf_logger()->warn("ikf::utils::IO: unable to open file: " + file_name);
     }
 
     return vgmf_files;
@@ -449,7 +449,7 @@ namespace utils
 
         if(!dirExist(baseDir))
         {
-          std::cerr << "ikf::utils::IO: something went wrong creating dir: " << baseDir << std::endl;
+          Logger::ikf_logger()->error("ikf::utils::IO: something went wrong creating dir: " + baseDir);
           return false;
         }
       }
@@ -473,7 +473,7 @@ namespace utils
 
       if(!dirExist(baseDir))
       {
-        std::cerr << "ikf::utils::IO: something went wrong creating dir: " << baseDir << std::endl;
+        Logger::ikf_logger()->error("ikf::utils::IO: something went wrong creating dir: " + baseDir);
         return false;
       }
     }

@@ -26,7 +26,7 @@ public:
   // logs everyting (trace) to a file, logs warnings+ to the console
   static std::string ikf_logger_name();
 
-  // logs everyting (trace) to a file, logs warnings+ to the console
+  // logs everyting (trace) to a file, logs warnings+ to the console; logger level by default is trace (all)
   static std::shared_ptr<spdlog::logger> ikf_logger();
 
   // creates and registeres a new logger given the sinks

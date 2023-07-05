@@ -55,6 +55,7 @@ namespace ikf
     friend std::ostream& operator<< (std::ostream& out, const MeasData& obj);
 
     static MeasData lin_interpolate(MeasData const& m_a, MeasData const& m_c, Timestamp const& t_b);
+    std::string str() const;
 
   };
 
