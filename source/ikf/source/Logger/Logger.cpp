@@ -44,11 +44,12 @@ std::shared_ptr<spdlog::logger> Logger::ikf_logger() {
     logger_ptr = std::make_shared<spdlog::logger>(ikf_logger_name(), std::begin(sinks), std::end(sinks));
 
     // force a flush when errors are detected:
-    logger_ptr->flush_on(spdlog::level::err);
+    logger_ptr->flush_on(spdlog::level::warn);
 
     // IMPORTANT: set the logger level to the lowest level of the sinks!
     logger_ptr->set_level(spdlog::level::trace);
-
+    logger_ptr->warn("log file created: " + ss.str());
+    logger_ptr->flush();
     spdlog::register_logger(logger_ptr);
   }
   return logger_ptr;
