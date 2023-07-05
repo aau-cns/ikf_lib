@@ -55,6 +55,20 @@ std::shared_ptr<spdlog::logger> Logger::ikf_logger() {
   return logger_ptr;
 }
 
+bool Logger::set_level(const size_t level) {
+  if(level <= spdlog::level::off) {
+    auto l_ptr = ikf_logger();
+
+    l_ptr->set_level(static_cast<spdlog::level::level_enum>(level) );
+    return true;
+  }
+  return false;
+}
+
+void Logger::disable() {
+  ikf_logger()->set_level(spdlog::level::off);
+}
+
 std::shared_ptr<spdlog::logger> Logger::setup_logger(std::vector<spdlog::sink_ptr> sinks)
 {
   if(sinks.size() > 0)

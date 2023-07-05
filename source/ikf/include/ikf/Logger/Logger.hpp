@@ -28,6 +28,8 @@ public:
 
   // logs everyting (trace) to a file, logs warnings+ to the console; logger level by default is trace (all)
   static std::shared_ptr<spdlog::logger> ikf_logger();
+  static bool set_level(size_t const level);
+  static void disable();
 
   // creates and registeres a new logger given the sinks
   static std::shared_ptr<spdlog::logger> setup_logger(std::vector<spdlog::sink_ptr> sinks);
