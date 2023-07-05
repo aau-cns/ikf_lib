@@ -32,8 +32,8 @@ public:
   IsolatedKalmanFilterHandler(bool const handle_delayed=true, double const horizon_sec=1.0);
   ~IsolatedKalmanFilterHandler() = default;
 
-  bool add(ptr_IKF p_IKF);
-  ptr_IKF get(const size_t ID);
+  bool add(pIKF_t p_IKF);
+  pIKF_t get(const size_t ID);
   bool remove(const size_t ID);
   bool exists(const size_t ID);
   std::vector<size_t> get_instance_ids();

@@ -26,7 +26,7 @@ IsolatedKalmanFilterHandler::IsolatedKalmanFilterHandler(const bool handle_delay
   }
 }
 
-bool IsolatedKalmanFilterHandler::add(ptr_IKF p_IKF) {
+bool IsolatedKalmanFilterHandler::add(pIKF_t p_IKF) {
   if (!exists(p_IKF->ID())) {
     // either one is handling delayed measurements!
     p_IKF->handle_delayed_meas(!m_handle_delayed_meas);

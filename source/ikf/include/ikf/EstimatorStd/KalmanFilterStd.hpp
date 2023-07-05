@@ -29,12 +29,12 @@ namespace ikf {
 class IKF_API KalmanFilterStd {
 public:
   KalmanFilterStd();
-  KalmanFilterStd(ptr_belief const& belief);
+  KalmanFilterStd(pBelief_t const& belief);
 
-  KalmanFilterStd(ptr_belief const& belief, Timestamp const& t);
+  KalmanFilterStd(pBelief_t const& belief, Timestamp const& t);
 
-  void set_belief(ptr_belief p_bel);
-  ptr_belief get_belief();
+  void set_belief(pBelief_t p_bel);
+  pBelief_t get_belief();
   virtual ~KalmanFilterStd();
 
   virtual bool propagate(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_b);
@@ -45,7 +45,7 @@ public:
                                  const Eigen::VectorXd &z);
 
 protected:
-  ptr_belief m_belief;
+  pBelief_t m_belief;
 };
 
 } // ns ifk

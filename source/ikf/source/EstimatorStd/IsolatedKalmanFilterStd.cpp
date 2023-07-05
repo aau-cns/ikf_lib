@@ -24,7 +24,7 @@
 
 namespace ikf{
 
-IsolatedKalmanFilterStd::IsolatedKalmanFilterStd(ptr_handler pHandler, const ptr_belief &belief, const size_t ID) : KalmanFilterStd(belief),  m_ID(ID), m_pHandler(pHandler) {}
+IsolatedKalmanFilterStd::IsolatedKalmanFilterStd(ptr_handler pHandler, const pBelief_t &belief, const size_t ID) : KalmanFilterStd(belief),  m_ID(ID), m_pHandler(pHandler) {}
 
 IsolatedKalmanFilterStd::IsolatedKalmanFilterStd(ptr_handler pHandler, const size_t ID) : KalmanFilterStd(),  m_ID(ID), m_pHandler(pHandler) {}
 
@@ -61,8 +61,8 @@ bool IsolatedKalmanFilterStd::joint_update(const size_t ID_I, const size_t ID_J,
   RTV_EXPECT_TRUE_THROW(m_pHandler->exists(ID_I) && m_pHandler->exists(ID_J), "IKF instances do not exists!");
   RTV_EXPECT_TRUE_THROW(ID_I == m_ID, "ID_I missmatch! wrong interim master");
 
-  ptr_belief bel_I_apri = m_belief;
-  ptr_belief bel_J_apri = m_pHandler->get(ID_J)->get_belief();
+  pBelief_t bel_I_apri = m_belief;
+  pBelief_t bel_J_apri = m_pHandler->get(ID_J)->get_belief();
   RTV_EXPECT_TRUE_THROW(bel_I_apri->timestamp() == bel_J_apri->timestamp(), "Timestamps of bliefs need to match! Did you forgett to propagate first?");
 
   // stack the measurement sensitivity matrix:
@@ -169,7 +169,7 @@ Eigen::MatrixXd IsolatedKalmanFilterStd::get_Sigma_IJ(const size_t ID_I, const s
 }
 
 
-Eigen::MatrixXd IsolatedKalmanFilterStd::stack_apri_covariance(ptr_belief &bel_J_apri, const size_t ID_J) {
+Eigen::MatrixXd IsolatedKalmanFilterStd::stack_apri_covariance(pBelief_t &bel_J_apri, const size_t ID_J) {
   Eigen::MatrixXd Sigma_IJ = get_Sigma_IJ(m_ID, ID_J);
 
   if (Sigma_IJ.size()) {

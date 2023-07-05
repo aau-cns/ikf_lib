@@ -45,8 +45,8 @@ public:
 
   virtual size_t ID() const;
   void reset() override;
-  virtual void initialize(ptr_belief bel_init) override;
-  virtual void initialize(ptr_belief bel_init, Timestamp const& t) override;
+  virtual void initialize(pBelief_t bel_init) override;
+  virtual void initialize(pBelief_t bel_init, Timestamp const& t) override;
   virtual void set_horizon(double const t_hor) override;
 
   virtual bool insert_measurement(MeasData const& m, Timestamp const& t) override;
@@ -107,37 +107,37 @@ protected:
   // KF: Algorithm 8 in [1]
   bool apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
   // EKF: Algorithm 8 in [1]
-  bool apply_propagation(ptr_belief& bel_II_apri, const Eigen::VectorXd &mean_II_b, const Eigen::MatrixXd &Phi_II_ab,
+  bool apply_propagation(pBelief_t& bel_II_apri, const Eigen::VectorXd &mean_II_b, const Eigen::MatrixXd &Phi_II_ab,
                          const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
 
-  virtual  bool apply_propagation(ptr_belief bel_II_b, const Eigen::MatrixXd &Phi_II_ab, const Timestamp &t_a, const Timestamp &t_b);
+  virtual  bool apply_propagation(pBelief_t bel_II_b, const Eigen::MatrixXd &Phi_II_ab, const Timestamp &t_a, const Timestamp &t_b);
 
   // KF:  Algorithm 4 in [1]
   bool apply_private_observation(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) override;
   // EKF: Algorithm 4 in [1]
-  bool apply_private_observation(ptr_belief& bel_II_apri,const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R,
+  bool apply_private_observation(pBelief_t& bel_II_apri,const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R,
                                  const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg);
 
-  bool apply_private_observation(ptr_belief& bel_II_apri, const size_t ID_I,const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg);
+  bool apply_private_observation(pBelief_t& bel_II_apri, const size_t ID_I,const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg);
 
   // KF: Algorithm 6 in [1]
   bool apply_joint_observation(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ,
                                const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t, const KalmanFilter::CorrectionCfg_t& cfg);
 
   // EKF: Algorithm 6 in [1]
-  bool apply_joint_observation(ptr_belief& bel_I_apri, ptr_belief& bel_J_apri, const size_t ID_I, const size_t ID_J,
+  bool apply_joint_observation(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, const size_t ID_I, const size_t ID_J,
                                const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ, const Eigen::MatrixXd &R,
                                const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg);
 
 
-  bool apply_joint_observation(ptr_belief& bel_I_apri, ptr_belief& bel_J_apri, ptr_belief& bel_K_apri,
+  bool apply_joint_observation(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, pBelief_t& bel_K_apri,
                                const size_t ID_I, const size_t ID_J, const size_t ID_K,
                                const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ, const Eigen::MatrixXd &H_KK,
                                const Eigen::MatrixXd &R, const Eigen::VectorXd &r,
                                const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg);
 
-  bool apply_joint_observation(ptr_belief& bel_I_apri, ptr_belief& bel_J_apri,
-                               ptr_belief& bel_K_apri, ptr_belief& bel_L_apri,
+  bool apply_joint_observation(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri,
+                               pBelief_t& bel_K_apri, pBelief_t& bel_L_apri,
                                const size_t ID_I, const size_t ID_J, const size_t ID_K, const size_t ID_L,
                                const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ,
                                const Eigen::MatrixXd &H_KK, const Eigen::MatrixXd &H_LL,
@@ -156,13 +156,13 @@ protected:
                           Eigen::MatrixXd& Sigma_IJ, Eigen::MatrixXd& Sigma_IK, Eigen::MatrixXd& Sigma_JK,
                             Eigen::MatrixXd& Sigma_IL, Eigen::MatrixXd& Sigma_JL, Eigen::MatrixXd& Sigma_KL);
 
-  Eigen::MatrixXd stack_apri_covariance(ptr_belief& bel_I_apri, ptr_belief& bel_J_apri, const size_t ID_I, const size_t ID_J,
+  Eigen::MatrixXd stack_apri_covariance(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, const size_t ID_I, const size_t ID_J,
                                         Timestamp const& t);
 
-  Eigen::MatrixXd stack_apri_covariance(ptr_belief& bel_I_apri, ptr_belief& bel_J_apri, ptr_belief& bel_K_apri,
+  Eigen::MatrixXd stack_apri_covariance(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, pBelief_t& bel_K_apri,
                                         const size_t ID_I, const size_t ID_J, const size_t ID_K,
                                         Timestamp const& t);
-  Eigen::MatrixXd stack_apri_covariance(ptr_belief& bel_I_apri, ptr_belief& bel_J_apri, ptr_belief& bel_K_apri, ptr_belief& bel_L_apri,
+  Eigen::MatrixXd stack_apri_covariance(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, pBelief_t& bel_K_apri, pBelief_t& bel_L_apri,
                                         const size_t ID_I, const size_t ID_J, const size_t ID_K, const size_t ID_L,
                                         Timestamp const& t);
 
@@ -177,7 +177,7 @@ protected:
 
 }; // class IIsolatedKalmanFilter
 
-typedef std::shared_ptr<IIsolatedKalmanFilter> ptr_IKF;
+typedef std::shared_ptr<IIsolatedKalmanFilter> pIKF_t;
 
 }
 

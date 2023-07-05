@@ -24,18 +24,18 @@ namespace ikf {
 
 KalmanFilterStd::KalmanFilterStd() {}
 
-KalmanFilterStd::KalmanFilterStd(const ptr_belief &belief) {
+KalmanFilterStd::KalmanFilterStd(const pBelief_t &belief) {
   m_belief = belief->clone();
 }
 
-KalmanFilterStd::KalmanFilterStd(const ptr_belief &belief, const Timestamp &t) {
+KalmanFilterStd::KalmanFilterStd(const pBelief_t &belief, const Timestamp &t) {
   m_belief = belief->clone();
   m_belief->set_timestamp(t);
 }
 
-void KalmanFilterStd::set_belief(ptr_belief p_bel) { m_belief = p_bel; }
+void KalmanFilterStd::set_belief(pBelief_t p_bel) { m_belief = p_bel; }
 
-ptr_belief KalmanFilterStd::get_belief() { return m_belief; }
+pBelief_t KalmanFilterStd::get_belief() { return m_belief; }
 
 KalmanFilterStd::~KalmanFilterStd() {}
 

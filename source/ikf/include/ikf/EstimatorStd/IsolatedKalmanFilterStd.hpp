@@ -47,7 +47,7 @@ public:
   /// \param belief initial belief
   /// \param ID unique ID
   ///
-  IsolatedKalmanFilterStd(ptr_handler pHandler, ptr_belief const& belief, size_t const ID);
+  IsolatedKalmanFilterStd(ptr_handler pHandler, pBelief_t const& belief, size_t const ID);
   IsolatedKalmanFilterStd(ptr_handler pHandler, size_t const ID);
   virtual ~IsolatedKalmanFilterStd();
   virtual size_t ID() const;
@@ -75,7 +75,7 @@ protected:
 
   Eigen::MatrixXd get_CrossCovFact(const size_t ID_J) const;
   Eigen::MatrixXd get_Sigma_IJ(const size_t ID_I, const size_t ID_J);
-  Eigen::MatrixXd stack_apri_covariance(ptr_belief &bel_J_apri, const size_t ID_J);
+  Eigen::MatrixXd stack_apri_covariance(pBelief_t &bel_J_apri, const size_t ID_J);
   void apply_propagation(const Eigen::MatrixXd &Phi_a_b);
   void apply_correction(const Eigen::MatrixXd &Lambda);
 

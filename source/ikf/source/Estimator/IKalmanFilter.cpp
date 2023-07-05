@@ -27,7 +27,7 @@ IKalmanFilter::IKalmanFilter(const double horizon_sec_, const bool handle_delaye
 
 }
 
-IKalmanFilter::IKalmanFilter(ptr_belief bel_0, const double horizon_sec_, const bool handle_delayed_meas) : HistBelief(horizon_sec_), HistMeas(horizon_sec_), HistMeasPropagation(horizon_sec_), max_time_horizon_sec(horizon_sec_), m_handle_delayed_meas(handle_delayed_meas)
+IKalmanFilter::IKalmanFilter(pBelief_t bel_0, const double horizon_sec_, const bool handle_delayed_meas) : HistBelief(horizon_sec_), HistMeas(horizon_sec_), HistMeasPropagation(horizon_sec_), max_time_horizon_sec(horizon_sec_), m_handle_delayed_meas(handle_delayed_meas)
 {
   HistBelief.insert(bel_0, bel_0->timestamp());
 }
@@ -41,11 +41,11 @@ void IKalmanFilter::handle_delayed_meas(const bool val) {
   }
 }
 
-void IKalmanFilter::initialize(ptr_belief bel_init) {
+void IKalmanFilter::initialize(pBelief_t bel_init) {
   initialize(bel_init, bel_init->timestamp());
 }
 
-void IKalmanFilter::initialize(ptr_belief bel_init, const Timestamp &t) {
+void IKalmanFilter::initialize(pBelief_t bel_init, const Timestamp &t) {
   reset();
   HistBelief.insert(bel_init, t);
 }
@@ -95,13 +95,13 @@ Timestamp IKalmanFilter::current_t() const {
   return t;
 }
 
-ptr_belief IKalmanFilter::current_belief() const {
-  ptr_belief bel;
+pBelief_t IKalmanFilter::current_belief() const {
+  pBelief_t bel;
   if (HistBelief.get_latest(bel)) {
     return bel;
   }
   else {
-    return ptr_belief(nullptr);
+    return pBelief_t(nullptr);
   }
 }
 
@@ -109,8 +109,8 @@ bool IKalmanFilter::exist_belief_at_t(const Timestamp &t) const {
   return HistBelief.exist_at_t(t);
 }
 
-ptr_belief ikf::IKalmanFilter::get_belief_at_t(const Timestamp &t) const {
-  ptr_belief bel;
+pBelief_t ikf::IKalmanFilter::get_belief_at_t(const Timestamp &t) const {
+  pBelief_t bel;
   if (!HistBelief.get_at_t(t, bel)) {
     Logger::ikf_logger()->info("IKalmanFilter::get_belief_at_t: could not find belief at t=" + t.str());
   }
@@ -118,15 +118,15 @@ ptr_belief ikf::IKalmanFilter::get_belief_at_t(const Timestamp &t) const {
 }
 
 
-ptr_belief IKalmanFilter::get_belief_at_t(const Timestamp &t, const ikf::eGetBeliefStrategy type) {
-  ptr_belief bel;
+pBelief_t IKalmanFilter::get_belief_at_t(const Timestamp &t, const ikf::eGetBeliefStrategy type) {
+  pBelief_t bel;
   if (!get_belief_at_t(t, bel, type)) {
     Logger::ikf_logger()->info("IKalmanFilter::get_belief_at_t: could not find belief at t=" + t.str());
   }
   return bel;
 }
 
-bool IKalmanFilter::get_belief_at_t(const Timestamp &t, ptr_belief &bel, const ikf::eGetBeliefStrategy type) {
+bool IKalmanFilter::get_belief_at_t(const Timestamp &t, pBelief_t &bel, const ikf::eGetBeliefStrategy type) {
   if (!exist_belief_at_t(t)) {
     switch(type) {
       case eGetBeliefStrategy::EXACT:
@@ -135,7 +135,7 @@ bool IKalmanFilter::get_belief_at_t(const Timestamp &t, ptr_belief &bel, const i
       }
       case eGetBeliefStrategy::CLOSEST:
       {
-        TStampedData<ptr_belief> stamped_bel_prev, stamped_bel_after;
+        TStampedData<pBelief_t> stamped_bel_prev, stamped_bel_after;
         if(HistBelief.get_before_t(t, stamped_bel_prev)) {
           if (HistBelief.get_after_t(t, stamped_bel_after)) {
             // bounded between two beliefs
@@ -170,7 +170,7 @@ bool IKalmanFilter::get_belief_at_t(const Timestamp &t, ptr_belief &bel, const i
       }
       case eGetBeliefStrategy::LINEAR_INTERPOL_BELIEF:
       {
-        TStampedData<ptr_belief> stamped_bel_prev, stamped_bel_after;
+        TStampedData<pBelief_t> stamped_bel_prev, stamped_bel_after;
         if(HistBelief.get_before_t(t, stamped_bel_prev) && HistBelief.get_after_t(t, stamped_bel_after))
         {
 
@@ -241,12 +241,12 @@ bool IKalmanFilter::get_belief_at_t(const Timestamp &t, ptr_belief &bel, const i
   }
 }
 
-void IKalmanFilter::set_belief_at_t(const ptr_belief &bel, const Timestamp &t){
+void IKalmanFilter::set_belief_at_t(const pBelief_t &bel, const Timestamp &t){
   HistBelief.insert(bel, t);
 }
 
 bool IKalmanFilter::correct_belief_at_t(const Eigen::VectorXd &mean_corr, const Eigen::MatrixXd &Sigma_apos, const Timestamp &t){
-  ptr_belief bel;
+  pBelief_t bel;
   bool res = get_belief_at_t(t, bel);
   if (res) {
     bel->correct(mean_corr, Sigma_apos);
@@ -255,9 +255,9 @@ bool IKalmanFilter::correct_belief_at_t(const Eigen::VectorXd &mean_corr, const 
   return res;
 }
 
-bool IKalmanFilter::get_belief_before_t(const Timestamp &t, ptr_belief &bel, Timestamp &t_before)
+bool IKalmanFilter::get_belief_before_t(const Timestamp &t, pBelief_t &bel, Timestamp &t_before)
 {
-  TStampedData<ptr_belief> tData;
+  TStampedData<pBelief_t> tData;
   bool res = HistBelief.get_before_t(t, tData);
   bel = tData.data;
   t_before = tData.stamp;
@@ -265,12 +265,12 @@ bool IKalmanFilter::get_belief_before_t(const Timestamp &t, ptr_belief &bel, Tim
 }
 
 Eigen::VectorXd IKalmanFilter::get_mean_at_t(const Timestamp &t) const {
-  ptr_belief bel = get_belief_at_t(t);
+  pBelief_t bel = get_belief_at_t(t);
   return bel->mean();
 }
 
 Eigen::MatrixXd IKalmanFilter::get_Sigma_at_t(const Timestamp &t) const {
-  ptr_belief bel = get_belief_at_t(t);
+  pBelief_t bel = get_belief_at_t(t);
   return bel->Sigma();
 }
 
@@ -321,7 +321,7 @@ void IKalmanFilter::print_HistMeas(size_t max, bool reverse) {
 
 void IKalmanFilter::print_HistBelief(size_t max, bool reverse) {
   size_t cnt = 0;
-  auto lambda = [&cnt, max](ptr_belief const& i){
+  auto lambda = [&cnt, max](pBelief_t const& i){
     if(cnt < max) {
       std::stringstream ss;
       ss << (*i.get()) ;
@@ -372,7 +372,7 @@ ProcessMeasResult_t IKalmanFilter::reprocess_measurement(const MeasData &m) {
 
 bool IKalmanFilter::apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab,
                                       const Timestamp &t_a, const Timestamp &t_b)  {
-  ptr_belief bel_II_apri;
+  pBelief_t bel_II_apri;
   if (get_belief_at_t(t_a, bel_II_apri)) {
     if(KalmanFilter::check_dim(bel_II_apri->mean(), Phi_II_ab)) {
       Eigen::VectorXd mean_II_b = Phi_II_ab * bel_II_apri->mean();
@@ -385,7 +385,7 @@ bool IKalmanFilter::apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Ei
   return false;
 }
 
-bool IKalmanFilter::apply_propagation(ptr_belief &bel_II_a, const Eigen::VectorXd &mean_II_b, const Eigen::MatrixXd &Phi_II_ab,
+bool IKalmanFilter::apply_propagation(pBelief_t &bel_II_a, const Eigen::VectorXd &mean_II_b, const Eigen::MatrixXd &Phi_II_ab,
                                       const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b) {
   if (KalmanFilter::check_dim(bel_II_a->Sigma(),  Phi_II_ab, Q_II_ab)) {
     Eigen::MatrixXd Sigma_II_b = KalmanFilter::covariance_propagation(bel_II_a->Sigma(),
@@ -394,7 +394,7 @@ bool IKalmanFilter::apply_propagation(ptr_belief &bel_II_a, const Eigen::VectorX
     //RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_II_b), "[ERROR] Not PSD: Covariance propagted to t_b=" + t_b.str());
 
     // This is where the magic happens!
-    ptr_belief bel_b = bel_II_a->clone(); //clone the state definiton!
+    pBelief_t bel_b = bel_II_a->clone(); //clone the state definiton!
 
     if (KalmanFilter::check_dim(mean_II_b, Sigma_II_b) && bel_b->set(mean_II_b, Sigma_II_b)) {
       bel_b->set_timestamp(t_b);
@@ -414,7 +414,7 @@ bool IKalmanFilter::apply_propagation(ptr_belief &bel_II_a, const Eigen::VectorX
   return false;
 }
 
-bool ikf::IKalmanFilter::apply_propagation(ikf::ptr_belief bel_II_b, const Eigen::MatrixXd &Phi_II_ab, const Timestamp &t_a, const Timestamp &t_b) {
+bool ikf::IKalmanFilter::apply_propagation(ikf::pBelief_t bel_II_b, const Eigen::MatrixXd &Phi_II_ab, const Timestamp &t_a, const Timestamp &t_b) {
   if (KalmanFilter::check_dim(bel_II_b->Sigma(),  Phi_II_ab)) {
     //RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(bel_II_b->Sigma()), "[ERROR] Not PSD: Covariance propagted to t_b=" + t_b.str());
 
@@ -434,7 +434,7 @@ bool ikf::IKalmanFilter::apply_propagation(ikf::ptr_belief bel_II_b, const Eigen
 }
 
 //bool IKalmanFilter::apply_propagation(const Eigen::VectorXd &mean_II_b, const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b) {
-//  ptr_belief bel_a;
+//  pBelief_t bel_a;
 //  if (get_belief_at_t(t_a, bel_a)) {
 //    return apply_propagation(bel_a, mean_II_b, Phi_II_ab, Q_II_ab, t_a, t_b);
 //  }
@@ -446,7 +446,7 @@ bool ikf::IKalmanFilter::apply_propagation(ikf::ptr_belief bel_II_b, const Eigen
 
 bool IKalmanFilter::apply_private_observation(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R,
                                                 const Eigen::VectorXd &z, const Timestamp &t, const ikf::KalmanFilter::CorrectionCfg_t &cfg){
-  ptr_belief bel_apri;
+  pBelief_t bel_apri;
   if (get_belief_at_t(t, bel_apri)) {
     Eigen::VectorXd r = z - H_II * bel_apri->mean();
     return apply_private_observation(bel_apri, H_II, R, r, cfg);
@@ -454,7 +454,7 @@ bool IKalmanFilter::apply_private_observation(const Eigen::MatrixXd &H_II, const
   return false;
 }
 
-bool IKalmanFilter::apply_private_observation(ptr_belief &bel_II_apri, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const ikf::KalmanFilter::CorrectionCfg_t &cfg) {
+bool IKalmanFilter::apply_private_observation(pBelief_t &bel_II_apri, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const ikf::KalmanFilter::CorrectionCfg_t &cfg) {
   KalmanFilter::CorrectionResult_t res;
   res = KalmanFilter::correction_step(H_II, R, r, bel_II_apri->Sigma(), cfg);
 

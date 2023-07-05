@@ -105,7 +105,7 @@ protected:
   BeliefOptions m_options;
 };
 
-typedef std::shared_ptr<IBelief> ptr_belief;
+typedef std::shared_ptr<IBelief> pBelief_t;
 
 } // ns ikf
 #endif // IKF_BELIEF_HPP

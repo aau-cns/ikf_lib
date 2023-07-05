@@ -91,11 +91,11 @@ TMultiHistoryBuffer<MeasData> IIsolatedKalmanFilter::get_measurements_from_t(con
   return TMultiHistoryBuffer<MeasData>();
 }
 
-void IIsolatedKalmanFilter::initialize(ptr_belief bel_init) {
+void IIsolatedKalmanFilter::initialize(pBelief_t bel_init) {
   initialize(bel_init, bel_init->timestamp());
 }
 
-void IIsolatedKalmanFilter::initialize(ptr_belief bel_init, const Timestamp &t) {
+void IIsolatedKalmanFilter::initialize(pBelief_t bel_init, const Timestamp &t) {
   reset();
   HistBelief.insert(bel_init, t);
 }
@@ -288,7 +288,7 @@ bool IIsolatedKalmanFilter::apply_propagation(const Eigen::MatrixXd &Phi_II_ab, 
 }
 
 // EKF: Algorithm 8 in [1]
-bool IIsolatedKalmanFilter::apply_propagation(ptr_belief &bel_II_apri, const Eigen::VectorXd &mean_II_b, const Eigen::MatrixXd &Phi_II_ab,
+bool IIsolatedKalmanFilter::apply_propagation(pBelief_t &bel_II_apri, const Eigen::VectorXd &mean_II_b, const Eigen::MatrixXd &Phi_II_ab,
                                               const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b) {
   if (IKalmanFilter::apply_propagation(bel_II_apri, mean_II_b, Phi_II_ab, Q_II_ab, t_a, t_b)) {
     if (add_correction_at_t(t_a, t_b, Phi_II_ab)) {
@@ -304,7 +304,7 @@ bool IIsolatedKalmanFilter::apply_propagation(ptr_belief &bel_II_apri, const Eig
   return false;
 }
 
-bool ikf::IIsolatedKalmanFilter::apply_propagation(ptr_belief bel_II_b, const Eigen::MatrixXd &Phi_II_ab, const Timestamp &t_a, const Timestamp &t_b) {
+bool ikf::IIsolatedKalmanFilter::apply_propagation(pBelief_t bel_II_b, const Eigen::MatrixXd &Phi_II_ab, const Timestamp &t_a, const Timestamp &t_b) {
   if (IKalmanFilter::apply_propagation(bel_II_b, Phi_II_ab, t_a, t_b)) {
     if (add_correction_at_t(t_a, t_b, Phi_II_ab)) {
       check_horizon();
@@ -322,7 +322,7 @@ bool ikf::IIsolatedKalmanFilter::apply_propagation(ptr_belief bel_II_b, const Ei
 // KF:  Algorithm 4 in [1]
 bool IIsolatedKalmanFilter::apply_private_observation(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R,
                                                       const Eigen::VectorXd &z, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
-  ptr_belief bel_apri;
+  pBelief_t bel_apri;
   if (get_belief_at_t(t, bel_apri)) {
     Eigen::VectorXd r = z - H_II * bel_apri->mean();
 
@@ -342,7 +342,7 @@ bool IIsolatedKalmanFilter::apply_private_observation(const Eigen::MatrixXd &H_I
 }
 
 // EKF:  Algorithm 4 in [1]
-bool IIsolatedKalmanFilter::apply_private_observation(ptr_belief &bel_II_apri, const Eigen::MatrixXd &H_II,
+bool IIsolatedKalmanFilter::apply_private_observation(pBelief_t &bel_II_apri, const Eigen::MatrixXd &H_II,
                                                       const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg){
 
   RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(bel_II_apri->Sigma()), "Apri covariance is not PSD at t=" + t.str());
@@ -366,7 +366,7 @@ bool IIsolatedKalmanFilter::apply_private_observation(ptr_belief &bel_II_apri, c
 
 }
 
-bool ikf::IIsolatedKalmanFilter::apply_private_observation(ptr_belief &bel_II_apri, const size_t ID_I, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
+bool ikf::IIsolatedKalmanFilter::apply_private_observation(pBelief_t &bel_II_apri, const size_t ID_I, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
   bool is_psd = RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(bel_II_apri->Sigma()), "Apri covariance is not PSD at t=" + t.str());
   if(!is_psd) {
     bel_II_apri->Sigma(utils::stabilize_covariance(bel_II_apri->Sigma()));
@@ -445,7 +445,7 @@ void ikf::IIsolatedKalmanFilter::split_Sigma(const Eigen::MatrixXd &Sigma, const
 
 
 // Algorithm 6 in [1]
-Eigen::MatrixXd IIsolatedKalmanFilter::stack_apri_covariance(ptr_belief &bel_I_apri, ptr_belief &bel_J_apri,
+Eigen::MatrixXd IIsolatedKalmanFilter::stack_apri_covariance(pBelief_t &bel_I_apri, pBelief_t &bel_J_apri,
                                                              const size_t ID_I, const size_t ID_J, const Timestamp &t) {
   Eigen::MatrixXd Sigma_IJ = get_Sigma_IJ_at_t(ID_I, ID_J, t);
 
@@ -459,7 +459,7 @@ Eigen::MatrixXd IIsolatedKalmanFilter::stack_apri_covariance(ptr_belief &bel_I_a
   }
 }
 
-Eigen::MatrixXd ikf::IIsolatedKalmanFilter::stack_apri_covariance(ptr_belief &bel_I_apri, ptr_belief &bel_J_apri, ptr_belief &bel_K_apri, const size_t ID_I, const size_t ID_J, const size_t ID_K, const Timestamp &t) {
+Eigen::MatrixXd ikf::IIsolatedKalmanFilter::stack_apri_covariance(pBelief_t &bel_I_apri, pBelief_t &bel_J_apri, pBelief_t &bel_K_apri, const size_t ID_I, const size_t ID_J, const size_t ID_K, const Timestamp &t) {
 
   // stack individual's covariances:
   Eigen::MatrixXd Sigma_apri_22 = stack_apri_covariance(bel_I_apri, bel_J_apri, ID_I, ID_J, t);
@@ -477,7 +477,7 @@ Eigen::MatrixXd ikf::IIsolatedKalmanFilter::stack_apri_covariance(ptr_belief &be
   return stack_Sigma(Sigma_apri_22, bel_K_apri->Sigma(), Sigma_2K_apri);
 }
 
-Eigen::MatrixXd ikf::IIsolatedKalmanFilter::stack_apri_covariance(ptr_belief &bel_I_apri, ptr_belief &bel_J_apri, ptr_belief &bel_K_apri, ptr_belief &bel_L_apri, const size_t ID_I, const size_t ID_J, const size_t ID_K, const size_t ID_L, const Timestamp &t) {
+Eigen::MatrixXd ikf::IIsolatedKalmanFilter::stack_apri_covariance(pBelief_t &bel_I_apri, pBelief_t &bel_J_apri, pBelief_t &bel_K_apri, pBelief_t &bel_L_apri, const size_t ID_I, const size_t ID_J, const size_t ID_K, const size_t ID_L, const Timestamp &t) {
   // stack individual's covariances:
   Eigen::MatrixXd Sigma_apri_33 = stack_apri_covariance(bel_I_apri, bel_J_apri, bel_K_apri,
                                                         ID_I, ID_J, ID_K, t);
@@ -541,7 +541,7 @@ bool IIsolatedKalmanFilter::apply_joint_observation(const size_t ID_I, const siz
   RTV_EXPECT_TRUE_THROW(ID_I == m_ID, "ID_I missmatch! wrong interim master");
 
   // get individuals a priori beliefs:
-  ptr_belief bel_I_apri, bel_J_apri;
+  pBelief_t bel_I_apri, bel_J_apri;
   RTV_EXPECT_TRUE_THROW(get_belief_at_t(t, bel_I_apri), "Could not obtain belief");
   RTV_EXPECT_TRUE_THROW(ptr_Handler->get(ID_J)->get_belief_at_t(t, bel_J_apri), "Could not obtain belief");
   RTV_EXPECT_TRUE_THROW(bel_I_apri->timestamp() == bel_J_apri->timestamp(), "Timestamps of bliefs need to match! Did you forgett to propagate first?");
@@ -559,7 +559,7 @@ bool IIsolatedKalmanFilter::apply_joint_observation(const size_t ID_I, const siz
 }
 
 // EKF: Algorithm 6 in [1]
-bool IIsolatedKalmanFilter::apply_joint_observation(ptr_belief &bel_I_apri, ptr_belief &bel_J_apri, const size_t ID_I,
+bool IIsolatedKalmanFilter::apply_joint_observation(pBelief_t &bel_I_apri, pBelief_t &bel_J_apri, const size_t ID_I,
                                                     const size_t ID_J, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ,
                                                     const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t& cfg) {
   RTV_EXPECT_TRUE_THROW(ID_I == m_ID, "ID_I missmatch! wrong interim master");
@@ -601,7 +601,7 @@ bool IIsolatedKalmanFilter::apply_joint_observation(ptr_belief &bel_I_apri, ptr_
   return !res.rejected;
 }
 
-bool ikf::IIsolatedKalmanFilter::apply_joint_observation(ptr_belief &bel_I_apri, ptr_belief &bel_J_apri, ptr_belief &bel_K_apri, const size_t ID_I, const size_t ID_J, const size_t ID_K, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ, const Eigen::MatrixXd &H_KK, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
+bool ikf::IIsolatedKalmanFilter::apply_joint_observation(pBelief_t &bel_I_apri, pBelief_t &bel_J_apri, pBelief_t &bel_K_apri, const size_t ID_I, const size_t ID_J, const size_t ID_K, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ, const Eigen::MatrixXd &H_KK, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
   RTV_EXPECT_TRUE_THROW(ID_I == m_ID, "ID_I missmatch! wrong interim master");
 
 
@@ -644,7 +644,7 @@ bool ikf::IIsolatedKalmanFilter::apply_joint_observation(ptr_belief &bel_I_apri,
   return !res.rejected;
 }
 
-bool ikf::IIsolatedKalmanFilter::apply_joint_observation(ptr_belief &bel_I_apri, ptr_belief &bel_J_apri, ptr_belief &bel_K_apri, ptr_belief &bel_L_apri, const size_t ID_I, const size_t ID_J, const size_t ID_K, const size_t ID_L, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ, const Eigen::MatrixXd &H_KK, const Eigen::MatrixXd &H_LL, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
+bool ikf::IIsolatedKalmanFilter::apply_joint_observation(pBelief_t &bel_I_apri, pBelief_t &bel_J_apri, pBelief_t &bel_K_apri, pBelief_t &bel_L_apri, const size_t ID_I, const size_t ID_J, const size_t ID_K, const size_t ID_L, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ, const Eigen::MatrixXd &H_KK, const Eigen::MatrixXd &H_LL, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
   RTV_EXPECT_TRUE_THROW(ID_I == m_ID, "ID_I missmatch! wrong interim master");
 
 
