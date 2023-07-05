@@ -73,7 +73,7 @@ void ProgressBar::update(const size_t i) {
     }
     if(showremTime) {
       double curr_sec = m_profiler.elapsedSec();
-      double rem_sec = curr_sec *(100-percent);
+      double rem_sec = curr_sec *(100-percent)/percent;
       std::cout << "[" << sec_to_HHMMSS(curr_sec) << "/" << sec_to_HHMMSS(rem_sec) << "]";
     }
     std::cout << std::endl;
