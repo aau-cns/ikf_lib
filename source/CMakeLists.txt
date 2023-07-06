@@ -14,14 +14,14 @@ find_package(Eigen REQUIRED)
 #find_package(matplotplusplus REQUIRED)
 
 if(NOT TARGET spdlog)
-    # Stand-alone build
+   # System wide installed:  sudo apt install libspdlog-dev
     find_package(spdlog REQUIRED)
 endif()
 
 message(" **************************************")
 message(" --- Main Dependencies:")
 message(" * Eigen: ${EIGEN3_INCLUDE_DIR}, ${Eigen_VERSION} ")
-message(" * spdlog: ${SPDLOG_INCLUDE_DIR}, ${Eigen_VERSION} ")
+message(" * spdlog: ${SPDLOG_INCLUDE_DIR}, ${SPDLOG_VERSION} ")
 
 message(" **************************************")
 #

@@ -40,7 +40,7 @@ public:
     Eigen::MatrixXd Q_II_ab(dim_x, dim_x); // Process noise covariance
 
 
-    ikf::ptr_belief bel_a;
+    ikf::pBelief_t bel_a;
     ikf::Timestamp t_a;
     ikf::Timestamp t_b = m.t_m;
     if(!get_belief_before_t(t_b, bel_a, t_a)) {
@@ -77,7 +77,7 @@ public:
     Eigen::MatrixXd H_private(dim_z, dim_x); // Output matrix
     H_private << 1, 0;
 
-    ikf::ptr_belief bel;
+    ikf::pBelief_t bel;
     ikf::Timestamp t = m.t_m;
     if(!get_belief_at_t(t, bel)) {
       return res;
@@ -86,7 +86,8 @@ public:
     Eigen::VectorXd r = m.z - H_private * bel->mean();
     res.observation_type = "local_position";
     res.residual = r;
-    res.rejected = !apply_private_observation(bel, H_private, m.R, r, t);
+    ikf::KalmanFilter::CorrectionCfg_t cfg;
+    res.rejected = !apply_private_observation(bel, H_private, m.R, r, t, cfg);
 
     return res;
 
@@ -107,9 +108,17 @@ public:
     size_t ID_J = std::stoi(m.meta_info);
     res.ID_participants.push_back(ID_J);
     res.observation_type = m.meas_type + " between [" + std::to_string(m_ID) + "," + m.meta_info + "]";
-    res.rejected = !apply_joint_observation(m_ID, ID_J, H_II, H_JJ, m.R, m.z, m.t_m);
+    ikf::KalmanFilter::CorrectionCfg_t cfg;
+    res.rejected = !apply_joint_observation(m_ID, ID_J, H_II, H_JJ, m.R, m.z, m.t_m, cfg);
     return res;
   }
+
+  // IKalmanFilter interface
+protected:
+  virtual bool predict_to(const ikf::Timestamp &t_b) override {
+    return false;
+  }
+
 };
 
 

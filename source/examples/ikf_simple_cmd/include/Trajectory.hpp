@@ -20,7 +20,7 @@
 #define TRAJECTORY_HPP
 #include <iostream>
 #include <ikf/utils/eigen_utils.hpp>
-#include <ikf/utils/eigen_mvn.hpp>
+#include <ikf/utils/UnivariateNormal.hpp>
 #include <ikf/utils/RTVerification.hpp>
 #include <matplot/matplot.h>
 

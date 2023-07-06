@@ -22,6 +22,7 @@
 #include "LinearIKF.hpp"
 #include "ikf/Container/TTimeHorizonBuffer.hpp"
 #include <ikf/Estimate/LinearBelief.hpp>
+#include <ikf/utils/MultivariateNormal.hpp>
 
 
 class SimInstance {
@@ -158,7 +159,7 @@ public:
 
   void print_HistBelief(size_t max) {
     size_t cnt = 0;
-    HistBelief.foreach([&cnt, max](ikf::ptr_belief const& i){
+    HistBelief.foreach([&cnt, max](ikf::pBelief_t const& i){
       if(cnt < max) {
         std::cout << (*i.get()) << std::endl;
       }
@@ -183,7 +184,7 @@ public:
   Eigen::ArrayXd p_noisy_arr;
   Eigen::ArrayXd a_noisy_arr;
   std::map<size_t, Eigen::ArrayXd> dict_p_rel_noisy_arr;
-  ikf::TTimeHorizonBuffer<ikf::ptr_belief> HistBelief;
+  ikf::TTimeHorizonBuffer<ikf::pBelief_t> HistBelief;
 };
 
 
