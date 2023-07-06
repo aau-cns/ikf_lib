@@ -1,3 +1,14 @@
+/******************************************************************************
+* FILENAME:     MultivariateNormal.hpp
+* PURPOSE:      %{Cpp:License:ClassName}
+* AUTHOR:       jungr
+* MAIL:         roland.jung@ieee.org
+* VERSION:      v0.0.1
+* CREATION:     06.07.2023
+*
+*  Copyright (C) 2023
+*  All rights reserved. See the LICENSE file for details.
+******************************************************************************/
 /**
  * Multivariate Normal distribution sampling using C++11 and Eigen matrices.
  *
@@ -36,40 +47,24 @@
  *
  * source code base: https://github.com/beniz/eigenmvn
  */
-
-#ifndef __EIGENMULTIVARIATENORMAL_HPP
-#define __EIGENMULTIVARIATENORMAL_HPP
-
-#include <Eigen/Dense>
-#include <iostream>
-#include <random>
-#include <ikf/utils/RandValGenerator.hpp>
+#ifndef IKF_MULTIVARIATENORMAL_HPP
+#define IKF_MULTIVARIATENORMAL_HPP
+#include <ikf/ikf_api.h>
+#include <ikf/utils/rand_op.hpp>
 
 namespace ikf {
-
-template<typename Scalar>
-struct rand_op {
-  ikf::GaussianNoiseGen& m_gen;
-  explicit rand_op(ikf::GaussianNoiseGen& gen) : m_gen(gen) {}
-  template<typename Index>
-  inline const Scalar operator()(Index, Index = 0) const
-  {
-    return static_cast<Scalar>(m_gen.randn());
-  }
-};
-
 
 /**
   Find the eigen-decomposition of the covariance matrix
   and then store it for sampling from a multi-variate normal
 */
 template <typename Scalar>
-class MultivariateNormal {
+class IKF_API MultivariateNormal {
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> m_Sigma;
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> m_Tf;  // scales the random values according to the covariance m_Sigma
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> m_mean;
 
- public:
+public:
   MultivariateNormal(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& mean,
                      const Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& covar,
                      const bool use_cholesky = false) {
@@ -123,34 +118,7 @@ class MultivariateNormal {
   }
 };  // end class MultivariateNormal
 
-
-template <typename Scalar>
-class UnivariateNormal {
-  double  m_mean = 0;
-  double  m_std_dev = 1;
+} // ns ikf
 
 
-public:
-  UnivariateNormal(double const mean = 0,
-                   double const std_dev = 1)
-      : m_mean(mean), m_std_dev(std_dev) {}
-
-  void setSeed(const uint64_t seed) {
-    ikf::GaussianNoiseGen& gen = ikf::GaussianNoiseGen::instance();
-    gen.seed(seed);
-  }
-  void setMean(double const mean) { m_mean = mean; }
-  void setCovar( double const std_dev) {  m_std_dev = std_dev; }
-
-  /// Draw nn samples from the gaussian and return them
-  /// as columns in a Dynamic by nn matrix
-  Eigen::Array<Scalar, 1, Eigen::Dynamic> samples(int const nn) {
-    ikf::GaussianNoiseGen& gen = ikf::GaussianNoiseGen::instance();
-    return (m_std_dev * Eigen::Array<Scalar, 1, Eigen::Dynamic>::NullaryExpr(1, nn, rand_op<Scalar>(gen))) + m_mean;
-  }
-};  // end class UnivariateNormal
-
-
-
-} // ns mmsf
-#endif
+#endif // MULTIVARIATENORMAL_HPP

@@ -1,9 +1,18 @@
-#ifndef QUATERNIONUTILS_HPP
-#define QUATERNIONUTILS_HPP
-
+/******************************************************************************
+* FILENAME:     QuaternionUtils.hpp
+* PURPOSE:      %{Cpp:License:ClassName}
+* AUTHOR:       jungr
+* MAIL:         roland.jung@ieee.org
+* VERSION:      v0.0.1
+* CREATION:     06.01.2023
+*
+*  Copyright (C) 2023
+*  All rights reserved. See the LICENSE file for details.
+******************************************************************************/
+#ifndef IKF_QUATERNIONUTILS_HPP
+#define IKF_QUATERNIONUTILS_HPP
 #include <ikf/ikf_api.h>
-#include <ikf/types.hpp>
-
+#include <Eigen/Dense>
 namespace ikf
 {
 
@@ -12,19 +21,19 @@ namespace ikf
     public:
 
       /// computes a quaternion from the 3-element small angle approximation theta
-      static ikf::Quaternion_t small_angle_to_quaternion(const ikf::Vector3_t & theta)
+      static Eigen::Quaterniond small_angle_to_quaternion(const Eigen::Vector3d & theta)
       {
-        const ikf::Precision_t q_squared = theta.squaredNorm() / 4.0;
+        const double q_squared = theta.squaredNorm() / 4.0;
 
         if ( q_squared < 1)
         {
-          return ikf::Quaternion_t(sqrt(1 - q_squared), theta[0] * 0.5, theta[1] * 0.5, theta[2] * 0.5);
+          return Eigen::Quaterniond(sqrt(1 - q_squared), theta[0] * 0.5, theta[1] * 0.5, theta[2] * 0.5);
         }
         else
         {
-          const ikf::Precision_t w = 1.0 / sqrt(1 + q_squared);
-          const ikf::Precision_t f = w*0.5;
-          return ikf::Quaternion_t(w, theta[0] * f, theta[1] * f, theta[2] * f);
+          const double w = 1.0 / sqrt(1 + q_squared);
+          const double f = w*0.5;
+          return Eigen::Quaterniond(w, theta[0] * f, theta[1] * f, theta[2] * f);
         }
       }
 

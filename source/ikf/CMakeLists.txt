@@ -35,7 +35,6 @@ set(source_path  "${CMAKE_CURRENT_SOURCE_DIR}/source")
 set(headers
  include/ikf/Logger/Logger.hpp
 
- include/ikf/types.hpp
  include/ikf/Estimate/IBelief.hpp
  include/ikf/Estimate/LinearBelief.hpp
  include/ikf/EstimatorStd/KalmanFilterStd.hpp
@@ -55,9 +54,14 @@ set(headers
  include/ikf/utils/Rate.hpp
  include/ikf/utils/CyclicThread.hpp
  include/ikf/utils/ProgressBar.hpp
+ include/ikf/utils/RandomSampler.hpp
+ include/ikf/utils/GaussianNoiseGen.hpp
+ include/ikf/utils/rand_op.hpp
+ include/ikf/utils/MultivariateNormal.hpp
+ include/ikf/utils/UnivariateNormal.hpp
+
 
  ${include_local_path}/helper.hpp
- ${include_local_path}/utils.hpp
 )
 
 set(sources
@@ -65,7 +69,8 @@ set(sources
 
  source/utils/eigen_utils.cpp
  source/utils/math.cpp
- source/utils/RandValGenerator.cpp
+ source/utils/RandomSampler.cpp
+ source/utils/GaussianNoiseGen.cpp
  source/utils/IO.cpp
  source/utils/Rate.cpp
  source/utils/CyclicThread.cpp
