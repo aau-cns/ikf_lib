@@ -33,7 +33,7 @@ std::shared_ptr<spdlog::logger> Logger::ikf_logger() {
     std::time_t now_c = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     std::tm now_tm = *std::localtime(&now_c);
     std::stringstream ss;
-    ss << "logs/ikf_log_" << now_tm.tm_year << "-" << now_tm.tm_mon << "-" <<  now_tm.tm_mday << "-" <<  now_tm.tm_hour << "-" <<  now_tm.tm_min << "-" <<  now_tm.tm_sec << ".txt";
+    ss << "/tmp/logs/ikf_log_" << now_tm.tm_year << "-" << now_tm.tm_mon << "-" <<  now_tm.tm_mday << "-" <<  now_tm.tm_hour << "-" <<  now_tm.tm_min << "-" <<  now_tm.tm_sec << ".txt";
     auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(ss.str(), false);
     file_sink->set_level(spdlog::level::trace);
 
@@ -51,6 +51,7 @@ std::shared_ptr<spdlog::logger> Logger::ikf_logger() {
     logger_ptr->warn("log file created: " + ss.str());
     logger_ptr->flush();
     spdlog::register_logger(logger_ptr);
+    logger_ptr->warn("logger registered... ");
   }
   return logger_ptr;
 }
@@ -59,7 +60,7 @@ bool Logger::set_level(const size_t level) {
   if(level <= spdlog::level::off) {
     auto l_ptr = ikf_logger();
 
-    l_ptr->set_level(static_cast<spdlog::level::level_enum>(level) );
+    l_ptr->set_level((spdlog::level::level_enum)(level) );
     return true;
   }
   return false;
