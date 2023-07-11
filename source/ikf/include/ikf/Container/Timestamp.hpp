@@ -87,7 +87,23 @@ namespace ikf
           return !(*this == rhs ) && !(*this < rhs);
       }
 
-      // TODO: operator + and -
+      Timestamp operator+(const Timestamp& rhs) const { return Timestamp(to_sec() + rhs.to_sec()); }
+      Timestamp operator-(const Timestamp& rhs) const { return Timestamp(to_sec() - rhs.to_sec()); }
+
+      Timestamp& operator=(const Timestamp& rhs) {
+          this->nsec = rhs.nsec;
+          this->sec = rhs.sec;
+          return *this;
+      }
+      Timestamp& operator-=(const Timestamp& rhs) {
+          from_sec(to_sec() - rhs.to_sec());
+          return *this;
+      }
+
+      Timestamp& operator+=(const Timestamp& rhs) {
+          from_sec(to_sec() + rhs.to_sec());
+          return *this;
+      }
   };
 
   class IKF_API Timestamped: public Timestamp
