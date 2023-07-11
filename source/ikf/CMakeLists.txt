@@ -178,7 +178,7 @@ target_include_directories(${target}
     ${CMAKE_CURRENT_SOURCE_DIR}/include_local
     ${CMAKE_CURRENT_BINARY_DIR}/include
 
-    ${matplot_SOURCE_DIR}/source
+    #${matplot_SOURCE_DIR}/source
     PUBLIC
     ${DEFAULT_INCLUDE_DIRECTORIES}
 
@@ -200,17 +200,10 @@ target_link_libraries(${target}
     ${DEFAULT_LIBRARIES}
     Eigen
     spdlog::spdlog
-    #kindr
-    #Sophus
-    #Boost
-
 
     INTERFACE
     $<BUILD_INTERFACE:Eigen>
     $<BUILD_INTERFACE:spdlog::spdlog>
-#    $<BUILD_INTERFACE:kindr>
-#    $<BUILD_INTERFACE:Sophus>
-#    $<BUILD_INTERFACE:matplot_imp>
 )
 
 
