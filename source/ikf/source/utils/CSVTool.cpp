@@ -127,6 +127,7 @@ namespace ikf {
 
     if(IDs.empty()) {
       Logger::ikf_logger()->warn("CSVTool::write_csv(): No data for " + filename);
+      file_.close();
       return true;
     }
 
@@ -160,8 +161,55 @@ namespace ikf {
     return true;
   }
 
-  CSVTool::HeaderMapType CSVTool::get_header(std::ifstream &file_, const int &row, char delim)
-  {
+  bool CSVTool::write_csv(const CsvDataUnorderedType &csv_data, const std::string &filename, char delim) {
+    std::fstream file_;
+    if (!utils::IO::openFile(filename, file_)) {
+      Logger::ikf_logger()->error("CSVTool::write_csv(): file " + filename + " could not be created/opend.");
+      return false;
+    }
+
+    std::vector<std::string> IDs;
+    IDs.reserve(csv_data.size());
+    for (auto const &elem : csv_data) {
+      IDs.push_back(elem.first);
+    }
+
+    if (IDs.empty()) {
+      Logger::ikf_logger()->warn("CSVTool::write_csv(): No data for " + filename);
+      file_.close();
+      return true;
+    }
+
+    // write header
+    for (auto it = IDs.begin(); it != IDs.end(); it++) {
+      if (it != --IDs.end()) {
+        file_ << *it << delim;
+      } else {
+        file_ << *it << std::endl;
+      }
+    }
+
+    size_t const num_rows = csv_data.at(IDs.at(0)).size();
+
+    for (size_t row = 0; row < num_rows; row++) {
+      std::ostringstream ss;
+      ss.precision(16);
+      for (auto it = IDs.begin(); it != IDs.end(); it++) {
+        if (it != --IDs.end()) {
+          ss << csv_data.at(*it)[row] << delim;
+        } else {
+          ss << csv_data.at(*it)[row];
+        }
+      }
+      file_ << ss.str() << std::endl;
+    }
+
+    file_.close();
+
+    return true;
+  }
+
+  CSVTool::HeaderMapType CSVTool::get_header(std::ifstream &file_, const int &row, char delim) {
     set_line_couter_of_file(file_, row);
 
     HeaderMapType header_data;

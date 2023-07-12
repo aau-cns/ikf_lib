@@ -11,10 +11,11 @@
 ******************************************************************************/
 #ifndef IKF_CSVTOOL_HPP
 #define IKF_CSVTOOL_HPP
-#include <ikf/ikf_api.h>
 #include <fstream>
+#include <ikf/ikf_api.h>
 #include <map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace ikf {
@@ -23,22 +24,23 @@ namespace ikf {
 class IKF_API CSVTool
 {
 public:
-  typedef std::map<std::string, std::vector<double>>  CsvDataType;
-  typedef std::map<int, std::string>  HeaderMapType;
+ typedef std::map<std::string, std::vector<double>> CsvDataType;
+ typedef std::unordered_map<std::string, std::vector<double>> CsvDataUnorderedType;
 
+ typedef std::map<int, std::string> HeaderMapType;
 
-  static bool read_csv(CsvDataType& csv_data, const std::string& file_path, char delim=',');
+ static bool read_csv(CsvDataType& csv_data, const std::string& file_path, char delim = ',');
 
-  static bool write_csv(CsvDataType const& csv_data, const std::string& filename, char delim=',');
+ static bool write_csv(CsvDataType const& csv_data, const std::string& filename, char delim = ',');
+ static bool write_csv(CsvDataUnorderedType const& csv_data, const std::string& filename, char delim = ',');
 
+ static HeaderMapType get_header(std::ifstream& file_, const int& row = 0, char delim = ',');
 
-  static HeaderMapType get_header(std::ifstream & file_, const int& row = 0, char delim=',');
+ static int check_for_header(std::ifstream& file_);
 
-  static int check_for_header(std::ifstream & file_);
+ static void set_line_couter_of_file(std::ifstream& file_, const int& line_number);
 
-  static void set_line_couter_of_file(std::ifstream & file_, const int& line_number);
-
-  static int get_rows(std::ifstream & file_);
+ static int get_rows(std::ifstream& file_);
 };
 
 
