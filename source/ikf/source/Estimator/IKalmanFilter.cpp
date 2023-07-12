@@ -63,10 +63,10 @@ ProcessMeasResult_t IKalmanFilter::process_measurement(const MeasData &m) {
     insert_measurement(m, m.t_m);
   }
 
-  // needed for inter-properation interpolation
-  if (m.obs_type == eObservationType::PROPAGATION) {
-    HistMeasPropagation.insert(m, m.t_m);
-  }
+  // TODO: Already DONE in reprocess_measurement?? needed for inter-properation interpolation
+  // if (m.obs_type == eObservationType::PROPAGATION) {
+  //  HistMeasPropagation.insert(m, m.t_m);
+  //}
 
   return res;
 }
@@ -281,14 +281,14 @@ Eigen::MatrixXd IKalmanFilter::get_Sigma_at_t(const Timestamp &t) const {
 
 void IKalmanFilter::reset() {
   HistBelief.clear();
+  // IMPORTANT: DO NOT CLEAR
+  // HistMeas.clear();
+  // HistMeasPropagation.clear();
 }
 
 bool IKalmanFilter::insert_measurement(const MeasData &m, const Timestamp &t) {
   if(m_handle_delayed_meas) {
     HistMeas.insert(m, t);
-//    if(m.obs_type == eObservationType::PROPAGATION) {
-//      HistMeasPropagation.insert(m,t);
-//    }
   }
   return m_handle_delayed_meas;
 }
@@ -300,10 +300,14 @@ void IKalmanFilter::remove_beliefs_after_t(const Timestamp &t) {
 void IKalmanFilter::set_horizon(const double t_hor) {
   max_time_horizon_sec = t_hor;
   HistBelief.set_horizon(t_hor);
+  HistMeas.set_horizon(t_hor);
+  HistMeasPropagation.set_horizon(t_hor);
 }
 
 void IKalmanFilter::check_horizon() {
   HistBelief.check_horizon();
+  HistMeas.check_horizon();
+  HistMeasPropagation.check_horizon();
 }
 
 void IKalmanFilter::print_HistMeas(size_t max, bool reverse) {
@@ -352,15 +356,14 @@ bool ikf::IKalmanFilter::get_prop_meas_at_t(const Timestamp &t, MeasData &m) {
 ProcessMeasResult_t IKalmanFilter::reprocess_measurement(const MeasData &m) {
   ProcessMeasResult_t res;
   res.rejected = true;
-  switch(m.obs_type) {
-    case eObservationType::PROPAGATION:
-      {
-      res = progapation_measurement(m);
+  switch (m.obs_type) {
+  case eObservationType::PROPAGATION: {
+    res = progapation_measurement(m);
 
-        // needed for inter-properation interpolation (replace in case of re-do updates
-        HistMeasPropagation.insert(m, m.t_m);
-        break;
-      }
+    // needed for inter-properation interpolation (replace in case of re-do updates
+    HistMeasPropagation.insert(m, m.t_m);
+    break;
+  }
     case eObservationType::PRIVATE_OBSERVATION:
       {
         res = local_private_measurement(m);
@@ -369,8 +372,8 @@ ProcessMeasResult_t IKalmanFilter::reprocess_measurement(const MeasData &m) {
     case eObservationType::JOINT_OBSERVATION:
     case eObservationType::UNKNOWN:
     default:
-      break;
-  }
+        break;
+    }
   return res;
 }
 
