@@ -91,16 +91,17 @@ bool IKalmanFilter::redo_updates_after_t(const Timestamp &t) {
 
 Timestamp IKalmanFilter::current_t() const {
   Timestamp t;
-  HistBelief.get_latest_t(t);
+  if (HistBelief.size()) {
+    HistBelief.get_latest_t(t);
+  }
   return t;
 }
 
 pBelief_t IKalmanFilter::current_belief() const {
   pBelief_t bel;
-  if (HistBelief.get_latest(bel)) {
+  if (HistBelief.size() && HistBelief.get_latest(bel)) {
     return bel;
-  }
-  else {
+  } else {
     return pBelief_t(nullptr);
   }
 }
