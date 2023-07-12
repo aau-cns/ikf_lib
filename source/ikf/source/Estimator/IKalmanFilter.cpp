@@ -196,7 +196,12 @@ bool IKalmanFilter::get_belief_at_t(const Timestamp &t, pBelief_t &bel, const ik
           if(HistMeasPropagation.get_before_t(t, stamped_meas_prev) && HistMeasPropagation.get_after_t(t, stamped_meas_after)) {
             // bounded between two measurements
 
-            RTV_EXPECT_TRUE_THROW(HistBelief.exist_at_t(stamped_meas_prev.stamp), "No blief exist for get_belief()  + LINEAR_INTERPOL_MEAS!");
+            if (!HistBelief.exist_at_t(stamped_meas_prev.stamp)) {
+              Logger::ikf_logger()->error("IKalmanFilter::get_belief_at_t: No blief exist at t= " +
+                                          stamped_meas_prev.stamp.str() + " in LINEAR_INTERPOL_MEAS");
+              // no bounds
+              return false;
+            }
             MeasData pseudo_meas_b = MeasData::lin_interpolate(stamped_meas_prev.data, stamped_meas_after.data, t);
 
             ikf::ProcessMeasResult_t res = progapation_measurement(pseudo_meas_b);
