@@ -24,6 +24,7 @@ IsolatedKalmanFilterHandler::IsolatedKalmanFilterHandler(const bool handle_delay
   if (handle_delayed) {
     Logger::ikf_logger()->info("IsolatedKalmanFilterHandler will handle delayed measurements, therefore call it's process_measurement method!");
   }
+  Logger::ikf_logger()->info("IsolatedKalmanFilterHandler: m_horizon_sec=" + std::to_string(m_horzion_sec));
 }
 
 bool IsolatedKalmanFilterHandler::add(pIKF_t p_IKF) {

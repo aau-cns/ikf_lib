@@ -28,8 +28,10 @@
 
 namespace ikf {
 
-IIsolatedKalmanFilter::IIsolatedKalmanFilter(std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler, const size_t ID, const bool handle_delayed_meas, const double horizon_sec) : IKalmanFilter(horizon_sec, handle_delayed_meas), ptr_Handler(ptr_Handler), m_ID(ID) {
-
+IIsolatedKalmanFilter::IIsolatedKalmanFilter(std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler, const size_t ID,
+                                             const bool handle_delayed_meas, const double horizon_sec)
+  : IKalmanFilter(horizon_sec, handle_delayed_meas), ptr_Handler(ptr_Handler), m_ID(ID) {
+  Logger::ikf_logger()->info("IIsolatedKalmanFilter: horizon_sec=" + std::to_string(horizon_sec));
 }
 
 size_t IIsolatedKalmanFilter::ID() const { return m_ID; }
