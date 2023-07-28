@@ -50,7 +50,7 @@ public:
     bool use_outlier_rejection = true;
     bool use_Josephs_form=true;
     bool nummerical_stabilization=true;
-    double confidence_interval = 0.997;
+    double confidence_interval = 0.997;  // supported levels: [0.68, 0.95, 0.997]
     double eps = 1e-16;
   };
 
