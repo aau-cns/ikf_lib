@@ -28,6 +28,11 @@ Eigen::Matrix3d skew(const Eigen::Vector3d &v) {
   return M;
 }
 
+Eigen::Vector3d skew_inv(const Eigen::Matrix3d& M) {
+  Eigen::Vector3d v(M(2, 1), M(0, 2), M(1, 0));
+  return v;
+}
+
 Eigen::Matrix4d OmegaMat(const Eigen::Vector3d& v)
 {
   Eigen::Matrix4d res;

@@ -66,7 +66,7 @@ public:
   }
 
     // Algorithm 7 in [1]
-  virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
+  virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m) override;
 
   virtual Eigen::MatrixXd get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J);
   void set_CrossCovFact_at_t(Timestamp const& t, size_t const unique_ID, Eigen::MatrixXd const& ccf);
@@ -105,20 +105,25 @@ protected:
   ///////////////////////////////////////////
   /// FUSION LOGIC:
   // KF: Algorithm 8 in [1]
-  bool apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
+  bool apply_propagation(const Eigen::MatrixXd& Phi_II_ab, const Eigen::MatrixXd& Q_II_ab, const Timestamp& t_a,
+                         const Timestamp& t_b) override;
   // EKF: Algorithm 8 in [1]
-  bool apply_propagation(pBelief_t& bel_II_apri, const Eigen::VectorXd &mean_II_b, const Eigen::MatrixXd &Phi_II_ab,
-                         const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
+  bool apply_propagation(pBelief_t& bel_II_apri, const Eigen::VectorXd& mean_II_b, const Eigen::MatrixXd& Phi_II_ab,
+                         const Eigen::MatrixXd& Q_II_ab, const Timestamp& t_a, const Timestamp& t_b) override;
 
-  virtual  bool apply_propagation(pBelief_t bel_II_b, const Eigen::MatrixXd &Phi_II_ab, const Timestamp &t_a, const Timestamp &t_b);
+  virtual bool apply_propagation(pBelief_t bel_II_b, const Eigen::MatrixXd& Phi_II_ab, const Timestamp& t_a,
+                                 const Timestamp& t_b) override;
 
   // KF:  Algorithm 4 in [1]
   bool apply_private_observation(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) override;
   // EKF: Algorithm 4 in [1]
-  bool apply_private_observation(pBelief_t& bel_II_apri,const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R,
-                                 const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg);
+  bool apply_private_observation(pBelief_t& bel_II_apri, const Eigen::MatrixXd& H_II, const Eigen::MatrixXd& R,
+                                 const Eigen::VectorXd& r, const Timestamp& t,
+                                 const KalmanFilter::CorrectionCfg_t& cfg);
 
-  bool apply_private_observation(pBelief_t& bel_II_apri, const size_t ID_I,const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg);
+  bool apply_private_observation(pBelief_t& bel_II_apri, const size_t ID_I, const Eigen::MatrixXd& H_II,
+                                 const Eigen::MatrixXd& R, const Eigen::VectorXd& r, const Timestamp& t,
+                                 const KalmanFilter::CorrectionCfg_t& cfg);
 
   // KF: Algorithm 6 in [1]
   bool apply_joint_observation(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ,

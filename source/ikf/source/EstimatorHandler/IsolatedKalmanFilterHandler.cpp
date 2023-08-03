@@ -16,7 +16,7 @@
 *
 * You can contact the author at <roland.jung@aau.at>
 ******************************************************************************/
-#include <ikf/Estimator/IsolatedKalmanFilterHandler.hpp>
+#include <ikf/EstimatorHandler/IsolatedKalmanFilterHandler.hpp>
 #include <ikf/Logger/Logger.hpp>
 namespace ikf {
 

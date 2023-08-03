@@ -20,11 +20,10 @@
 *  [1] Jung, Roland and Weiss, Stephan, "Modular Multi-Sensor Fusion: A Collaborative State Estimation Perspective", IEEE RA-L, DOI: 10.1109/LRA.2021.3096165, 2021.
 ******************************************************************************/
 #include <ikf/Estimator/IIsolatedKalmanFilter.hpp>
-#include <ikf/Estimator/IsolatedKalmanFilterHandler.hpp>
 #include <ikf/Estimator/KalmanFilter.hpp>
-#include <ikf/utils/eigen_utils.hpp>
+#include <ikf/EstimatorHandler/IsolatedKalmanFilterHandler.hpp>
 #include <ikf/Logger/Logger.hpp>
-
+#include <ikf/utils/eigen_utils.hpp>
 
 namespace ikf {
 

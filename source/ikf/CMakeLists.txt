@@ -44,7 +44,7 @@ set(headers
  #include/ikf/Estimator/IDiCoFilter.hpp
  include/ikf/Estimator/IIsolatedKalmanFilter.hpp
  include/ikf/Estimator/IIsolatedKalmanFilterCorr.hpp
- include/ikf/Estimator/IsolatedKalmanFilterHandler.hpp
+ include/ikf/EstimatorHandler/IsolatedKalmanFilterHandler.hpp
  include/ikf/Container/Timestamp.hpp
  include/ikf/Container/TStampedData.hpp
  include/ikf/Container/THistoryBuffer.hpp
