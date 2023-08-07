@@ -67,15 +67,40 @@ namespace ikf
     nsec = stamp_ns % 1000000000ul;
   }
 
-  Timestamped::~Timestamped() {}
+  std::string Timestamp::str() const { return std::to_string(to_sec()); }
 
-  Timestamp Timestamped::get_timestamp()
-  {
-    return static_cast<Timestamp>(*this);
+  bool Timestamp::operator<(const Timestamp &rhs) const {
+    if (sec < rhs.sec) {
+      return true;
+    } else if (sec == rhs.sec) {
+      if (nsec < rhs.nsec) {
+        return true;
+      }
+    }
+    return false;
   }
 
-  bool Timestamped::operator <(const Timestamped &rhs) const
-  {
+  bool Timestamp::operator==(const Timestamp &rhs) const { return (sec == rhs.sec) && (nsec == rhs.nsec); }
+
+  bool Timestamp::operator<=(const Timestamp &rhs) const { return !(*this > rhs); }
+
+  bool Timestamp::operator>(const Timestamp &rhs) const { return !(*this == rhs) && !(*this < rhs); }
+
+  Timestamp &Timestamp::operator-=(const Timestamp &rhs) {
+    from_sec(to_sec() - rhs.to_sec());
+    return *this;
+  }
+
+  Timestamp &Timestamp::operator+=(const Timestamp &rhs) {
+    from_sec(to_sec() + rhs.to_sec());
+    return *this;
+  }
+
+  Timestamped::~Timestamped() {}
+
+  Timestamp Timestamped::get_timestamp() { return static_cast<Timestamp>(*this); }
+
+  bool Timestamped::operator<(const Timestamped &rhs) const {
     if(sec < rhs.sec)
     {
       return true;

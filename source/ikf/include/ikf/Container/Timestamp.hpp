@@ -19,8 +19,8 @@
 #ifndef IKF_TIMESTAMP_HPP
 #define IKF_TIMESTAMP_HPP
 
-#include <ikf/ikf_api.h>
 #include <cstdint>
+#include <ikf/ikf_api.h>
 #include <ostream>
 
 namespace ikf
@@ -51,59 +51,21 @@ namespace ikf
       std::int64_t stamp_ns() const;
       void from_stamp_ns(std::int64_t const stamp_ns);
 
-      std::string str() const {
-        return std::to_string(sec) + "." + std::to_string(nsec);
+      std::string str() const;
+
+      friend std::ostream& operator<<(std::ostream& out, const Timestamp& obj) {
+        out << obj.str();
+        return out;
       }
 
-      friend std::ostream &operator<< (std::ostream& out, const Timestamp& obj){
-          out << obj.sec << "." << obj.nsec;
-          return out;
-      }
-
-      bool operator < (Timestamp const& rhs)  const {
-          if(sec < rhs.sec)
-          {
-              return true;
-          }
-          else if(sec == rhs.sec)
-          {
-              if(nsec < rhs.nsec)
-              {
-                  return true;
-              }
-          }
-          return false;
-      }
-
-      bool operator==(Timestamp const& rhs) const  {
-          return (sec == rhs.sec) && (nsec == rhs.nsec);
-      }
-
-      bool operator<=(Timestamp const& rhs) const  {
-          return !(*this > rhs);
-      }
-
-      bool operator > (Timestamp const& rhs) const  {
-          return !(*this == rhs ) && !(*this < rhs);
-      }
-
+      bool operator<(Timestamp const& rhs) const;
+      bool operator==(Timestamp const& rhs) const;
+      bool operator<=(Timestamp const& rhs) const;
+      bool operator>(Timestamp const& rhs) const;
       Timestamp operator+(const Timestamp& rhs) const { return Timestamp(to_sec() + rhs.to_sec()); }
       Timestamp operator-(const Timestamp& rhs) const { return Timestamp(to_sec() - rhs.to_sec()); }
-
-      /*Timestamp& operator=(const Timestamp& rhs) {
-          this->nsec = rhs.nsec;
-          this->sec = rhs.sec;
-          return *this;
-      }*/
-      Timestamp& operator-=(const Timestamp& rhs) {
-          from_sec(to_sec() - rhs.to_sec());
-          return *this;
-      }
-
-      Timestamp& operator+=(const Timestamp& rhs) {
-          from_sec(to_sec() + rhs.to_sec());
-          return *this;
-      }
+      Timestamp& operator-=(const Timestamp& rhs);
+      Timestamp& operator+=(const Timestamp& rhs);
   };
 
   class IKF_API Timestamped: public Timestamp
