@@ -18,13 +18,11 @@
 ******************************************************************************/
 #ifndef SIMINSTANCE_HPP
 #define SIMINSTANCE_HPP
-#include "Trajectory.hpp"
 #include "LinearIKF_1D_const_acc.hpp"
-#include "ikf/Estimator/IsolatedKalmanFilterHandler.hpp"
+#include "Trajectory.hpp"
+#include "ikf/EstimatorHandler/IsolatedKalmanFilterHandler.hpp"
 #include <ikf/Estimate/LinearBelief.hpp>
 #include <ikf/utils/MultivariateNormal.hpp>
-
-
 
 class SimInstanceDelay {
 public:

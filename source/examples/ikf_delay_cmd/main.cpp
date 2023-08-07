@@ -1,9 +1,7 @@
-#include "include/Trajectory.hpp"
-#include "include/SimInstanceDelay.hpp"
 #include "include/CLI11.hpp"
-#include <ikf/Estimator/IsolatedKalmanFilterHandler.hpp>
-
-
+#include "include/SimInstanceDelay.hpp"
+#include "include/Trajectory.hpp"
+#include <ikf/EstimatorHandler/IsolatedKalmanFilterHandler.hpp>
 
 void wait_for_key() {
   std::cout << "insert a VALUE to continue..." << std::flush << std::endl;
