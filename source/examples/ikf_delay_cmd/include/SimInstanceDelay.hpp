@@ -131,6 +131,11 @@ public:
 
       ikf::ProcessMeasResult_t res;
       res = m_ptr_Handler->process_measurement(m);
+
+      if (res.rejected) {
+        std::cout << "* Meas rejected[" << m.id_sensor << "] idx=" << idx_meas << ": " << m << std::endl;
+        // std::cout << traj.t_arr.transpose() << std::endl;
+      }
     }
 
     if (perform_joint && idx > delay_joint)
@@ -154,6 +159,9 @@ public:
 
         ikf::ProcessMeasResult_t res;
         res = m_ptr_Handler->process_measurement(m);
+        if (res.rejected) {
+          std::cout << "* Meas rejected[" << m.id_sensor << "] idx=" << idx_meas << ": " << m << std::endl;
+        }
       }
     }
     return true;
@@ -208,6 +216,4 @@ public:
   ikf::TTimeHorizonBuffer<ikf::pBelief_t> HistBelief;
 };
 
-
-
-#endif // SIMINSTANCE_HPP
+#endif  // SIMINSTANCE_HPP

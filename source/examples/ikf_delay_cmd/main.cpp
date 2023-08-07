@@ -16,19 +16,16 @@ void wait_for_key() {
   std::cout << "The value has been set to: " << Value << std::endl;
 }
 
-
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
   std::string app_name = "ikf_delay_cmd";
   CLI::App app{app_name};
 
-  bool handle_measurements_centralized = false;
-  app.add_option("--meas_centralized", handle_measurements_centralized, "specifies if measurements are maintained in handler or individual filter instances", true);
+  bool handle_measurements_centralized = true;
 
-  int N = 4; // number of filter instances
+  int N = 4;  // number of filter instances
   app.add_option("--num_instances", N, "number of filter instances", true);
 
-  int duration = 5; // number of filter instances
+  int duration = 5;
   app.add_option("--duration", duration, "Duration of the trajectory [sec]", true);
 
   bool first_private_only = true;
@@ -94,18 +91,14 @@ int main(int argc, char** argv)
    std::cout << "* \t delay_joint = " << delay_joint << std::endl;
   if (handle_measurements_centralized) {
     std::cout << "* Measurements are maintained in IKF handler (centralized)"  << std::endl;
-  } else {
-    std::cout << "* Measurements are maintained in individual IKF instances (distributed)"  << std::endl;
   }
-
 
   ikf::GaussianNoiseGen& gen = ikf::GaussianNoiseGen::instance();
   gen.seed(seed);
 
-  std::shared_ptr<ikf::IsolatedKalmanFilterHandler> ptr_Handler(new ikf::IsolatedKalmanFilterHandler(handle_measurements_centralized));
+  std::shared_ptr<ikf::IsolatedKalmanFilterHandler> ptr_Handler(new ikf::IsolatedKalmanFilterHandler());
 
-
-  double const dt = 1.0/std::max(1, freq); // Time step
+  double const dt = 1.0 / std::max(1, freq);  // Time step
   double const D = duration*1.0;
 
 

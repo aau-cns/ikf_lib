@@ -118,9 +118,13 @@ public:
     if (perform_private)
     {
       z << p_noisy_arr(idx);
-      if (ptr_IKF->update(z)  && print_belief) {
+      bool good = ptr_IKF->update(z);
+      if (good && print_belief) {
         auto p_bel = ptr_IKF->get_belief();
         std::cout << "* Update [" << ID <<  "]:t=" << t_curr << ", mean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
+      }
+      if (!good) {
+        std::cout << "* Meas rejected[" << ID << "]: t = " << t_curr << std::endl;
       }
     }
 
@@ -137,11 +141,14 @@ public:
         H_JJ << 1, 0;
 
         z << elem.second(idx);
-        if (ptr_IKF->joint_update(H_II, H_JJ, ID_J, R, z) && print_belief) {
+        bool good = ptr_IKF->joint_update(H_II, H_JJ, ID_J, R, z);
+        if (good && print_belief) {
           auto p_bel = ptr_IKF->get_belief();
           std::cout << "* Update Rel [" << ID << "," << ID_J << "]:t=" << t_curr << ", mean=\n " << p_bel->mean() << ",\nSigma=\n" << p_bel->Sigma() << std::endl;
         }
-
+        if (!good) {
+          std::cout << "* Meas rejected[" << ID << "," << ID_J << "]: t = " << t_curr << std::endl;
+        }
       }
     }
 
