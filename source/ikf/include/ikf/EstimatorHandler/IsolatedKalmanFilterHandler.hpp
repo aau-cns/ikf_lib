@@ -46,6 +46,12 @@ public:
 
   void reset();
 
+  /// Generic fusion algorithm for M-participants:
+  /// - the state dim can be obtained through the cols of the H matrices
+  /// - IDs of particants can be obtained through the dictionary keys.
+  bool apply_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::MatrixXd& R,
+                         const Eigen::VectorXd& r, const Timestamp& t, const KalmanFilter::CorrectionCfg_t& cfg);
+
   // KF: Algorithm 6 in [1]
   bool apply_joint_observation(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd& H_II,
                                const Eigen::MatrixXd& H_JJ, const Eigen::MatrixXd& R, const Eigen::VectorXd& z,

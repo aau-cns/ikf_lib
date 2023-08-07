@@ -377,6 +377,116 @@ Eigen::MatrixXd IsolatedKalmanFilterHandler::get_Sigma_IJ_at_t(const size_t ID_I
   }
   return Sigma_IJ;
 }
+bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H,
+                                                    const Eigen::MatrixXd &R, const Eigen::VectorXd &r,
+                                                    const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
+  std::map<size_t, size_t> dict_dim;
+  std::vector<size_t> IDs;
+  size_t state_dim = 0;
+  size_t H_rows = 0;
+  for (auto const &e : dict_H) {
+    IDs.push_back(e.first);
+    dict_dim.insert({e.first, e.second.cols()});
+    state_dim += e.second.cols();
+    H_rows = e.second.rows();
+  }
+
+  Eigen::MatrixXd H = Eigen::MatrixXd::Zero(H_rows, state_dim);
+  {
+    size_t col_start = 0;
+    for (auto const &id : IDs) {
+      H.block(0, col_start, H_rows, dict_dim[id]) = dict_H.at(id);
+      col_start += dict_dim[id];
+    }
+  }
+
+  std::map<size_t, pBelief_t> dict_bel;
+  for (auto const &id : IDs) {
+    pBelief_t bel_apri;
+    if (!get(id)->get_belief_at_t(t, bel_apri)) {
+      RTV_EXPECT_TRUE_MSG(false, "No belief exists!!");
+      return false;
+    }
+    dict_bel.insert({id, bel_apri});
+  }
+
+  Eigen::MatrixXd Sigma_apri = Eigen::MatrixXd::Zero(state_dim, state_dim);
+
+  {
+    // TODO: simplify to upper triangular matrix
+    size_t row_start = 0;
+    for (auto const &id_row : IDs) {
+      size_t state_dim_row = dict_dim[id_row];
+      size_t col_start = 0;
+      for (auto const &id_col : IDs) {
+        size_t state_dim_col = dict_dim[id_col];
+        if (id_row == id_col) {
+          Sigma_apri.block(row_start, col_start, state_dim_row, state_dim_col) = dict_bel[id_row]->Sigma();
+        } else {
+          Eigen::MatrixXd Sigma_IJ = get_Sigma_IJ_at_t(id_row, id_col, t);
+          if (Sigma_IJ.size()) {
+            Sigma_apri.block(row_start, col_start, state_dim_row, state_dim_col) = Sigma_IJ;
+          }
+        }
+        col_start += state_dim_col;
+      }
+      row_start += state_dim_row;
+    }
+  }
+
+  // stack individual's covariances:
+  Sigma_apri = utils::stabilize_covariance(Sigma_apri);
+  RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_apri), "Joint apri covariance is not PSD at t=" + t.str());
+
+  KalmanFilter::CorrectionResult_t res;
+  res = KalmanFilter::correction_step(H, R, r, Sigma_apri, cfg);
+  if (!res.rejected) {
+    RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(res.Sigma_apos),
+                        "Joint apos covariance is not PSD at t=" + t.str());
+
+    // IMPORTANT: MAINTAIN ORDER STRICKTLY
+    // 1) add correction terms in the appropriate correction buffers!
+    {
+      size_t row_start = 0;
+      for (auto const &id : IDs) {
+        Eigen::MatrixXd Sigma_II_apos = res.Sigma_apos.block(row_start, row_start, dict_dim[id], dict_dim[id]);
+        get(id)->apply_correction_at_t(t, dict_bel[id]->Sigma(), Sigma_II_apos);
+        row_start += dict_dim[id];
+      }
+    }
+
+    // 2) set a corrected factorized a posterioiry cross-covariance
+    // split covariance
+    {
+      size_t row_start = 0, col_start_offset = 0;
+      for (size_t i = 0; i < IDs.size() - 1; i++) {
+        size_t dim_i = dict_dim[IDs.at(i)];
+        col_start_offset += dim_i;
+        size_t ID_I = IDs.at(i);
+        size_t col_start = col_start_offset;
+        for (size_t j = i + 1; j < IDs.size(); j++) {
+          size_t dim_j = dict_dim[IDs.at(j)];
+          size_t ID_J = IDs.at(j);
+          Eigen::MatrixXd Sigma_IJ_apos = res.Sigma_apos.block(row_start, col_start, dim_i, dim_j);
+          set_Sigma_IJ_at_t(ID_I, ID_J, Sigma_IJ_apos, t);
+          col_start += dim_j;
+        }
+        row_start += dim_i;
+      }
+    }
+
+    // 3) correct beliefs implace!
+    {
+      size_t row_start = 0;
+      for (auto const &id : IDs) {
+        Eigen::MatrixXd Sigma_II_apos = res.Sigma_apos.block(row_start, row_start, dict_dim[id], dict_dim[id]);
+        dict_bel[id]->correct(res.delta_mean.block(row_start, 0, dict_dim[id], 1), Sigma_II_apos);
+        row_start += dict_dim[id];
+      }
+    }
+  }
+  return !res.rejected;
+}
 
 // KF: Algorithm 6 in [1]
 bool IsolatedKalmanFilterHandler::apply_joint_observation(const size_t ID_I, const size_t ID_J,
@@ -546,4 +656,4 @@ bool IsolatedKalmanFilterHandler::apply_joint_observation(
   return !res.rejected;
 }
 
-} // namespace ikf
+}  // namespace ikf

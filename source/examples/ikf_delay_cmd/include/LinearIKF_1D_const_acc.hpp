@@ -20,10 +20,10 @@
 #define LINEARIKF_HPP
 #include "ikf/Estimator/IIsolatedKalmanFilter.hpp"
 #include <ikf/EstimatorHandler/IsolatedKalmanFilterHandler.hpp>
+#include <ikf/utils/eigen_utils.hpp>
 #include <iostream>
 
-
-class LinearIKF_1D_const_acc: public ikf::IIsolatedKalmanFilter {
+class LinearIKF_1D_const_acc : public ikf::IIsolatedKalmanFilter {
 public:
   LinearIKF_1D_const_acc(std::shared_ptr<ikf::IsolatedKalmanFilterHandler> pHandler, size_t const ID) : ikf::IIsolatedKalmanFilter(pHandler, ID) {
     std::cout << "LinearIKF_1D_const_acc: 1D constant acceleration moving body (harmonic motion) ID=" << ID << std::endl;
@@ -88,8 +88,14 @@ public:
     res.observation_type = "local_position";
     res.residual = r;
     ikf::KalmanFilter::CorrectionCfg_t cfg;
-    res.rejected = !apply_private_observation(bel, H_private, m.R, r, t, cfg);
 
+    std::map<size_t, Eigen::MatrixXd> dict_H = {{m_ID, H_private}};
+
+#if 0
+    res.rejected = !apply_private_observation(bel, H_private, m.R, r, t, cfg);
+#else
+    res.rejected = !ptr_Handler->apply_observation(dict_H, m.R, r, t, cfg);
+#endif
     return res;
 
   }
@@ -110,17 +116,24 @@ public:
     res.ID_participants.push_back(ID_J);
     res.observation_type = m.meas_type + " between [" + std::to_string(m_ID) + "," + m.meta_info + "]";
     ikf::KalmanFilter::CorrectionCfg_t cfg;
+
+#if 0
     res.rejected = !ptr_Handler->apply_joint_observation(m_ID, ID_J, H_II, H_JJ, m.R, m.z, m.t_m, cfg);
+#else
+    std::map<size_t, Eigen::MatrixXd> dict_H = {{m_ID, H_II}, {ID_J, H_JJ}};
+    Eigen::VectorXd z_est = ikf::utils::horcat(H_II, H_JJ)
+                            * ikf::utils::vertcat_vec(this->get_belief_at_t(m.t_m)->mean(),
+                                                      ptr_Handler->get(ID_J)->get_belief_at_t(m.t_m)->mean());
+    Eigen::VectorXd r = m.z - z_est;
+
+    res.rejected = !ptr_Handler->apply_observation(dict_H, m.R, r, m.t_m, cfg);
+#endif
     return res;
   }
 
   // IKalmanFilter interface
 protected:
-  virtual bool predict_to(const ikf::Timestamp &t_b) override {
-    return false;
-  }
-
+  virtual bool predict_to(const ikf::Timestamp &t_b) override { return false; }
 };
 
-
-#endif // LINEARIKF_HPP
+#endif  // LINEARIKF_HPP
