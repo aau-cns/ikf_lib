@@ -49,8 +49,6 @@ public:
   virtual void initialize(pBelief_t bel_init, Timestamp const& t) override;
   virtual void set_horizon(double const t_hor) override;
 
-  virtual bool insert_measurement(MeasData const& m, Timestamp const& t) override;
-
   ///////////////////////////////////////////////////////////////////////////////////
   /// Trigger the filter:
   // Algorithm 7 in [1]
@@ -59,12 +57,6 @@ public:
 
   ///////////////////////////////////////////////////////////////////////////////////
   /// inter-filter interface:
-  TMultiHistoryBuffer<MeasData> get_measurements_after_t(Timestamp const&t);
-  TMultiHistoryBuffer<MeasData> get_measurements_from_t(Timestamp const&t);
-  std::vector<MeasData> get_measurements_at_t(Timestamp const&t) {
-    return HistMeas.get_all_at_t(t);
-  }
-
     // Algorithm 7 in [1]
   virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m) override;
 
@@ -77,7 +69,6 @@ public:
   virtual void remove_from_t(Timestamp const& t);
 
 protected:
-  bool is_order_violated(MeasData const& m);
   virtual bool redo_updates_after_t(Timestamp const& t) override;
   ///////////////////////////////////////////////////////////////////////////////////
   /// pure virtual method
@@ -124,56 +115,6 @@ protected:
   bool apply_private_observation(pBelief_t& bel_II_apri, const size_t ID_I, const Eigen::MatrixXd& H_II,
                                  const Eigen::MatrixXd& R, const Eigen::VectorXd& r, const Timestamp& t,
                                  const KalmanFilter::CorrectionCfg_t& cfg);
-
-  // KF: Algorithm 6 in [1]
-  bool apply_joint_observation(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ,
-                               const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t, const KalmanFilter::CorrectionCfg_t& cfg);
-
-  // EKF: Algorithm 6 in [1]
-  bool apply_joint_observation(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, const size_t ID_I, const size_t ID_J,
-                               const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ, const Eigen::MatrixXd &R,
-                               const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg);
-
-
-  bool apply_joint_observation(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, pBelief_t& bel_K_apri,
-                               const size_t ID_I, const size_t ID_J, const size_t ID_K,
-                               const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ, const Eigen::MatrixXd &H_KK,
-                               const Eigen::MatrixXd &R, const Eigen::VectorXd &r,
-                               const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg);
-
-  bool apply_joint_observation(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri,
-                               pBelief_t& bel_K_apri, pBelief_t& bel_L_apri,
-                               const size_t ID_I, const size_t ID_J, const size_t ID_K, const size_t ID_L,
-                               const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ,
-                               const Eigen::MatrixXd &H_KK, const Eigen::MatrixXd &H_LL,
-                               const Eigen::MatrixXd &R, const Eigen::VectorXd &r,
-                               const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg);
-
-  static Eigen::MatrixXd stack_Sigma(const Eigen::MatrixXd &Sigma_II, const Eigen::MatrixXd &Sigma_JJ, const Eigen::MatrixXd &Sigma_IJ);
-  static void split_Sigma(Eigen::MatrixXd const& Sigma, size_t const dim_I, size_t const dim_J, Eigen::MatrixXd& Sigma_II, Eigen::MatrixXd& Sigma_JJ, Eigen::MatrixXd& Sigma_IJ);
-
-    static void split_Sigma(Eigen::MatrixXd const& Sigma, size_t const dim_I, size_t const dim_J, size_t const dim_K,
-                          Eigen::MatrixXd& Sigma_II, Eigen::MatrixXd& Sigma_JJ, Eigen::MatrixXd& Sigma_KK,
-                          Eigen::MatrixXd& Sigma_IJ, Eigen::MatrixXd& Sigma_IK, Eigen::MatrixXd& Sigma_JK);
-
-  static void split_Sigma(Eigen::MatrixXd const& Sigma, size_t const dim_I, size_t const dim_J, size_t const dim_K, size_t const dim_L,
-                          Eigen::MatrixXd& Sigma_II, Eigen::MatrixXd& Sigma_JJ, Eigen::MatrixXd& Sigma_KK, Eigen::MatrixXd& Sigma_LL,
-                          Eigen::MatrixXd& Sigma_IJ, Eigen::MatrixXd& Sigma_IK, Eigen::MatrixXd& Sigma_JK,
-                            Eigen::MatrixXd& Sigma_IL, Eigen::MatrixXd& Sigma_JL, Eigen::MatrixXd& Sigma_KL);
-
-  Eigen::MatrixXd stack_apri_covariance(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, const size_t ID_I, const size_t ID_J,
-                                        Timestamp const& t);
-
-  Eigen::MatrixXd stack_apri_covariance(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, pBelief_t& bel_K_apri,
-                                        const size_t ID_I, const size_t ID_J, const size_t ID_K,
-                                        Timestamp const& t);
-  Eigen::MatrixXd stack_apri_covariance(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, pBelief_t& bel_K_apri, pBelief_t& bel_L_apri,
-                                        const size_t ID_I, const size_t ID_J, const size_t ID_K, const size_t ID_L,
-                                        Timestamp const& t);
-
-
-  Eigen::MatrixXd get_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, Timestamp const& t);
-  void set_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd &Sigma_IJ, const Timestamp &t);
 
   std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler;
   std::unordered_map<size_t, TTimeHorizonBuffer<Eigen::MatrixXd>> HistCrossCovFactors;

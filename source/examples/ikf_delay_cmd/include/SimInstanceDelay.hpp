@@ -107,11 +107,8 @@ public:
     m.t_p = t_curr;
 
     ikf::ProcessMeasResult_t res;
-    if (m_ptr_Handler->handle_delayed_meas())
-      res = m_ptr_Handler->process_measurement(m);
-    else {
-      res = ptr_IKF->process_measurement(m);
-    }
+    res = m_ptr_Handler->process_measurement(m);
+
     return true;
   }
 
@@ -133,11 +130,7 @@ public:
       m.t_p = t_curr;
 
       ikf::ProcessMeasResult_t res;
-      if (m_ptr_Handler->handle_delayed_meas())
-        res = m_ptr_Handler->process_measurement(m);
-      else {
-        res = ptr_IKF->process_measurement(m);
-      }
+      res = m_ptr_Handler->process_measurement(m);
     }
 
     if (perform_joint && idx > delay_joint)
@@ -160,13 +153,8 @@ public:
         m.t_p = t_curr;
 
         ikf::ProcessMeasResult_t res;
-        if (m_ptr_Handler->handle_delayed_meas())
-          res = m_ptr_Handler->process_measurement(m);
-        else {
-          res = ptr_IKF->process_measurement(m);
-        }
+        res = m_ptr_Handler->process_measurement(m);
       }
-
     }
     return true;
   }

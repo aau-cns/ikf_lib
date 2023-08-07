@@ -37,35 +37,77 @@ public:
   bool remove(const size_t ID);
   bool exists(const size_t ID);
   std::vector<size_t> get_instance_ids();
-  bool handle_delayed_meas() const;
   double horizon_sec() const;
 
+  ///
+  /// \brief process_measurement: If the m_handle_delayed_meas == true, the IKF-Handler is a centralized entity hanndle
+  /// all incomming measurements and is responsible to handle delayed measurements. \param m \return
+  virtual ProcessMeasResult_t process_measurement(MeasData const& m);
+
+  void reset();
+
+  // KF: Algorithm 6 in [1]
+  bool apply_joint_observation(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd& H_II,
+                               const Eigen::MatrixXd& H_JJ, const Eigen::MatrixXd& R, const Eigen::VectorXd& z,
+                               const Timestamp& t, const KalmanFilter::CorrectionCfg_t& cfg);
+
+  // EKF: Algorithm 6 in [1]
+  bool apply_joint_observation(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, const size_t ID_I, const size_t ID_J,
+                               const Eigen::MatrixXd& H_II, const Eigen::MatrixXd& H_JJ, const Eigen::MatrixXd& R,
+                               const Eigen::VectorXd& r, const Timestamp& t, const KalmanFilter::CorrectionCfg_t& cfg);
+
+  bool apply_joint_observation(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, pBelief_t& bel_K_apri, const size_t ID_I,
+                               const size_t ID_J, const size_t ID_K, const Eigen::MatrixXd& H_II,
+                               const Eigen::MatrixXd& H_JJ, const Eigen::MatrixXd& H_KK, const Eigen::MatrixXd& R,
+                               const Eigen::VectorXd& r, const Timestamp& t, const KalmanFilter::CorrectionCfg_t& cfg);
+
+  bool apply_joint_observation(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, pBelief_t& bel_K_apri,
+                               pBelief_t& bel_L_apri, const size_t ID_I, const size_t ID_J, const size_t ID_K,
+                               const size_t ID_L, const Eigen::MatrixXd& H_II, const Eigen::MatrixXd& H_JJ,
+                               const Eigen::MatrixXd& H_KK, const Eigen::MatrixXd& H_LL, const Eigen::MatrixXd& R,
+                               const Eigen::VectorXd& r, const Timestamp& t, const KalmanFilter::CorrectionCfg_t& cfg);
+
+protected:
   virtual bool insert_measurement(MeasData const& m, Timestamp const& t);
 
   void sort_measurements_from_t(Timestamp const& t);
-
-
-  ///
-  /// \brief process_measurement: If the m_handle_delayed_meas == true, the IKF-Handler is a centralized entity hanndle all incomming measurements and is responsible to handle delayed measurements. If
-  /// \param m
-  /// \return
-  ///
-  virtual ProcessMeasResult_t process_measurement(MeasData const& m);
-
   /////////////////////////////////////////////////////
   /// Interface for IKF handles to reprocess measurements
-  TMultiHistoryBuffer<MeasData> get_measurements_from_t(Timestamp const&t);
-  TMultiHistoryBuffer<MeasData> get_measurements_after_t(Timestamp const&t);
-  virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
-  virtual void remove_beliefs_after_t(Timestamp const& t);
-  virtual void remove_beliefs_from_t(Timestamp const& t);
-  void reset();
-
-protected:
+  TMultiHistoryBuffer<MeasData> get_measurements_from_t(Timestamp const& t);
+  TMultiHistoryBuffer<MeasData> get_measurements_after_t(Timestamp const& t);
   bool is_order_violated(MeasData const& m);
   virtual bool redo_updates_from_t(const Timestamp &t);
   virtual bool redo_updates_after_t(const Timestamp &t);
+  virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
+  virtual void remove_beliefs_after_t(Timestamp const& t);
+  virtual void remove_beliefs_from_t(Timestamp const& t);
 
+  static Eigen::MatrixXd stack_Sigma(const Eigen::MatrixXd& Sigma_II, const Eigen::MatrixXd& Sigma_JJ,
+                                     const Eigen::MatrixXd& Sigma_IJ);
+  static void split_Sigma(Eigen::MatrixXd const& Sigma, size_t const dim_I, size_t const dim_J,
+                          Eigen::MatrixXd& Sigma_II, Eigen::MatrixXd& Sigma_JJ, Eigen::MatrixXd& Sigma_IJ);
+
+  static void split_Sigma(Eigen::MatrixXd const& Sigma, size_t const dim_I, size_t const dim_J, size_t const dim_K,
+                          Eigen::MatrixXd& Sigma_II, Eigen::MatrixXd& Sigma_JJ, Eigen::MatrixXd& Sigma_KK,
+                          Eigen::MatrixXd& Sigma_IJ, Eigen::MatrixXd& Sigma_IK, Eigen::MatrixXd& Sigma_JK);
+
+  static void split_Sigma(Eigen::MatrixXd const& Sigma, size_t const dim_I, size_t const dim_J, size_t const dim_K,
+                          size_t const dim_L, Eigen::MatrixXd& Sigma_II, Eigen::MatrixXd& Sigma_JJ,
+                          Eigen::MatrixXd& Sigma_KK, Eigen::MatrixXd& Sigma_LL, Eigen::MatrixXd& Sigma_IJ,
+                          Eigen::MatrixXd& Sigma_IK, Eigen::MatrixXd& Sigma_JK, Eigen::MatrixXd& Sigma_IL,
+                          Eigen::MatrixXd& Sigma_JL, Eigen::MatrixXd& Sigma_KL);
+
+  Eigen::MatrixXd stack_apri_covariance(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, const size_t ID_I,
+                                        const size_t ID_J, Timestamp const& t);
+
+  Eigen::MatrixXd stack_apri_covariance(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, pBelief_t& bel_K_apri,
+                                        const size_t ID_I, const size_t ID_J, const size_t ID_K, Timestamp const& t);
+  Eigen::MatrixXd stack_apri_covariance(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, pBelief_t& bel_K_apri,
+                                        pBelief_t& bel_L_apri, const size_t ID_I, const size_t ID_J, const size_t ID_K,
+                                        const size_t ID_L, Timestamp const& t);
+
+  Eigen::MatrixXd get_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, Timestamp const& t);
+  void set_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd& Sigma_IJ, const Timestamp& t);
 
   std::unordered_map<size_t, std::shared_ptr<IIsolatedKalmanFilter>> id_dict;
   bool m_handle_delayed_meas = true;

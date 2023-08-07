@@ -19,6 +19,7 @@
 #ifndef LINEARIKF_HPP
 #define LINEARIKF_HPP
 #include "ikf/Estimator/IIsolatedKalmanFilter.hpp"
+#include <ikf/EstimatorHandler/IsolatedKalmanFilterHandler.hpp>
 #include <iostream>
 
 
@@ -109,7 +110,7 @@ public:
     res.ID_participants.push_back(ID_J);
     res.observation_type = m.meas_type + " between [" + std::to_string(m_ID) + "," + m.meta_info + "]";
     ikf::KalmanFilter::CorrectionCfg_t cfg;
-    res.rejected = !apply_joint_observation(m_ID, ID_J, H_II, H_JJ, m.R, m.z, m.t_m, cfg);
+    res.rejected = !ptr_Handler->apply_joint_observation(m_ID, ID_J, H_II, H_JJ, m.R, m.z, m.t_m, cfg);
     return res;
   }
 
