@@ -89,11 +89,10 @@ public:
     res.residual = r;
     ikf::KalmanFilter::CorrectionCfg_t cfg;
 
-    std::map<size_t, Eigen::MatrixXd> dict_H = {{m_ID, H_private}};
-
 #if 0
     res.rejected = !apply_private_observation(bel, H_private, m.R, r, t, cfg);
 #else
+    std::map<size_t, Eigen::MatrixXd> dict_H = {{m_ID, H_private}};
     res.rejected = !m_pHandler->apply_observation(dict_H, m.R, r, t, cfg);
 #endif
     return res;
