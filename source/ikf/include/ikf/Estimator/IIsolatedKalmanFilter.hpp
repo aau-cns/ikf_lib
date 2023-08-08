@@ -54,7 +54,7 @@ class IsolatedKalmanFilterHandler;
 /// --- factorize the cross-covariances and to update the previous ones.
 /// - The collaborative Fusion Center needs to exchange information between other Fusion Centers (overwrites methods of
 /// local FC)
-/// --- optinally maintaining the measurements.
+/// --- optinally maintaining the measurements (is recommended to simplify the algorithm).
 ///
 /// - The responsibilities of the IIsolatedKalmanFilter realization:
 /// --- to define which state definition is used.
@@ -99,7 +99,7 @@ protected:
   virtual ProcessMeasResult_t local_joint_measurement(MeasData const& m) = 0;
   /// pure virtual method
   ///////////////////////////////////////////////////////////////////////////////////
-  ///
+
   ///////////////////////////////////////////////////////////////////////////////////
   /// IsolatedKalmanFilterHandler interface:
   ///
@@ -107,7 +107,6 @@ protected:
   /// local_private_measurement(), or local_joint_measurement() based on the measurement's eObservationType
   /// \param m
   /// \return ProcessMeasResult_t
-  ///
   virtual ProcessMeasResult_t delegate_measurement(MeasData const& m) override;
 
   virtual Eigen::MatrixXd get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J);
@@ -118,7 +117,7 @@ protected:
 
   /// IsolatedKalmanFilterHandler interface:
   ///////////////////////////////////////////////////////////////////////////////////
-  ///
+
   virtual void remove_after_t(Timestamp const& t);
   virtual void remove_from_t(Timestamp const& t);
   virtual bool redo_updates_after_t(Timestamp const& t) override;
@@ -158,9 +157,10 @@ protected:
   bool apply_private_observation(pBelief_t& bel_II_apri, const Eigen::MatrixXd& H_II, const Eigen::MatrixXd& R,
                                  const Eigen::VectorXd& r, const KalmanFilter::CorrectionCfg_t& cfg) override;
 
-  bool apply_private_observation(pBelief_t& bel_II_apri, const size_t ID_I, const Eigen::MatrixXd& H_II,
-                                 const Eigen::MatrixXd& R, const Eigen::VectorXd& r,
-                                 const KalmanFilter::CorrectionCfg_t& cfg);
+  // call m_pHandler->apply_observation(...)
+  //  bool apply_private_observation(pBelief_t& bel_II_apri, const size_t ID_I, const Eigen::MatrixXd& H_II,
+  //                                 const Eigen::MatrixXd& R, const Eigen::VectorXd& r,
+  //                                 const KalmanFilter::CorrectionCfg_t& cfg);
 
   std::shared_ptr<IsolatedKalmanFilterHandler> m_pHandler;
   std::unordered_map<size_t, TTimeHorizonBuffer<Eigen::MatrixXd>> HistCrossCovFactors;

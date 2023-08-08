@@ -263,34 +263,4 @@ bool IIsolatedKalmanFilter::apply_private_observation(pBelief_t &bel_II_apri, co
   return false;
 }
 
-bool ikf::IIsolatedKalmanFilter::apply_private_observation(pBelief_t &bel_II_apri, const size_t ID_I,
-                                                           const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R,
-                                                           const Eigen::VectorXd &r,
-                                                           const KalmanFilter::CorrectionCfg_t &cfg) {
-  // TODO: remove -> IKF should call ptr_Handler->apply_observation instead!
-  auto t = bel_II_apri->timestamp();
-  bool is_psd = RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(bel_II_apri->Sigma()),
-                                    "Apri covariance is not PSD at t=" + t.str());
-  if(!is_psd) {
-    bel_II_apri->Sigma(utils::stabilize_covariance(bel_II_apri->Sigma()));
-  }
-  RTV_EXPECT_TRUE_THROW(m_pHandler->exists(ID_I), "IKF instances do not exists!");
-
-  KalmanFilter::CorrectionResult_t res;
-  res = KalmanFilter::correction_step(H_II, R, r, bel_II_apri->Sigma(), cfg);
-
-  if (!res.rejected) {
-    RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(res.Sigma_apos), "Apos covariance is not PSD at t=" + t.str());
-
-    // correction strategy: IMPORTANT: before setting the belief implace!
-    if (m_pHandler->get(ID_I)->apply_correction_at_t(t, res.U)) {
-      bel_II_apri->correct(res.delta_mean, res.Sigma_apos);
-      return true;
-    } else {
-      return false;
-    }
-  }
-  return false;
-}
-
 }  // namespace ikf
