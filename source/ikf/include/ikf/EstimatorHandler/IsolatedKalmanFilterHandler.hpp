@@ -106,59 +106,18 @@ protected:
 
   Eigen::MatrixXd stack_H(const std::map<size_t, Eigen::MatrixXd>& dict_H);
 
-  std::map<size_t, pBelief_t> get_dict_bel(const std::map<size_t, Eigen::MatrixXd>& dict_H, Timestamp const& t) {
-    std::map<size_t, pBelief_t> dict_bel;
-    for (auto const& e : dict_H) {
-      size_t id = e.first;
-      pBelief_t bel_apri;
-      if (!get(id)->get_belief_at_t(t, bel_apri)) {
-        RTV_EXPECT_TRUE_MSG(false, "No belief exists!!");
-        return dict_bel;
-      }
-      dict_bel.insert({id, bel_apri});
-    }
-    return dict_bel;
-  }
+  std::map<size_t, pBelief_t> get_dict_bel(const std::map<size_t, Eigen::MatrixXd>& dict_H, Timestamp const& t);
 
-  Eigen::MatrixXd stack_Sigma_apri(const std::map<size_t, pBelief_t>& dict_bel, Timestamp const& t) {
-    size_t state_dim = 0;
-    for (auto const& e : dict_bel) {
-      state_dim += e.second->es_dim();
-    }
-    Eigen::MatrixXd Sigma_apri = Eigen::MatrixXd::Zero(state_dim, state_dim);
+  Eigen::MatrixXd stack_Sigma_apri(const std::map<size_t, pBelief_t>& dict_bel, Timestamp const& t);
 
-    size_t row_start = 0;
-    for (auto const& e_i : dict_bel) {
-      size_t id_row = e_i.first;
-      size_t state_dim_row = e_i.second->es_dim();
-      size_t col_start = 0;
-      for (auto const& e_j : dict_bel) {
-        size_t id_col = e_j.first;
-        size_t state_dim_col = e_j.second->es_dim();
-        if (id_row == id_col) {
-          Sigma_apri.block(row_start, col_start, state_dim_row, state_dim_col) = e_i.second->Sigma();
-        } else {
-          Eigen::MatrixXd Sigma_IJ = get_Sigma_IJ_at_t(id_row, id_col, t);
-          if (Sigma_IJ.size()) {
-            Sigma_apri.block(row_start, col_start, state_dim_row, state_dim_col) = Sigma_IJ;
-          }
-        }
-        col_start += state_dim_col;
-      }
-      row_start += state_dim_row;
-    }
+  void apply_corrections_at_t(Eigen::MatrixXd& Sigma_apos, const std::map<size_t, pBelief_t>& dict_bel,
+                              Timestamp const& t);
 
-    return Sigma_apri;
-  }
-
-  void apply_corrections_at_t(Eigen::MatrixXd& Sigma_apos, std::map<size_t, size_t> const& dict_dim,
-                              const std::map<size_t, pBelief_t>& dict_bel, Timestamp const& t);
-
-  void split_right_upper_covariance(Eigen::MatrixXd& Sigma, std::map<size_t, size_t> const& dict_dim,
+  void split_right_upper_covariance(Eigen::MatrixXd& Sigma, const std::map<size_t, pBelief_t>& dict_bel,
                                     Timestamp const& t);
 
   void correct_beliefs_implace(Eigen::MatrixXd& Sigma_apos, Eigen::VectorXd& delta_mean,
-                               std::map<size_t, size_t> const& dict_dim, const std::map<size_t, pBelief_t>& dict_bel);
+                               const std::map<size_t, pBelief_t>& dict_bel);
 
   std::unordered_map<size_t, std::shared_ptr<IIsolatedKalmanFilter>> id_dict;
   bool m_handle_delayed_meas = true;
