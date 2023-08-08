@@ -46,15 +46,6 @@ ProcessMeasResult_t IIsolatedKalmanFilter::process_measurement(const MeasData &m
   return m_pHandler->process_measurement(m);
 }
 
-void IIsolatedKalmanFilter::initialize(pBelief_t bel_init) {
-  initialize(bel_init, bel_init->timestamp());
-}
-
-void IIsolatedKalmanFilter::initialize(pBelief_t bel_init, const Timestamp &t) {
-  reset();
-  HistBelief.insert(bel_init, t);
-}
-
 bool IIsolatedKalmanFilter::redo_updates_after_t(const Timestamp &t) {
   remove_after_t(t);
   return IKalmanFilter::redo_updates_after_t(t);
@@ -172,14 +163,14 @@ bool IIsolatedKalmanFilter::apply_correction_at_t(const Timestamp &t, const Eige
 
 
 // Algorithm 7 in [1]
-ProcessMeasResult_t IIsolatedKalmanFilter::reprocess_measurement(const MeasData &m) {
+ProcessMeasResult_t IIsolatedKalmanFilter::delegate_measurement(const MeasData &m) {
   ProcessMeasResult_t res;
   res.rejected = true;
 
   if (m.obs_type == eObservationType::JOINT_OBSERVATION) {
     res = local_joint_measurement(m);
   } else {
-    res = IKalmanFilter::reprocess_measurement(m);
+    res = IKalmanFilter::delegate_measurement(m);
   }
 
   return res;

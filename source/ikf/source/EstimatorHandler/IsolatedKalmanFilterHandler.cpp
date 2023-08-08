@@ -113,7 +113,7 @@ void IsolatedKalmanFilterHandler::sort_measurements_from_t(const Timestamp &t) {
 }
 
 ProcessMeasResult_t IsolatedKalmanFilterHandler::process_measurement(const MeasData &m) {
-  ProcessMeasResult_t res = reprocess_measurement(m);
+  ProcessMeasResult_t res = delegate_measurement(m);
   bool order_violated = is_order_violated(m);
   if (order_violated) {
     HistMeas.insert(m, m.t_m);
@@ -129,10 +129,10 @@ ProcessMeasResult_t IsolatedKalmanFilterHandler::process_measurement(const MeasD
   return res;
 }
 
-ProcessMeasResult_t IsolatedKalmanFilterHandler::reprocess_measurement(const MeasData &m) {
+ProcessMeasResult_t IsolatedKalmanFilterHandler::delegate_measurement(const MeasData &m) {
   ProcessMeasResult_t res;
   if (exists(m.id_sensor)) {
-    res = id_dict[m.id_sensor]->reprocess_measurement(m);
+    res = id_dict[m.id_sensor]->delegate_measurement(m);
   }
   return res;
 }
@@ -146,11 +146,11 @@ bool IsolatedKalmanFilterHandler::redo_updates_from_t(const Timestamp &t) {
     if (t == t_last) {
       auto vec = HistMeas.get_all_at_t(t);
       for (MeasData &m : vec) {
-        this->reprocess_measurement(m);
+        this->delegate_measurement(m);
       }
     }
     else {
-      HistMeas.foreach_between_t1_t2(t, t_last, [this](MeasData const&m){ this->reprocess_measurement(m); });
+      HistMeas.foreach_between_t1_t2(t, t_last, [this](MeasData const &m) { this->delegate_measurement(m); });
     }
     return true;
   }
@@ -165,11 +165,11 @@ bool IsolatedKalmanFilterHandler::redo_updates_after_t(const Timestamp &t) {
     if (t_after == t_last) {
       auto vec = HistMeas.get_all_at_t(t_after);
       for (MeasData &m : vec) {
-        this->reprocess_measurement(m);
+        this->delegate_measurement(m);
       }
     }
     else {
-      HistMeas.foreach_between_t1_t2(t_after, t_last, [this](MeasData const&m){ this->reprocess_measurement(m); });
+      HistMeas.foreach_between_t1_t2(t_after, t_last, [this](MeasData const &m) { this->delegate_measurement(m); });
     }
     return true;
   }

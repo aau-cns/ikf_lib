@@ -88,7 +88,7 @@ protected:
   bool is_order_violated(MeasData const& m);
   virtual bool redo_updates_from_t(const Timestamp &t);
   virtual bool redo_updates_after_t(const Timestamp &t);
-  virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
+  virtual ProcessMeasResult_t delegate_measurement(MeasData const& m);
   virtual void remove_beliefs_after_t(Timestamp const& t);
   virtual void remove_beliefs_from_t(Timestamp const& t);
 

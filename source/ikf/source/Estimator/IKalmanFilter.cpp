@@ -54,7 +54,7 @@ ProcessMeasResult_t IKalmanFilter::process_measurement(const MeasData &m) {
   // propagation and private -> to filter instance
   // joint -> use ptr_CIH and two filter instances: The CIH must provide others belief and ccf
 
-  auto res = IKalmanFilter::reprocess_measurement(m);
+  auto res = IKalmanFilter::delegate_measurement(m);
 
   if (m_handle_delayed_meas) {
     if (!res.rejected && HistMeas.exist_after_t(m.t_m)) {
@@ -79,10 +79,10 @@ bool IKalmanFilter::redo_updates_after_t(const Timestamp &t) {
     if (t_after == t_last) {
       MeasData m;
       HistMeas.get_at_t(t_after, m);
-      this->reprocess_measurement(m);
+      this->delegate_measurement(m);
     }
     else {
-      HistMeas.foreach_between_t1_t2(t_after, t_last, [this](MeasData const&m){ this->reprocess_measurement(m); });
+      HistMeas.foreach_between_t1_t2(t_after, t_last, [this](MeasData const &m) { this->delegate_measurement(m); });
     }
     return true;
   }
@@ -354,7 +354,7 @@ bool ikf::IKalmanFilter::get_prop_meas_at_t(const Timestamp &t, MeasData &m) {
   return false;
 }
 
-ProcessMeasResult_t IKalmanFilter::reprocess_measurement(const MeasData &m) {
+ProcessMeasResult_t IKalmanFilter::delegate_measurement(const MeasData &m) {
   ProcessMeasResult_t res;
   res.rejected = true;
   switch (m.obs_type) {
@@ -377,7 +377,6 @@ ProcessMeasResult_t IKalmanFilter::reprocess_measurement(const MeasData &m) {
     }
   return res;
 }
-
 
 bool IKalmanFilter::apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab,
                                       const Timestamp &t_a, const Timestamp &t_b)  {

@@ -53,27 +53,25 @@ public:
   bool handle_delayed_meas() const;
   void handle_delayed_meas(bool const val);
   virtual void initialize(pBelief_t bel_init);
-  virtual void initialize(pBelief_t bel_init, Timestamp const& t);
+  virtual void initialize(pBelief_t bel_init, Timestamp const &t);
   virtual void set_horizon(double const t_hor);
   virtual void reset();
-  virtual bool insert_measurement(MeasData const& m, Timestamp const& t);
-
-  virtual bool redo_updates_after_t(Timestamp const& t);
   Timestamp current_t() const;
   pBelief_t current_belief() const;
-  bool exist_belief_at_t(Timestamp const& t) const;
+  bool exist_belief_at_t(Timestamp const &t) const;
 
-  pBelief_t get_belief_at_t(Timestamp const& t) const;
-  pBelief_t get_belief_at_t(Timestamp const& t, eGetBeliefStrategy const type);
-  bool get_belief_at_t(Timestamp const& t, pBelief_t& bel, eGetBeliefStrategy const type=eGetBeliefStrategy::EXACT);
-  void set_belief_at_t(pBelief_t const& bel, Timestamp const&t);
-  bool get_belief_before_t(Timestamp const&t, pBelief_t& bel, Timestamp &t_before);
+  pBelief_t get_belief_at_t(Timestamp const &t) const;
+  pBelief_t get_belief_at_t(Timestamp const &t, eGetBeliefStrategy const type);
+  bool get_belief_at_t(Timestamp const &t, pBelief_t &bel, eGetBeliefStrategy const type = eGetBeliefStrategy::EXACT);
+  void set_belief_at_t(pBelief_t const &bel, Timestamp const &t);
+  bool get_belief_before_t(Timestamp const &t, pBelief_t &bel, Timestamp &t_before);
   Eigen::VectorXd get_mean_at_t(Timestamp const &t) const;
-  Eigen::MatrixXd get_Sigma_at_t(Timestamp const&t) const;
-  void print_HistMeas(size_t max=100, bool reverse=false);
-  void print_HistBelief(size_t max=100, bool reverse=false);
+  Eigen::MatrixXd get_Sigma_at_t(Timestamp const &t) const;
+  void print_HistMeas(size_t max = 100, bool reverse = false);
+  void print_HistBelief(size_t max = 100, bool reverse = false);
 
-  bool get_prop_meas_at_t(Timestamp const& t, MeasData &m);
+  bool get_prop_meas_at_t(Timestamp const &t, MeasData &m);
+
 protected:
   ///////////////////////////////////////////////////////////////////////////////////
   /// pure virtual method
@@ -82,12 +80,23 @@ protected:
   virtual ProcessMeasResult_t local_private_measurement(MeasData const& m) = 0;
   /// pure virtual method
   ///////////////////////////////////////////////////////////////////////////////////
+
+  virtual bool insert_measurement(MeasData const &m, Timestamp const &t);
+
+  virtual bool redo_updates_after_t(Timestamp const &t);
   bool correct_belief_at_t(Eigen::VectorXd const& mean_corr, Eigen::MatrixXd const& Sigma_apos, Timestamp const&t);
 
   virtual void remove_beliefs_after_t(Timestamp const& t);
   virtual void check_horizon();
 
-  virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);
+  ///
+  /// \brief delegate_measurement: redirects measurement either to progapation_measurement() or
+  /// local_private_measurement() based on the measurement's eObservationType
+  /// \param m
+  /// \return ProcessMeasResult_t
+  ///
+  virtual ProcessMeasResult_t delegate_measurement(MeasData const &m);
+
   // KF:
   virtual  bool apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
   // EKF: if linearizing about bel_II_apri

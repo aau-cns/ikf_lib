@@ -77,13 +77,11 @@ class IsolatedKalmanFilterHandler;
 class IKF_API IIsolatedKalmanFilter: public IKalmanFilter {
 public:
   IIsolatedKalmanFilter(std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler, size_t const ID,
-                        bool const handle_delayed_meas=true , double const horizon_sec=1.0);
+                        bool const handle_delayed_meas = false, double const horizon_sec = 1.0);
   virtual ~IIsolatedKalmanFilter() {}
 
-  virtual size_t ID() const;
+  size_t ID() const;
   void reset() override;
-  virtual void initialize(pBelief_t bel_init) override;
-  virtual void initialize(pBelief_t bel_init, Timestamp const& t) override;
   virtual void set_horizon(double const t_hor) override;
 
   ///////////////////////////////////////////////////////////////////////////////////
@@ -92,26 +90,38 @@ public:
   virtual ProcessMeasResult_t process_measurement(MeasData const& m) override;
   ///////////////////////////////////////////////////////////////////////////////////
 
-  ///////////////////////////////////////////////////////////////////////////////////
-  /// inter-filter interface:
-    // Algorithm 7 in [1]
-  virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m) override;
-
-  virtual Eigen::MatrixXd get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J);
-  void set_CrossCovFact_at_t(Timestamp const& t, size_t const unique_ID, Eigen::MatrixXd const& ccf);
-  // Eq. 20 in [1]
-  virtual bool apply_correction_at_t(Timestamp const&t, Eigen::MatrixXd const& Sigma_apri, Eigen::MatrixXd const Sigma_apos);
-  ///////////////////////////////////////////////////////////////////////////////////
-  virtual void remove_after_t(Timestamp const& t);
-  virtual void remove_from_t(Timestamp const& t);
-
 protected:
-  virtual bool redo_updates_after_t(Timestamp const& t) override;
+  /// FRIEND:
+  friend IsolatedKalmanFilterHandler;
+
   ///////////////////////////////////////////////////////////////////////////////////
   /// pure virtual method
   virtual ProcessMeasResult_t local_joint_measurement(MeasData const& m) = 0;
   /// pure virtual method
   ///////////////////////////////////////////////////////////////////////////////////
+  ///
+  ///////////////////////////////////////////////////////////////////////////////////
+  /// IsolatedKalmanFilterHandler interface:
+  ///
+  /// \brief delegate_measurement: redirects measurement either to progapation_measurement(),
+  /// local_private_measurement(), or local_joint_measurement() based on the measurement's eObservationType
+  /// \param m
+  /// \return ProcessMeasResult_t
+  ///
+  virtual ProcessMeasResult_t delegate_measurement(MeasData const& m) override;
+
+  virtual Eigen::MatrixXd get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J);
+  void set_CrossCovFact_at_t(Timestamp const& t, size_t const unique_ID, Eigen::MatrixXd const& ccf);
+  // Eq. 20 in [1]
+  virtual bool apply_correction_at_t(Timestamp const& t, Eigen::MatrixXd const& Sigma_apri,
+                                     Eigen::MatrixXd const Sigma_apos);
+
+  /// IsolatedKalmanFilterHandler interface:
+  ///////////////////////////////////////////////////////////////////////////////////
+  ///
+  virtual void remove_after_t(Timestamp const& t);
+  virtual void remove_from_t(Timestamp const& t);
+  virtual bool redo_updates_after_t(Timestamp const& t) override;
 
   bool get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J, Eigen::MatrixXd &FFC);
 
