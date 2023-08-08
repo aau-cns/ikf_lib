@@ -1,6 +1,7 @@
 #include "include/CLI11.hpp"
 #include "include/SimInstanceDelay.hpp"
 #include "include/Trajectory.hpp"
+#include <ikf/EstimatorHandler/DecoupledPropagationHandler.hpp>
 #include <ikf/EstimatorHandler/IsolatedKalmanFilterHandler.hpp>
 
 void wait_for_key() {
@@ -96,7 +97,7 @@ int main(int argc, char** argv) {
   ikf::GaussianNoiseGen& gen = ikf::GaussianNoiseGen::instance();
   gen.seed(seed);
 
-  std::shared_ptr<ikf::IsolatedKalmanFilterHandler> ptr_Handler(new ikf::IsolatedKalmanFilterHandler());
+  std::shared_ptr<ikf::DecoupledPropagationHandler> ptr_Handler(new ikf::DecoupledPropagationHandler());
 
   double const dt = 1.0 / std::max(1, freq);  // Time step
   double const D = duration * 1.0;

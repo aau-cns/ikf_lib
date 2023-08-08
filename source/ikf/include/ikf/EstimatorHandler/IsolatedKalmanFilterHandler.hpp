@@ -55,10 +55,12 @@ public:
   /// - IDs of particants can be obtained through the dictionary keys.
   ///
   ///
-  bool apply_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::MatrixXd& R,
-                         const Eigen::VectorXd& r, const Timestamp& t, const KalmanFilter::CorrectionCfg_t& cfg);
-  bool apply_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::VectorXd& z,
-                         const Eigen::MatrixXd& R, const Timestamp& t, const KalmanFilter::CorrectionCfg_t& cfg);
+  virtual bool apply_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::MatrixXd& R,
+                                 const Eigen::VectorXd& r, const Timestamp& t,
+                                 const KalmanFilter::CorrectionCfg_t& cfg);
+  virtual bool apply_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::VectorXd& z,
+                                 const Eigen::MatrixXd& R, const Timestamp& t,
+                                 const KalmanFilter::CorrectionCfg_t& cfg);
 
 protected:
   virtual bool insert_measurement(MeasData const& m, Timestamp const& t);
@@ -78,9 +80,9 @@ protected:
   Eigen::MatrixXd get_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, Timestamp const& t);
   void set_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd& Sigma_IJ, const Timestamp& t);
 
-  Eigen::MatrixXd stack_H(const std::map<size_t, Eigen::MatrixXd>& dict_H);
+  virtual Eigen::MatrixXd stack_H(const std::map<size_t, Eigen::MatrixXd>& dict_H);
 
-  std::map<size_t, pBelief_t> get_dict_bel(const std::map<size_t, Eigen::MatrixXd>& dict_H, Timestamp const& t);
+  virtual std::map<size_t, pBelief_t> get_dict_bel(const std::map<size_t, Eigen::MatrixXd>& dict_H, Timestamp const& t);
 
   Eigen::VectorXd stack_mean(const std::map<size_t, pBelief_t>& dict_bel);
   Eigen::MatrixXd stack_Sigma(const std::map<size_t, pBelief_t>& dict_bel, Timestamp const& t);
