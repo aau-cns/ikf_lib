@@ -124,16 +124,14 @@ void IIsolatedKalmanFilter::remove_from_t(const Timestamp &t) {
 }
 
 void IIsolatedKalmanFilter::set_horizon(const double t_hor) {
-  IKalmanFilter::set_horizon(t_hor*2);
-  // measurement horizon can be max half the horizon of beliefs!
+  IKalmanFilter::set_horizon(t_hor);
   for (auto& elem : HistCrossCovFactors){
-    elem.second.set_horizon(t_hor*2);
+    elem.second.set_horizon(t_hor);
   }
 }
 
 void IIsolatedKalmanFilter::check_horizon() {
   IKalmanFilter::check_horizon();
-
   for (auto& elem : HistCrossCovFactors){
     elem.second.check_horizon();
   }
@@ -243,17 +241,7 @@ bool IIsolatedKalmanFilter::apply_private_observation(const Eigen::MatrixXd &H_I
   if (get_belief_at_t(t, bel_apri)) {
     Eigen::VectorXd r = z - H_II * bel_apri->mean();
 
-    KalmanFilter::CorrectionResult_t res;
-    res = KalmanFilter::correction_step(H_II, R, r, bel_apri->Sigma(), cfg);
-
-    if (!res.rejected) {
-      // correction strategy: IMPORTANT: before setting the belief implace!
-      apply_correction_at_t(t, bel_apri->Sigma(), res.Sigma_apos);
-
-      // implace correction: no need to insert the belief into the HistBelief!
-      bel_apri->correct(res.delta_mean, res.Sigma_apos);
-    }
-    return !res.rejected;
+    return apply_private_observation(bel_apri, H_II, R, r, t, cfg);
   }
   return false;
 }
@@ -284,6 +272,8 @@ bool IIsolatedKalmanFilter::apply_private_observation(pBelief_t &bel_II_apri, co
 }
 
 bool ikf::IIsolatedKalmanFilter::apply_private_observation(pBelief_t &bel_II_apri, const size_t ID_I, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
+  // TODO: remove -> IKF should call ptr_Handler->apply_observation instead!
+
   bool is_psd = RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(bel_II_apri->Sigma()), "Apri covariance is not PSD at t=" + t.str());
   if(!is_psd) {
     bel_II_apri->Sigma(utils::stabilize_covariance(bel_II_apri->Sigma()));
