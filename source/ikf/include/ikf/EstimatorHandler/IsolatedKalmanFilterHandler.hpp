@@ -29,7 +29,7 @@ class IKF_API IsolatedKalmanFilterHandler {
 
 
 public:
-  IsolatedKalmanFilterHandler(bool const handle_delayed=true, double const horizon_sec=1.0);
+  IsolatedKalmanFilterHandler(bool const handle_delayed = true, double const horizon_sec = 1.0);
   ~IsolatedKalmanFilterHandler() = default;
 
   bool add(pIKF_t p_IKF);
@@ -38,19 +38,23 @@ public:
   bool exists(const size_t ID);
   std::vector<size_t> get_instance_ids();
   double horizon_sec() const;
+  void set_horizon(double const t_hor);
 
-  ///
+  void reset();
+
   /// \brief process_measurement: If the m_handle_delayed_meas == true, the IKF-Handler is a centralized entity hanndle
   /// all incomming measurements and is responsible to handle delayed measurements. \param m \return
   virtual ProcessMeasResult_t process_measurement(MeasData const& m);
 
-  void reset();
-
   /// Generic fusion algorithm for M-participants:
-  /// - the state dim can be obtained through the cols of the H matrices
+  /// - the state dim can be infered from the cols of the H matrices
   /// - IDs of particants can be obtained through the dictionary keys.
+  ///
+  ///
   bool apply_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::MatrixXd& R,
                          const Eigen::VectorXd& r, const Timestamp& t, const KalmanFilter::CorrectionCfg_t& cfg);
+  bool apply_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::VectorXd& z,
+                         const Eigen::MatrixXd& R, const Timestamp& t, const KalmanFilter::CorrectionCfg_t& cfg);
 
   // KF: Algorithm 6 in [1]
   bool apply_joint_observation(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd& H_II,
@@ -88,21 +92,6 @@ protected:
   virtual void remove_beliefs_after_t(Timestamp const& t);
   virtual void remove_beliefs_from_t(Timestamp const& t);
 
-  static Eigen::MatrixXd stack_Sigma(const Eigen::MatrixXd& Sigma_II, const Eigen::MatrixXd& Sigma_JJ,
-                                     const Eigen::MatrixXd& Sigma_IJ);
-  static void split_Sigma(Eigen::MatrixXd const& Sigma, size_t const dim_I, size_t const dim_J,
-                          Eigen::MatrixXd& Sigma_II, Eigen::MatrixXd& Sigma_JJ, Eigen::MatrixXd& Sigma_IJ);
-
-  static void split_Sigma(Eigen::MatrixXd const& Sigma, size_t const dim_I, size_t const dim_J, size_t const dim_K,
-                          Eigen::MatrixXd& Sigma_II, Eigen::MatrixXd& Sigma_JJ, Eigen::MatrixXd& Sigma_KK,
-                          Eigen::MatrixXd& Sigma_IJ, Eigen::MatrixXd& Sigma_IK, Eigen::MatrixXd& Sigma_JK);
-
-  static void split_Sigma(Eigen::MatrixXd const& Sigma, size_t const dim_I, size_t const dim_J, size_t const dim_K,
-                          size_t const dim_L, Eigen::MatrixXd& Sigma_II, Eigen::MatrixXd& Sigma_JJ,
-                          Eigen::MatrixXd& Sigma_KK, Eigen::MatrixXd& Sigma_LL, Eigen::MatrixXd& Sigma_IJ,
-                          Eigen::MatrixXd& Sigma_IK, Eigen::MatrixXd& Sigma_JK, Eigen::MatrixXd& Sigma_IL,
-                          Eigen::MatrixXd& Sigma_JL, Eigen::MatrixXd& Sigma_KL);
-
   Eigen::MatrixXd stack_apri_covariance(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, const size_t ID_I,
                                         const size_t ID_J, Timestamp const& t);
 
@@ -119,9 +108,8 @@ protected:
   bool m_handle_delayed_meas = true;
   TTimeHorizonBuffer<MeasData, TMultiHistoryBuffer<MeasData>> HistMeas;
   double m_horzion_sec;
-};
+};  // class IsolatedKalmanFilterHandler
 
-
-} // ns mmsf
+}  // namespace ikf
 
 #endif // ISOLATEDKALMANFILTERHANDLER_HPP

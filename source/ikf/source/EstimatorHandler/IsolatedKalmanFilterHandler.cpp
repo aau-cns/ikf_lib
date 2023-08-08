@@ -34,6 +34,7 @@ bool IsolatedKalmanFilterHandler::add(pIKF_t p_IKF) {
   if (!exists(p_IKF->ID())) {
     // either one is handling delayed measurements!
     p_IKF->handle_delayed_meas(false);
+    p_IKF->set_horizon(m_horzion_sec);
     id_dict.emplace(p_IKF->ID(), p_IKF);
     return true;
   }
@@ -64,11 +65,17 @@ std::vector<size_t> IsolatedKalmanFilterHandler::get_instance_ids() {
 
 double ikf::IsolatedKalmanFilterHandler::horizon_sec() const { return m_horzion_sec; }
 
-bool ikf::IsolatedKalmanFilterHandler::insert_measurement(const MeasData &m, const Timestamp &t) {
-  if(m_handle_delayed_meas) {
-    HistMeas.insert(m, t);
+void IsolatedKalmanFilterHandler::set_horizon(const double t_hor) {
+  m_horzion_sec = t_hor;
+  for (auto const &elem : id_dict) {
+    elem.second->set_horizon(m_horzion_sec);
   }
-  return m_handle_delayed_meas;
+  HistMeas.set_horizon(m_horzion_sec);
+}
+
+bool ikf::IsolatedKalmanFilterHandler::insert_measurement(const MeasData &m, const Timestamp &t) {
+  HistMeas.insert(m, t);
+  return true;
 }
 
 void IsolatedKalmanFilterHandler::sort_measurements_from_t(const Timestamp &t) {
@@ -112,7 +119,7 @@ ProcessMeasResult_t IsolatedKalmanFilterHandler::process_measurement(const MeasD
     HistMeas.insert(m, m.t_m);
     sort_measurements_from_t(m.t_m);
     redo_updates_from_t(m.t_m);
-  } else if (m_handle_delayed_meas) {
+  } else {
     if (!res.rejected && HistMeas.exist_after_t(m.t_m)) {
       redo_updates_after_t(m.t_m);
     }
@@ -218,72 +225,6 @@ bool IsolatedKalmanFilterHandler::is_order_violated(const MeasData &m) {
   return false;
 }
 
-Eigen::MatrixXd IsolatedKalmanFilterHandler::stack_Sigma(const Eigen::MatrixXd &Sigma_II,
-                                                         const Eigen::MatrixXd &Sigma_JJ,
-                                                         const Eigen::MatrixXd &Sigma_IJ) {
-  RTV_EXPECT_TRUE_THROW(Sigma_IJ.size() != 0, "empty Sigma_IJ!");
-  RTV_EXPECT_TRUE_THROW((Sigma_II.rows() == Sigma_IJ.rows()) && (Sigma_IJ.cols() == Sigma_JJ.cols()),
-                        "dimension missmatch!");
-
-  Eigen::MatrixXd C(Sigma_II.rows() + Sigma_JJ.rows(), Sigma_II.cols() + Sigma_JJ.cols());
-
-  C << Sigma_II, Sigma_IJ, Sigma_IJ.transpose(), Sigma_JJ;
-  return C;
-}
-
-// Algorithm 6 in [1]
-void IsolatedKalmanFilterHandler::split_Sigma(Eigen::MatrixXd const &Sigma, size_t const dim_I, size_t const dim_J,
-                                              Eigen::MatrixXd &Sigma_II, Eigen::MatrixXd &Sigma_JJ,
-                                              Eigen::MatrixXd &Sigma_IJ) {
-  RTV_EXPECT_TRUE_THROW(dim_I > 0 && dim_J > 0, "Dimension insvalid");
-
-  RTV_EXPECT_TRUE_THROW((Sigma.rows() == (long)(dim_I + dim_J)) && (Sigma.cols() == (long)(dim_I + dim_J)),
-                        "dimension missmatch!");
-  Sigma_II = Sigma.topLeftCorner(dim_I, dim_I);
-  Sigma_JJ = Sigma.bottomRightCorner(dim_J, dim_J);
-  Sigma_IJ = Sigma.topRightCorner(dim_I, dim_J);
-}
-
-void ikf::IsolatedKalmanFilterHandler::split_Sigma(const Eigen::MatrixXd &Sigma, const size_t dim_I, const size_t dim_J,
-                                                   const size_t dim_K, Eigen::MatrixXd &Sigma_II,
-                                                   Eigen::MatrixXd &Sigma_JJ, Eigen::MatrixXd &Sigma_KK,
-                                                   Eigen::MatrixXd &Sigma_IJ, Eigen::MatrixXd &Sigma_IK,
-                                                   Eigen::MatrixXd &Sigma_JK) {
-  RTV_EXPECT_TRUE_THROW(dim_I > 0 && dim_J > 0 && dim_K > 0, "Dimension insvalid");
-  RTV_EXPECT_TRUE_THROW(
-    (Sigma.rows() == (long)(dim_I + dim_J + dim_K)) && (Sigma.cols() == (long)(dim_I + dim_J + dim_K)),
-    "dimension missmatch!");
-
-  Sigma_II = Sigma.topLeftCorner(dim_I, dim_I);
-  Sigma_JJ = Sigma.block(dim_I, dim_I, dim_J, dim_J);
-  Sigma_IJ = Sigma.block(0, dim_I, dim_I, dim_J);
-  Sigma_IK = Sigma.topRightCorner(dim_I, dim_K);
-  Sigma_JK = Sigma.block(dim_I, dim_I + dim_J, dim_J, dim_K);
-  Sigma_KK = Sigma.bottomRightCorner(dim_K, dim_K);
-}
-
-void ikf::IsolatedKalmanFilterHandler::split_Sigma(const Eigen::MatrixXd &Sigma, const size_t dim_I, const size_t dim_J,
-                                                   const size_t dim_K, const size_t dim_L, Eigen::MatrixXd &Sigma_II,
-                                                   Eigen::MatrixXd &Sigma_JJ, Eigen::MatrixXd &Sigma_KK,
-                                                   Eigen::MatrixXd &Sigma_LL, Eigen::MatrixXd &Sigma_IJ,
-                                                   Eigen::MatrixXd &Sigma_IK, Eigen::MatrixXd &Sigma_JK,
-                                                   Eigen::MatrixXd &Sigma_IL, Eigen::MatrixXd &Sigma_JL,
-                                                   Eigen::MatrixXd &Sigma_KL) {
-  Sigma_II = Sigma.topLeftCorner(dim_I, dim_I);
-  Sigma_JJ = Sigma.block(dim_I, dim_I, dim_J, dim_J);
-  Sigma_KK = Sigma.block(dim_I + dim_J, dim_I + dim_J, dim_K, dim_K);
-  Sigma_LL = Sigma.bottomRightCorner(dim_L, dim_L);
-
-  Sigma_IJ = Sigma.block(0, dim_I, dim_I, dim_J);
-  Sigma_IK = Sigma.block(0, dim_I + dim_J, dim_I, dim_K);
-  Sigma_IL = Sigma.topRightCorner(dim_I, dim_L);
-
-  Sigma_JK = Sigma.block(dim_I, dim_I + dim_J, dim_J, dim_K);
-  Sigma_JL = Sigma.block(dim_I, dim_I + dim_J + dim_K, dim_J, dim_L);
-
-  Sigma_KL = Sigma.block(dim_I + dim_J, dim_I + dim_J + dim_K, dim_K, dim_L);
-}
-
 // Algorithm 6 in [1]
 Eigen::MatrixXd IsolatedKalmanFilterHandler::stack_apri_covariance(pBelief_t &bel_I_apri, pBelief_t &bel_J_apri,
                                                                    const size_t ID_I, const size_t ID_J,
@@ -291,11 +232,11 @@ Eigen::MatrixXd IsolatedKalmanFilterHandler::stack_apri_covariance(pBelief_t &be
   Eigen::MatrixXd Sigma_IJ = get_Sigma_IJ_at_t(ID_I, ID_J, t);
 
   if (Sigma_IJ.size()) {
-    return stack_Sigma(bel_I_apri->Sigma(), bel_J_apri->Sigma(), Sigma_IJ);
+    return utils::stack_Sigma(bel_I_apri->Sigma(), bel_J_apri->Sigma(), Sigma_IJ);
   } else {
     // Not correlated!
     Sigma_IJ = Sigma_IJ.Zero(bel_I_apri->es_dim(), bel_J_apri->es_dim());
-    return stack_Sigma(bel_I_apri->Sigma(), bel_J_apri->Sigma(), Sigma_IJ);
+    return utils::stack_Sigma(bel_I_apri->Sigma(), bel_J_apri->Sigma(), Sigma_IJ);
   }
 }
 
@@ -316,7 +257,7 @@ Eigen::MatrixXd ikf::IsolatedKalmanFilterHandler::stack_apri_covariance(pBelief_
   }
 
   Eigen::MatrixXd Sigma_2K_apri = utils::vertcat(Sigma_IK, Sigma_JK);
-  return stack_Sigma(Sigma_apri_22, bel_K_apri->Sigma(), Sigma_2K_apri);
+  return utils::stack_Sigma(Sigma_apri_22, bel_K_apri->Sigma(), Sigma_2K_apri);
 }
 
 Eigen::MatrixXd IsolatedKalmanFilterHandler::stack_apri_covariance(pBelief_t &bel_I_apri, pBelief_t &bel_J_apri,
@@ -342,7 +283,7 @@ Eigen::MatrixXd IsolatedKalmanFilterHandler::stack_apri_covariance(pBelief_t &be
   }
 
   Eigen::MatrixXd Sigma_3L_apri = utils::vertcat(Sigma_IL, Sigma_JL, Sigma_KL);
-  return stack_Sigma(Sigma_apri_33, bel_L_apri->Sigma(), Sigma_3L_apri);
+  return utils::stack_Sigma(Sigma_apri_33, bel_L_apri->Sigma(), Sigma_3L_apri);
 }
 
 //  Eq (1) and Algorithm 6 in [1]
@@ -488,6 +429,13 @@ bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen
   return !res.rejected;
 }
 
+bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H,
+                                                    const Eigen::VectorXd &z, const Eigen::MatrixXd &R,
+                                                    const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
+  // TODO:
+  return false;
+}
+
 // KF: Algorithm 6 in [1]
 bool IsolatedKalmanFilterHandler::apply_joint_observation(const size_t ID_I, const size_t ID_J,
                                                           const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ,
@@ -540,7 +488,7 @@ bool IsolatedKalmanFilterHandler::apply_joint_observation(pBelief_t &bel_I_apri,
 
     // split covariance
     Eigen::MatrixXd Sigma_II_apos, Sigma_JJ_apos, Sigma_IJ_apos;
-    split_Sigma(res.Sigma_apos, dim_I, dim_J, Sigma_II_apos, Sigma_JJ_apos, Sigma_IJ_apos);
+    utils::split_Sigma(res.Sigma_apos, dim_I, dim_J, Sigma_II_apos, Sigma_JJ_apos, Sigma_IJ_apos);
 
     // IMPORTANT: keep order! before setting cross-covariance factors and beliefs implace!
     // 1) add correction terms in the appropriate correction buffers!
@@ -578,8 +526,8 @@ bool ikf::IsolatedKalmanFilterHandler::apply_joint_observation(
 
     Eigen::MatrixXd Sigma_II_apos, Sigma_JJ_apos, Sigma_KK_apos;
     Eigen::MatrixXd Sigma_IJ_apos, Sigma_IK_apos, Sigma_JK_apos;
-    split_Sigma(res.Sigma_apos, dim_I, dim_J, dim_K, Sigma_II_apos, Sigma_JJ_apos, Sigma_KK_apos, Sigma_IJ_apos,
-                Sigma_IK_apos, Sigma_JK_apos);
+    utils::split_Sigma(res.Sigma_apos, dim_I, dim_J, dim_K, Sigma_II_apos, Sigma_JJ_apos, Sigma_KK_apos, Sigma_IJ_apos,
+                       Sigma_IK_apos, Sigma_JK_apos);
 
     // IMPORTANT: keep order! before setting cross-covariance factors and beliefs implace!
     // 1) add correction terms in the appropriate correction buffers!
@@ -627,8 +575,9 @@ bool IsolatedKalmanFilterHandler::apply_joint_observation(
     ;
     Eigen::MatrixXd Sigma_IJ_apos, Sigma_IK_apos, Sigma_JK_apos;
     Eigen::MatrixXd Sigma_IL_apos, Sigma_JL_apos, Sigma_KL_apos;
-    split_Sigma(res.Sigma_apos, dim_I, dim_J, dim_K, dim_L, Sigma_II_apos, Sigma_JJ_apos, Sigma_KK_apos, Sigma_LL_apos,
-                Sigma_IJ_apos, Sigma_IK_apos, Sigma_JK_apos, Sigma_IL_apos, Sigma_JL_apos, Sigma_KL_apos);
+    utils::split_Sigma(res.Sigma_apos, dim_I, dim_J, dim_K, dim_L, Sigma_II_apos, Sigma_JJ_apos, Sigma_KK_apos,
+                       Sigma_LL_apos, Sigma_IJ_apos, Sigma_IK_apos, Sigma_JK_apos, Sigma_IL_apos, Sigma_JL_apos,
+                       Sigma_KL_apos);
 
     // IMPORTANT: keep order! before setting cross-covariance factors and beliefs implace!
     // 1) add correction terms in the appropriate correction buffers!

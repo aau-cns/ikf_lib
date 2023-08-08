@@ -146,11 +146,63 @@ Eigen::MatrixXd utils::symmetrize_covariance(const Eigen::MatrixXd &Sigma) {
   return 0.5*(Sigma + Sigma.transpose());
 }
 
+void utils::split_Sigma(const Eigen::MatrixXd &Sigma, const size_t dim_I, const size_t dim_J, const size_t dim_K,
+                        const size_t dim_L, Eigen::MatrixXd &Sigma_II, Eigen::MatrixXd &Sigma_JJ,
+                        Eigen::MatrixXd &Sigma_KK, Eigen::MatrixXd &Sigma_LL, Eigen::MatrixXd &Sigma_IJ,
+                        Eigen::MatrixXd &Sigma_IK, Eigen::MatrixXd &Sigma_JK, Eigen::MatrixXd &Sigma_IL,
+                        Eigen::MatrixXd &Sigma_JL, Eigen::MatrixXd &Sigma_KL) {
+  Sigma_II = Sigma.topLeftCorner(dim_I, dim_I);
+  Sigma_JJ = Sigma.block(dim_I, dim_I, dim_J, dim_J);
+  Sigma_KK = Sigma.block(dim_I + dim_J, dim_I + dim_J, dim_K, dim_K);
+  Sigma_LL = Sigma.bottomRightCorner(dim_L, dim_L);
 
+  Sigma_IJ = Sigma.block(0, dim_I, dim_I, dim_J);
+  Sigma_IK = Sigma.block(0, dim_I + dim_J, dim_I, dim_K);
+  Sigma_IL = Sigma.topRightCorner(dim_I, dim_L);
 
+  Sigma_JK = Sigma.block(dim_I, dim_I + dim_J, dim_J, dim_K);
+  Sigma_JL = Sigma.block(dim_I, dim_I + dim_J + dim_K, dim_J, dim_L);
 
+  Sigma_KL = Sigma.block(dim_I + dim_J, dim_I + dim_J + dim_K, dim_K, dim_L);
+}
 
+void utils::split_Sigma(const Eigen::MatrixXd &Sigma, const size_t dim_I, const size_t dim_J, const size_t dim_K,
+                        Eigen::MatrixXd &Sigma_II, Eigen::MatrixXd &Sigma_JJ, Eigen::MatrixXd &Sigma_KK,
+                        Eigen::MatrixXd &Sigma_IJ, Eigen::MatrixXd &Sigma_IK, Eigen::MatrixXd &Sigma_JK) {
+  RTV_EXPECT_TRUE_THROW(dim_I > 0 && dim_J > 0 && dim_K > 0, "Dimension insvalid");
+  RTV_EXPECT_TRUE_THROW(
+    (Sigma.rows() == (long)(dim_I + dim_J + dim_K)) && (Sigma.cols() == (long)(dim_I + dim_J + dim_K)),
+    "dimension missmatch!");
 
+  Sigma_II = Sigma.topLeftCorner(dim_I, dim_I);
+  Sigma_JJ = Sigma.block(dim_I, dim_I, dim_J, dim_J);
+  Sigma_IJ = Sigma.block(0, dim_I, dim_I, dim_J);
+  Sigma_IK = Sigma.topRightCorner(dim_I, dim_K);
+  Sigma_JK = Sigma.block(dim_I, dim_I + dim_J, dim_J, dim_K);
+  Sigma_KK = Sigma.bottomRightCorner(dim_K, dim_K);
+}
 
+void utils::split_Sigma(const Eigen::MatrixXd &Sigma, const size_t dim_I, const size_t dim_J, Eigen::MatrixXd &Sigma_II,
+                        Eigen::MatrixXd &Sigma_JJ, Eigen::MatrixXd &Sigma_IJ) {
+  RTV_EXPECT_TRUE_THROW(dim_I > 0 && dim_J > 0, "Dimension insvalid");
 
-} // ns mmsf
+  RTV_EXPECT_TRUE_THROW((Sigma.rows() == (long)(dim_I + dim_J)) && (Sigma.cols() == (long)(dim_I + dim_J)),
+                        "dimension missmatch!");
+  Sigma_II = Sigma.topLeftCorner(dim_I, dim_I);
+  Sigma_JJ = Sigma.bottomRightCorner(dim_J, dim_J);
+  Sigma_IJ = Sigma.topRightCorner(dim_I, dim_J);
+}
+
+Eigen::MatrixXd utils::stack_Sigma(const Eigen::MatrixXd &Sigma_II, const Eigen::MatrixXd &Sigma_JJ,
+                                   const Eigen::MatrixXd &Sigma_IJ) {
+  RTV_EXPECT_TRUE_THROW(Sigma_IJ.size() != 0, "empty Sigma_IJ!");
+  RTV_EXPECT_TRUE_THROW((Sigma_II.rows() == Sigma_IJ.rows()) && (Sigma_IJ.cols() == Sigma_JJ.cols()),
+                        "dimension missmatch!");
+
+  Eigen::MatrixXd C(Sigma_II.rows() + Sigma_JJ.rows(), Sigma_II.cols() + Sigma_JJ.cols());
+
+  C << Sigma_II, Sigma_IJ, Sigma_IJ.transpose(), Sigma_JJ;
+  return C;
+}
+
+}  // namespace ikf

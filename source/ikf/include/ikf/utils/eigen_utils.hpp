@@ -161,6 +161,22 @@ Eigen::VectorXd IKF_API vertcat_vec(const Eigen::VectorXd &v_II, const Eigen::Ve
 Eigen::VectorXd IKF_API horcat_vec(const Eigen::VectorXd &v_II, const Eigen::VectorXd &v_JJ);
 Eigen::VectorXd IKF_API horcat_vec(const Eigen::VectorXd &v_II, const Eigen::VectorXd &v_JJ,
                                    const Eigen::VectorXd &v_KK);
+
+Eigen::MatrixXd IKF_API stack_Sigma(const Eigen::MatrixXd& Sigma_II, const Eigen::MatrixXd& Sigma_JJ,
+                                    const Eigen::MatrixXd& Sigma_IJ);
+
+void IKF_API split_Sigma(Eigen::MatrixXd const& Sigma, size_t const dim_I, size_t const dim_J,
+                         Eigen::MatrixXd& Sigma_II, Eigen::MatrixXd& Sigma_JJ, Eigen::MatrixXd& Sigma_IJ);
+
+void IKF_API split_Sigma(Eigen::MatrixXd const& Sigma, size_t const dim_I, size_t const dim_J, size_t const dim_K,
+                         Eigen::MatrixXd& Sigma_II, Eigen::MatrixXd& Sigma_JJ, Eigen::MatrixXd& Sigma_KK,
+                         Eigen::MatrixXd& Sigma_IJ, Eigen::MatrixXd& Sigma_IK, Eigen::MatrixXd& Sigma_JK);
+
+void IKF_API split_Sigma(Eigen::MatrixXd const& Sigma, size_t const dim_I, size_t const dim_J, size_t const dim_K,
+                         size_t const dim_L, Eigen::MatrixXd& Sigma_II, Eigen::MatrixXd& Sigma_JJ,
+                         Eigen::MatrixXd& Sigma_KK, Eigen::MatrixXd& Sigma_LL, Eigen::MatrixXd& Sigma_IJ,
+                         Eigen::MatrixXd& Sigma_IK, Eigen::MatrixXd& Sigma_JK, Eigen::MatrixXd& Sigma_IL,
+                         Eigen::MatrixXd& Sigma_JL, Eigen::MatrixXd& Sigma_KL);
 ///
 /// \brief stabilize_covariance
 /// \param Sigma
