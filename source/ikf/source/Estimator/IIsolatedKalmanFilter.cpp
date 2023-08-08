@@ -29,7 +29,7 @@ namespace ikf {
 
 IIsolatedKalmanFilter::IIsolatedKalmanFilter(std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler, const size_t ID,
                                              const bool handle_delayed_meas, const double horizon_sec)
-  : IKalmanFilter(horizon_sec, false), ptr_Handler(ptr_Handler), m_ID(ID) {
+  : IKalmanFilter(horizon_sec, false), m_pHandler(ptr_Handler), m_ID(ID) {
   Logger::ikf_logger()->info("IIsolatedKalmanFilter: horizon_sec=" + std::to_string(horizon_sec));
 }
 
@@ -43,7 +43,7 @@ void IIsolatedKalmanFilter::reset() {
 
 // Algorithm 7 in [1]
 ProcessMeasResult_t IIsolatedKalmanFilter::process_measurement(const MeasData &m) {
-  return ptr_Handler->process_measurement(m);
+  return m_pHandler->process_measurement(m);
 }
 
 void IIsolatedKalmanFilter::initialize(pBelief_t bel_init) {
@@ -283,7 +283,7 @@ bool ikf::IIsolatedKalmanFilter::apply_private_observation(pBelief_t &bel_II_apr
   if(!is_psd) {
     bel_II_apri->Sigma(utils::stabilize_covariance(bel_II_apri->Sigma()));
   }
-  RTV_EXPECT_TRUE_THROW(ptr_Handler->exists(ID_I), "IKF instances do not exists!");
+  RTV_EXPECT_TRUE_THROW(m_pHandler->exists(ID_I), "IKF instances do not exists!");
 
   KalmanFilter::CorrectionResult_t res;
   res = KalmanFilter::correction_step(H_II, R, r, bel_II_apri->Sigma(), cfg);
@@ -292,7 +292,7 @@ bool ikf::IIsolatedKalmanFilter::apply_private_observation(pBelief_t &bel_II_apr
     RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(res.Sigma_apos), "Apos covariance is not PSD at t=" + t.str());
 
     // correction strategy: IMPORTANT: before setting the belief implace!
-    if (ptr_Handler->get(ID_I)->apply_correction_at_t(t, res.U)) {
+    if (m_pHandler->get(ID_I)->apply_correction_at_t(t, res.U)) {
       bel_II_apri->correct(res.delta_mean, res.Sigma_apos);
       return true;
     } else {

@@ -152,7 +152,7 @@ protected:
                                  const Eigen::MatrixXd& R, const Eigen::VectorXd& r,
                                  const KalmanFilter::CorrectionCfg_t& cfg);
 
-  std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler;
+  std::shared_ptr<IsolatedKalmanFilterHandler> m_pHandler;
   std::unordered_map<size_t, TTimeHorizonBuffer<Eigen::MatrixXd>> HistCrossCovFactors;
   size_t m_ID;
 

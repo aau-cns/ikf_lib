@@ -94,7 +94,7 @@ public:
 #if 0
     res.rejected = !apply_private_observation(bel, H_private, m.R, r, t, cfg);
 #else
-    res.rejected = !ptr_Handler->apply_observation(dict_H, m.R, r, t, cfg);
+    res.rejected = !m_pHandler->apply_observation(dict_H, m.R, r, t, cfg);
 #endif
     return res;
 
@@ -123,10 +123,10 @@ public:
     std::map<size_t, Eigen::MatrixXd> dict_H = {{m_ID, H_II}, {ID_J, H_JJ}};
     Eigen::VectorXd z_est = ikf::utils::horcat(H_II, H_JJ)
                             * ikf::utils::vertcat_vec(this->get_belief_at_t(m.t_m)->mean(),
-                                                      ptr_Handler->get(ID_J)->get_belief_at_t(m.t_m)->mean());
+                                                      m_pHandler->get(ID_J)->get_belief_at_t(m.t_m)->mean());
     Eigen::VectorXd r = m.z - z_est;
 
-    res.rejected = !ptr_Handler->apply_observation(dict_H, m.R, r, m.t_m, cfg);
+    res.rejected = !m_pHandler->apply_observation(dict_H, m.R, r, m.t_m, cfg);
 #endif
     return res;
   }
