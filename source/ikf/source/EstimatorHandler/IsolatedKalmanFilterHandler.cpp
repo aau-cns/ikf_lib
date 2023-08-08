@@ -306,9 +306,13 @@ Eigen::MatrixXd IsolatedKalmanFilterHandler::stack_Sigma(const std::map<size_t, 
       if (id_row == id_col) {
         Sigma.block(row_start, col_start, state_dim_row, state_dim_col) = e_i.second->Sigma();
       } else {
-        Eigen::MatrixXd Sigma_IJ = get_Sigma_IJ_at_t(id_row, id_col, t);
-        if (Sigma_IJ.size()) {
-          Sigma.block(row_start, col_start, state_dim_row, state_dim_col) = Sigma_IJ;
+        // obtain only the upper triangular part (if dict_bel was sorted ascending)
+        if (id_row < id_col) {
+          Eigen::MatrixXd Sigma_IJ = get_Sigma_IJ_at_t(id_row, id_col, t);
+          if (Sigma_IJ.size()) {
+            Sigma.block(row_start, col_start, state_dim_row, state_dim_col) = Sigma_IJ;
+            Sigma.block(col_start, row_start, state_dim_col, state_dim_row) = Sigma_IJ.transpose();
+          }
         }
       }
       col_start += state_dim_col;
