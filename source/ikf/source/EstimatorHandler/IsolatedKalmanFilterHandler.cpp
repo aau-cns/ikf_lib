@@ -203,6 +203,21 @@ void IsolatedKalmanFilterHandler::reset() {
   }
 }
 
+bool ikf::IsolatedKalmanFilterHandler::get_belief_at_t(const size_t ID, const Timestamp &t, pBelief_t &bel,
+                                                       const eGetBeliefStrategy type) {
+  if (exists(ID)) {
+    return get(ID)->get_belief_at_t(t, bel, type);
+  }
+  return false;
+}
+
+bool ikf::IsolatedKalmanFilterHandler::get_prop_meas_at_t(const size_t ID, const Timestamp &t, MeasData &m) {
+  if (exists(ID)) {
+    return get(ID)->get_prop_meas_at_t(t, m);
+  }
+  return false;
+}
+
 bool IsolatedKalmanFilterHandler::is_order_violated(const MeasData &m) {
   if (m.obs_type != eObservationType::JOINT_OBSERVATION) {
     auto meas_arr = HistMeas.get_all_at_t(m.t_m);
@@ -214,7 +229,7 @@ bool IsolatedKalmanFilterHandler::is_order_violated(const MeasData &m) {
           return true;
         }
       }
-    } else if  (m.obs_type == eObservationType::PRIVATE_OBSERVATION) {
+    } else if (m.obs_type == eObservationType::PRIVATE_OBSERVATION) {
       for (MeasData & m_ : meas_arr) {
         if (m_.obs_type == eObservationType::JOINT_OBSERVATION) {
           return true;

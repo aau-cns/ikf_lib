@@ -39,8 +39,12 @@ public:
   std::vector<size_t> get_instance_ids();
   double horizon_sec() const;
   void set_horizon(double const t_hor);
-
   void reset();
+
+  bool get_belief_at_t(size_t const ID, Timestamp const& t, pBelief_t& bel,
+                       eGetBeliefStrategy const type = eGetBeliefStrategy::EXACT);
+
+  bool get_prop_meas_at_t(size_t const ID, Timestamp const& t, MeasData& m);
 
   /// \brief process_measurement: If the m_handle_delayed_meas == true, the IKF-Handler is a centralized entity hanndle
   /// all incomming measurements and is responsible to handle delayed measurements. \param m \return
