@@ -108,7 +108,8 @@ protected:
 
   std::map<size_t, pBelief_t> get_dict_bel(const std::map<size_t, Eigen::MatrixXd>& dict_H, Timestamp const& t);
 
-  Eigen::MatrixXd stack_Sigma_apri(const std::map<size_t, pBelief_t>& dict_bel, Timestamp const& t);
+  Eigen::VectorXd stack_mean(const std::map<size_t, pBelief_t>& dict_bel);
+  Eigen::MatrixXd stack_Sigma(const std::map<size_t, pBelief_t>& dict_bel, Timestamp const& t);
 
   void apply_corrections_at_t(Eigen::MatrixXd& Sigma_apos, const std::map<size_t, pBelief_t>& dict_bel,
                               Timestamp const& t);

@@ -325,22 +325,35 @@ std::map<size_t, pBelief_t> IsolatedKalmanFilterHandler::get_dict_bel(const std:
   for (auto const &e : dict_H) {
     size_t id = e.first;
     pBelief_t bel_apri;
-    if (!get(id)->get_belief_at_t(t, bel_apri)) {
-      RTV_EXPECT_TRUE_MSG(false, "No belief exists!!");
-      return dict_bel;
-    }
+    RTV_EXPECT_TRUE_THROW(get(id)->get_belief_at_t(t, bel_apri), "Could not obtain belief");
     dict_bel.insert({id, bel_apri});
   }
   return dict_bel;
 }
 
-Eigen::MatrixXd IsolatedKalmanFilterHandler::stack_Sigma_apri(const std::map<size_t, pBelief_t> &dict_bel,
-                                                              const Timestamp &t) {
+Eigen::VectorXd IsolatedKalmanFilterHandler::stack_mean(const std::map<size_t, pBelief_t> &dict_bel) {
   size_t state_dim = 0;
   for (auto const &e : dict_bel) {
     state_dim += e.second->es_dim();
   }
-  Eigen::MatrixXd Sigma_apri = Eigen::MatrixXd::Zero(state_dim, state_dim);
+  Eigen::VectorXd mean = Eigen::VectorXd::Zero(state_dim, 1);
+
+  size_t row_start = 0;
+  for (auto const &e_i : dict_bel) {
+    size_t state_dim_row = e_i.second->es_dim();
+    mean.block(row_start, 0, state_dim_row, 1) = e_i.second->mean();
+    row_start += state_dim_row;
+  }
+  return mean;
+}
+
+Eigen::MatrixXd IsolatedKalmanFilterHandler::stack_Sigma(const std::map<size_t, pBelief_t> &dict_bel,
+                                                         const Timestamp &t) {
+  size_t state_dim = 0;
+  for (auto const &e : dict_bel) {
+    state_dim += e.second->es_dim();
+  }
+  Eigen::MatrixXd Sigma = Eigen::MatrixXd::Zero(state_dim, state_dim);
 
   size_t row_start = 0;
   for (auto const &e_i : dict_bel) {
@@ -351,11 +364,11 @@ Eigen::MatrixXd IsolatedKalmanFilterHandler::stack_Sigma_apri(const std::map<siz
       size_t id_col = e_j.first;
       size_t state_dim_col = e_j.second->es_dim();
       if (id_row == id_col) {
-        Sigma_apri.block(row_start, col_start, state_dim_row, state_dim_col) = e_i.second->Sigma();
+        Sigma.block(row_start, col_start, state_dim_row, state_dim_col) = e_i.second->Sigma();
       } else {
         Eigen::MatrixXd Sigma_IJ = get_Sigma_IJ_at_t(id_row, id_col, t);
         if (Sigma_IJ.size()) {
-          Sigma_apri.block(row_start, col_start, state_dim_row, state_dim_col) = Sigma_IJ;
+          Sigma.block(row_start, col_start, state_dim_row, state_dim_col) = Sigma_IJ;
         }
       }
       col_start += state_dim_col;
@@ -363,7 +376,7 @@ Eigen::MatrixXd IsolatedKalmanFilterHandler::stack_Sigma_apri(const std::map<siz
     row_start += state_dim_row;
   }
 
-  return Sigma_apri;
+  return Sigma;
 }
 
 void IsolatedKalmanFilterHandler::apply_corrections_at_t(Eigen::MatrixXd &Sigma_apos,
@@ -442,7 +455,7 @@ bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen
 
   std::map<size_t, pBelief_t> dict_bel = get_dict_bel(dict_H, t);
 
-  Eigen::MatrixXd Sigma_apri = stack_Sigma_apri(dict_bel, t);
+  Eigen::MatrixXd Sigma_apri = stack_Sigma(dict_bel, t);
 
   // stack individual's covariances:
   Sigma_apri = utils::stabilize_covariance(Sigma_apri);
@@ -470,8 +483,36 @@ bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen
 bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H,
                                                     const Eigen::VectorXd &z, const Eigen::MatrixXd &R,
                                                     const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
-  // TODO:
-  return false;
+  Eigen::MatrixXd H = stack_H(dict_H);
+
+  std::map<size_t, pBelief_t> dict_bel = get_dict_bel(dict_H, t);
+
+  Eigen::VectorXd mean_apri = stack_mean(dict_bel);
+  Eigen::MatrixXd Sigma_apri = stack_Sigma(dict_bel, t);
+
+  Eigen::VectorXd r = z - H * mean_apri;
+
+  // stack individual's covariances:
+  Sigma_apri = utils::stabilize_covariance(Sigma_apri);
+  RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_apri), "Joint apri covariance is not PSD at t=" + t.str());
+
+  KalmanFilter::CorrectionResult_t res;
+  res = KalmanFilter::correction_step(H, R, r, Sigma_apri, cfg);
+  if (!res.rejected) {
+    RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(res.Sigma_apos),
+                        "Joint apos covariance is not PSD at t=" + t.str());
+
+    // IMPORTANT: MAINTAIN ORDER STRICKTLY
+    // 1) add correction terms in the appropriate correction buffers!
+    apply_corrections_at_t(res.Sigma_apos, dict_bel, t);
+
+    // 2) set a corrected factorized a posterioiry cross-covariance
+    split_right_upper_covariance(res.Sigma_apos, dict_bel, t);
+
+    // 3) correct beliefs implace!
+    correct_beliefs_implace(res.Sigma_apos, res.delta_mean, dict_bel);
+  }
+  return !res.rejected;
 }
 
 // KF: Algorithm 6 in [1]
