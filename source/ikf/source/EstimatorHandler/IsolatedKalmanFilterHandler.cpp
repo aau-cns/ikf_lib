@@ -299,6 +299,85 @@ void IsolatedKalmanFilterHandler::set_Sigma_IJ_at_t(const size_t ID_I, const siz
   }
 }
 
+Eigen::MatrixXd IsolatedKalmanFilterHandler::stack_H(const std::map<size_t, Eigen::MatrixXd> &dict_H) {
+  size_t state_dim = 0;
+  size_t H_rows = 0;
+  for (auto const &e : dict_H) {
+    state_dim += e.second.cols();
+    H_rows = e.second.rows();
+  }
+
+  Eigen::MatrixXd H = Eigen::MatrixXd::Zero(H_rows, state_dim);
+  {
+    size_t col_start = 0;
+    for (auto const &e : dict_H) {
+      size_t dim_I = e.second.cols();
+      H.block(0, col_start, H_rows, dim_I) = e.second;
+      col_start += dim_I;
+    }
+  }
+  return H;
+}
+
+void IsolatedKalmanFilterHandler::apply_corrections_at_t(Eigen::MatrixXd &Sigma_apos,
+                                                         const std::map<size_t, size_t> &dict_dim,
+                                                         const std::map<size_t, pBelief_t> &dict_bel,
+                                                         const Timestamp &t) {
+  std::vector<size_t> IDs;
+  for (auto const &e : dict_dim) {
+    IDs.push_back(e.first);
+  }
+  size_t row_start = 0;
+  for (auto const &id : IDs) {
+    size_t dim_I = dict_dim.at(id);
+    Eigen::MatrixXd Sigma_II_apos = Sigma_apos.block(row_start, row_start, dim_I, dim_I);
+    get(id)->apply_correction_at_t(t, dict_bel.at(id)->Sigma(), Sigma_II_apos);
+    row_start += dict_dim.at(id);
+  }
+}
+
+void IsolatedKalmanFilterHandler::split_right_upper_covariance(Eigen::MatrixXd &Sigma,
+                                                               const std::map<size_t, size_t> &dict_dim,
+                                                               const Timestamp &t) {
+  std::vector<size_t> IDs;
+  for (auto const &e : dict_dim) {
+    IDs.push_back(e.first);
+  }
+
+  size_t row_start = 0, col_start_offset = 0;
+  for (size_t i = 0; i < IDs.size() - 1; i++) {
+    size_t dim_i = dict_dim.at(IDs.at(i));
+    col_start_offset += dim_i;
+    size_t ID_I = IDs.at(i);
+    size_t col_start = col_start_offset;
+    for (size_t j = i + 1; j < IDs.size(); j++) {
+      size_t dim_j = dict_dim.at(IDs.at(j));
+      size_t ID_J = IDs.at(j);
+      Eigen::MatrixXd Sigma_IJ_apos = Sigma.block(row_start, col_start, dim_i, dim_j);
+      set_Sigma_IJ_at_t(ID_I, ID_J, Sigma_IJ_apos, t);
+      col_start += dim_j;
+    }
+    row_start += dim_i;
+  }
+}
+
+void IsolatedKalmanFilterHandler::correct_beliefs_implace(Eigen::MatrixXd &Sigma_apos, Eigen::VectorXd &delta_mean,
+                                                          const std::map<size_t, size_t> &dict_dim,
+                                                          std::map<size_t, pBelief_t> const &dict_bel) {
+  std::vector<size_t> IDs;
+  for (auto const &e : dict_dim) {
+    IDs.push_back(e.first);
+  }
+
+  size_t row_start = 0;
+  for (auto const &id : IDs) {
+    size_t dim_I = dict_dim.at(id);
+    Eigen::MatrixXd Sigma_II_apos = Sigma_apos.block(row_start, row_start, dim_I, dim_I);
+    dict_bel.at(id)->correct(delta_mean.block(row_start, 0, dim_I, 1), Sigma_II_apos);
+    row_start += dim_I;
+  }
+}
+
 //  Eq (1) and Algorithm 6 in [1]
 Eigen::MatrixXd IsolatedKalmanFilterHandler::get_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J,
                                                                const Timestamp &t) {
@@ -323,57 +402,16 @@ bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen
                                                     const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
   std::map<size_t, size_t> dict_dim;
   std::vector<size_t> IDs;
-  size_t state_dim = 0;
-  size_t H_rows = 0;
   for (auto const &e : dict_H) {
     IDs.push_back(e.first);
     dict_dim.insert({e.first, e.second.cols()});
-    state_dim += e.second.cols();
-    H_rows = e.second.rows();
   }
 
-  Eigen::MatrixXd H = Eigen::MatrixXd::Zero(H_rows, state_dim);
-  {
-    size_t col_start = 0;
-    for (auto const &id : IDs) {
-      H.block(0, col_start, H_rows, dict_dim[id]) = dict_H.at(id);
-      col_start += dict_dim[id];
-    }
-  }
+  Eigen::MatrixXd H = stack_H(dict_H);
 
-  std::map<size_t, pBelief_t> dict_bel;
-  for (auto const &id : IDs) {
-    pBelief_t bel_apri;
-    if (!get(id)->get_belief_at_t(t, bel_apri)) {
-      RTV_EXPECT_TRUE_MSG(false, "No belief exists!!");
-      return false;
-    }
-    dict_bel.insert({id, bel_apri});
-  }
+  std::map<size_t, pBelief_t> dict_bel = get_dict_bel(dict_H, t);
 
-  Eigen::MatrixXd Sigma_apri = Eigen::MatrixXd::Zero(state_dim, state_dim);
-
-  {
-    // TODO: simplify to upper triangular matrix
-    size_t row_start = 0;
-    for (auto const &id_row : IDs) {
-      size_t state_dim_row = dict_dim[id_row];
-      size_t col_start = 0;
-      for (auto const &id_col : IDs) {
-        size_t state_dim_col = dict_dim[id_col];
-        if (id_row == id_col) {
-          Sigma_apri.block(row_start, col_start, state_dim_row, state_dim_col) = dict_bel[id_row]->Sigma();
-        } else {
-          Eigen::MatrixXd Sigma_IJ = get_Sigma_IJ_at_t(id_row, id_col, t);
-          if (Sigma_IJ.size()) {
-            Sigma_apri.block(row_start, col_start, state_dim_row, state_dim_col) = Sigma_IJ;
-          }
-        }
-        col_start += state_dim_col;
-      }
-      row_start += state_dim_row;
-    }
-  }
+  Eigen::MatrixXd Sigma_apri = stack_Sigma_apri(dict_bel, t);
 
   // stack individual's covariances:
   Sigma_apri = utils::stabilize_covariance(Sigma_apri);
@@ -387,44 +425,13 @@ bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen
 
     // IMPORTANT: MAINTAIN ORDER STRICKTLY
     // 1) add correction terms in the appropriate correction buffers!
-    {
-      size_t row_start = 0;
-      for (auto const &id : IDs) {
-        Eigen::MatrixXd Sigma_II_apos = res.Sigma_apos.block(row_start, row_start, dict_dim[id], dict_dim[id]);
-        get(id)->apply_correction_at_t(t, dict_bel[id]->Sigma(), Sigma_II_apos);
-        row_start += dict_dim[id];
-      }
-    }
+    apply_corrections_at_t(res.Sigma_apos, dict_dim, dict_bel, t);
 
     // 2) set a corrected factorized a posterioiry cross-covariance
-    // split covariance
-    {
-      size_t row_start = 0, col_start_offset = 0;
-      for (size_t i = 0; i < IDs.size() - 1; i++) {
-        size_t dim_i = dict_dim[IDs.at(i)];
-        col_start_offset += dim_i;
-        size_t ID_I = IDs.at(i);
-        size_t col_start = col_start_offset;
-        for (size_t j = i + 1; j < IDs.size(); j++) {
-          size_t dim_j = dict_dim[IDs.at(j)];
-          size_t ID_J = IDs.at(j);
-          Eigen::MatrixXd Sigma_IJ_apos = res.Sigma_apos.block(row_start, col_start, dim_i, dim_j);
-          set_Sigma_IJ_at_t(ID_I, ID_J, Sigma_IJ_apos, t);
-          col_start += dim_j;
-        }
-        row_start += dim_i;
-      }
-    }
+    split_right_upper_covariance(res.Sigma_apos, dict_dim, t);
 
     // 3) correct beliefs implace!
-    {
-      size_t row_start = 0;
-      for (auto const &id : IDs) {
-        Eigen::MatrixXd Sigma_II_apos = res.Sigma_apos.block(row_start, row_start, dict_dim[id], dict_dim[id]);
-        dict_bel[id]->correct(res.delta_mean.block(row_start, 0, dict_dim[id], 1), Sigma_II_apos);
-        row_start += dict_dim[id];
-      }
-    }
+    correct_beliefs_implace(res.Sigma_apos, res.delta_mean, dict_dim, dict_bel);
   }
   return !res.rejected;
 }
