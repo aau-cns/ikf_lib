@@ -77,10 +77,10 @@ target_include_directories(${target}
 
 target_link_libraries(${target}
     PRIVATE
+    Eigen
+    matplot
     ${DEFAULT_LIBRARIES}
     ${META_PROJECT_NAME}::ikf
-    Eigen
-    matplot_imp
 )
 
 
