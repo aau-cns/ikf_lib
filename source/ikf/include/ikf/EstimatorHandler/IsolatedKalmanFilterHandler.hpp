@@ -56,27 +56,6 @@ public:
   bool apply_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::VectorXd& z,
                          const Eigen::MatrixXd& R, const Timestamp& t, const KalmanFilter::CorrectionCfg_t& cfg);
 
-  // KF: Algorithm 6 in [1]
-  bool apply_joint_observation(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd& H_II,
-                               const Eigen::MatrixXd& H_JJ, const Eigen::MatrixXd& R, const Eigen::VectorXd& z,
-                               const Timestamp& t, const KalmanFilter::CorrectionCfg_t& cfg);
-
-  // EKF: Algorithm 6 in [1]
-  bool apply_joint_observation(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, const size_t ID_I, const size_t ID_J,
-                               const Eigen::MatrixXd& H_II, const Eigen::MatrixXd& H_JJ, const Eigen::MatrixXd& R,
-                               const Eigen::VectorXd& r, const Timestamp& t, const KalmanFilter::CorrectionCfg_t& cfg);
-
-  bool apply_joint_observation(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, pBelief_t& bel_K_apri, const size_t ID_I,
-                               const size_t ID_J, const size_t ID_K, const Eigen::MatrixXd& H_II,
-                               const Eigen::MatrixXd& H_JJ, const Eigen::MatrixXd& H_KK, const Eigen::MatrixXd& R,
-                               const Eigen::VectorXd& r, const Timestamp& t, const KalmanFilter::CorrectionCfg_t& cfg);
-
-  bool apply_joint_observation(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, pBelief_t& bel_K_apri,
-                               pBelief_t& bel_L_apri, const size_t ID_I, const size_t ID_J, const size_t ID_K,
-                               const size_t ID_L, const Eigen::MatrixXd& H_II, const Eigen::MatrixXd& H_JJ,
-                               const Eigen::MatrixXd& H_KK, const Eigen::MatrixXd& H_LL, const Eigen::MatrixXd& R,
-                               const Eigen::VectorXd& r, const Timestamp& t, const KalmanFilter::CorrectionCfg_t& cfg);
-
 protected:
   virtual bool insert_measurement(MeasData const& m, Timestamp const& t);
 
@@ -91,15 +70,6 @@ protected:
   virtual ProcessMeasResult_t delegate_measurement(MeasData const& m);
   virtual void remove_beliefs_after_t(Timestamp const& t);
   virtual void remove_beliefs_from_t(Timestamp const& t);
-
-  Eigen::MatrixXd stack_apri_covariance(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, const size_t ID_I,
-                                        const size_t ID_J, Timestamp const& t);
-
-  Eigen::MatrixXd stack_apri_covariance(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, pBelief_t& bel_K_apri,
-                                        const size_t ID_I, const size_t ID_J, const size_t ID_K, Timestamp const& t);
-  Eigen::MatrixXd stack_apri_covariance(pBelief_t& bel_I_apri, pBelief_t& bel_J_apri, pBelief_t& bel_K_apri,
-                                        pBelief_t& bel_L_apri, const size_t ID_I, const size_t ID_J, const size_t ID_K,
-                                        const size_t ID_L, Timestamp const& t);
 
   Eigen::MatrixXd get_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, Timestamp const& t);
   void set_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd& Sigma_IJ, const Timestamp& t);
