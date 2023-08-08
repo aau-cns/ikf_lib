@@ -99,9 +99,10 @@ int main(int argc, char** argv) {
   std::shared_ptr<ikf::IsolatedKalmanFilterHandler> ptr_Handler(new ikf::IsolatedKalmanFilterHandler());
 
   double const dt = 1.0 / std::max(1, freq);  // Time step
-  double const D = duration*1.0;
+  double const D = duration * 1.0;
 
-
+  // we need the entire horizon to obtain all estimates after the simulation
+  ptr_Handler->set_horizon(D);
 
   std::cout << "* Duration D: " << D << std::endl;
   std::cout << "* dt: " << dt << std::endl;

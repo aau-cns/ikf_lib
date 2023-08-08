@@ -33,9 +33,46 @@ namespace ikf {
 
 class IsolatedKalmanFilterHandler;
 
-
 ///
-/// \brief The IsolatedKalmanFilter class: A modular and decoupled sensor fusion strategy by Roland Jung and Stephan Weiss.
+/// \brief The IsolatedKalmanFilter class: A modular and decoupled sensor fusion strategy by Roland Jung and Stephan
+/// Weiss.
+/// - The IsolatedKalmanFilter supports a state decoupling strategy, which requires in update steps only IKF instances
+/// that are output-coupled.
+/// - If the IKF instance has no direct access to other instances via pointers, it is necessary/recommended to use the
+/// IKF_Handler as fusion entity - as it has per definition access to all local instances. Local in this context referes
+/// to objects/instances within a common process. Having a (centralized) fusion entity, does not mitigate/harm the
+/// benefits of the state decoupling regarding scalabilty and modularity. The fusion center underlines/emphasises the
+/// responsibilties. It is also an oppurtonity to implement and use different decoupling strategies by replacing the FC
+/// and the handler to the filter intance.
+/// - The local fusion center (IsolatedKalmanFilterHandler) is responsible for
+/// --- stacking the beliefs
+/// --- stacking measurement matrices
+/// --- to call the KF update step (outlier rejection)
+/// --- splitting the apos covariance
+/// --- correcting the means
+/// --- applying the correction terms
+/// --- factorize the cross-covariances and to update the previous ones.
+/// - The collaborative Fusion Center needs to exchange information between other Fusion Centers (overwrites methods of
+/// local FC)
+/// --- optinally maintaining the measurements.
+///
+/// - The responsibilities of the IIsolatedKalmanFilter realization:
+/// --- to define which state definition is used.
+/// --- to compute the Jacobians of the propagtion model and the measurment models.
+/// --- to define which IKF instances are involved in the update and to compute the measurmenet matrix accordingly
+/// --- dispatching/interpreting the measurement
+/// --- to initialize the estimator
+/// --- to perform propagation and private update steps w/o FC.
+/// --- to call the FC methods in case of joint updates or a private update with FC if the ego belief is fixed!
+/// --- provide an interface for the FC to get/set_FCC and to apply_a_correction()
+///
+/// Imagine the following example: 2 instances on two agents. The local instances can exchange information locally via
+/// their handler and direct access the memory. While inter-agent coupling required information exchange. The handler
+/// knows if the instance is local or remote, thus it can request data from other handlers, right? This logic can be
+/// implement in either the filter instance or the handler. While on the handler side it would be clearer - while on the
+/// other hand, it might be confusing why the IKF is an extension of the KF, if it requires a central handler... ->
+/// Answer: The IKF-Paradigm is a state decoupling strategy. Meaning, it allows partitioning full-state vector in
+/// smaller junks, if their input/prediction model is decoupled and to couple their outputs through their fusion center.
 ///
 class IKF_API IIsolatedKalmanFilter: public IKalmanFilter {
 public:
@@ -109,11 +146,10 @@ protected:
   bool apply_private_observation(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) override;
   // EKF: Algorithm 4 in [1]
   bool apply_private_observation(pBelief_t& bel_II_apri, const Eigen::MatrixXd& H_II, const Eigen::MatrixXd& R,
-                                 const Eigen::VectorXd& r, const Timestamp& t,
-                                 const KalmanFilter::CorrectionCfg_t& cfg);
+                                 const Eigen::VectorXd& r, const KalmanFilter::CorrectionCfg_t& cfg) override;
 
   bool apply_private_observation(pBelief_t& bel_II_apri, const size_t ID_I, const Eigen::MatrixXd& H_II,
-                                 const Eigen::MatrixXd& R, const Eigen::VectorXd& r, const Timestamp& t,
+                                 const Eigen::MatrixXd& R, const Eigen::VectorXd& r,
                                  const KalmanFilter::CorrectionCfg_t& cfg);
 
   std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler;

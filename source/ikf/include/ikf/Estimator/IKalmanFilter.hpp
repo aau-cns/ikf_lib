@@ -99,8 +99,8 @@ protected:
   // KF:
   virtual bool apply_private_observation(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg);
   // EKF: if linearizing about bel_II_apri
-  virtual bool apply_private_observation(pBelief_t& bel_II_apri, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const KalmanFilter::CorrectionCfg_t &cfg);
-
+  virtual bool apply_private_observation(pBelief_t &bel_II_apri, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R,
+                                         const Eigen::VectorXd &r, const KalmanFilter::CorrectionCfg_t &cfg);
 
   TTimeHorizonBuffer<pBelief_t> HistBelief;
   TTimeHorizonBuffer<MeasData, TMultiHistoryBuffer<MeasData>> HistMeas;

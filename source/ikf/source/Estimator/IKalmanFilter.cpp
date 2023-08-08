@@ -463,7 +463,9 @@ bool IKalmanFilter::apply_private_observation(const Eigen::MatrixXd &H_II, const
   return false;
 }
 
-bool IKalmanFilter::apply_private_observation(pBelief_t &bel_II_apri, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const ikf::KalmanFilter::CorrectionCfg_t &cfg) {
+bool IKalmanFilter::apply_private_observation(pBelief_t &bel_II_apri, const Eigen::MatrixXd &H_II,
+                                              const Eigen::MatrixXd &R, const Eigen::VectorXd &r,
+                                              const ikf::KalmanFilter::CorrectionCfg_t &cfg) {
   KalmanFilter::CorrectionResult_t res;
   res = KalmanFilter::correction_step(H_II, R, r, bel_II_apri->Sigma(), cfg);
 
@@ -474,8 +476,4 @@ bool IKalmanFilter::apply_private_observation(pBelief_t &bel_II_apri, const Eige
   return !res.rejected;
 }
 
-
-
-
-
-} // ns mmsf
+}  // namespace ikf
