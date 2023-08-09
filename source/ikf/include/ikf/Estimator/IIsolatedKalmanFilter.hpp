@@ -90,6 +90,12 @@ public:
   virtual ProcessMeasResult_t process_measurement(MeasData const& m) override;
   ///////////////////////////////////////////////////////////////////////////////////
 
+  virtual Eigen::MatrixXd get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J);
+  void set_CrossCovFact_at_t(Timestamp const& t, size_t const unique_ID, Eigen::MatrixXd const& ccf);
+  // Eq. 20 in [1]
+  virtual bool apply_correction_at_t(Timestamp const& t, Eigen::MatrixXd const& Sigma_apri,
+                                     Eigen::MatrixXd const Sigma_apos);
+
 protected:
   /// FRIEND:
   friend IsolatedKalmanFilterHandler;
@@ -109,11 +115,6 @@ protected:
   /// \return ProcessMeasResult_t
   virtual ProcessMeasResult_t delegate_measurement(MeasData const& m) override;
 
-  virtual Eigen::MatrixXd get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J);
-  void set_CrossCovFact_at_t(Timestamp const& t, size_t const unique_ID, Eigen::MatrixXd const& ccf);
-  // Eq. 20 in [1]
-  virtual bool apply_correction_at_t(Timestamp const& t, Eigen::MatrixXd const& Sigma_apri,
-                                     Eigen::MatrixXd const Sigma_apos);
 
   /// IsolatedKalmanFilterHandler interface:
   ///////////////////////////////////////////////////////////////////////////////////

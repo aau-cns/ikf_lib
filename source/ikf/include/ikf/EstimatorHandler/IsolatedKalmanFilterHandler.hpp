@@ -33,7 +33,7 @@ public:
   ~IsolatedKalmanFilterHandler() = default;
 
   bool add(pIKF_t p_IKF);
-  pIKF_t get(const size_t ID);
+  virtual pIKF_t get(const size_t ID);
   bool remove(const size_t ID);
   bool exists(const size_t ID);
   std::vector<size_t> get_instance_ids();
@@ -77,21 +77,22 @@ protected:
   virtual void remove_beliefs_after_t(Timestamp const& t);
   virtual void remove_beliefs_from_t(Timestamp const& t);
 
-  Eigen::MatrixXd get_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, Timestamp const& t);
-  void set_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd& Sigma_IJ, const Timestamp& t);
+  virtual Eigen::MatrixXd get_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, Timestamp const& t);
+  virtual void set_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd& Sigma_IJ,
+                                 const Timestamp& t);
 
   virtual Eigen::MatrixXd stack_H(const std::map<size_t, Eigen::MatrixXd>& dict_H);
 
   virtual std::map<size_t, pBelief_t> get_dict_bel(const std::map<size_t, Eigen::MatrixXd>& dict_H, Timestamp const& t);
 
   Eigen::VectorXd stack_mean(const std::map<size_t, pBelief_t>& dict_bel);
-  Eigen::MatrixXd stack_Sigma(const std::map<size_t, pBelief_t>& dict_bel, Timestamp const& t);
+  virtual Eigen::MatrixXd stack_Sigma(const std::map<size_t, pBelief_t>& dict_bel, Timestamp const& t);
 
-  void apply_corrections_at_t(Eigen::MatrixXd& Sigma_apos, const std::map<size_t, pBelief_t>& dict_bel,
-                              Timestamp const& t);
+  virtual void apply_corrections_at_t(Eigen::MatrixXd& Sigma_apos, const std::map<size_t, pBelief_t>& dict_bel,
+                                      Timestamp const& t);
 
-  void split_right_upper_covariance(Eigen::MatrixXd& Sigma, const std::map<size_t, pBelief_t>& dict_bel,
-                                    Timestamp const& t);
+  virtual void split_right_upper_covariance(Eigen::MatrixXd& Sigma, const std::map<size_t, pBelief_t>& dict_bel,
+                                            Timestamp const& t);
 
   void correct_beliefs_implace(Eigen::MatrixXd& Sigma_apos, Eigen::VectorXd& delta_mean,
                                const std::map<size_t, pBelief_t>& dict_bel);

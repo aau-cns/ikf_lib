@@ -45,7 +45,11 @@ set(headers
  include/ikf/Estimator/IIsolatedKalmanFilter.hpp
  include/ikf/Estimator/IIsolatedKalmanFilterCorr.hpp
  include/ikf/EstimatorHandler/IsolatedKalmanFilterHandler.hpp
-  include/ikf/EstimatorHandler/DecoupledPropagationHandler.hpp
+ include/ikf/EstimatorHandler/DecoupledPropagationHandler.hpp
+ include/ikf/EstimatorHandler/CollaborativeIKFHandler.hpp
+ include/ikf/EstimatorHandler/IMultiAgentHandler.hpp
+
+
 
  include/ikf/Container/Timestamp.hpp
  include/ikf/Container/TStampedData.hpp
@@ -97,6 +101,9 @@ set(sources
  #source/EstimatorHandler/IDiCoFilterHandler.cpp
  source/EstimatorHandler/IsolatedKalmanFilterHandler.cpp
  source/EstimatorHandler/DecoupledPropagationHandler.cpp
+ source/EstimatorHandler/CollaborativeIKFHandler.cpp
+ source/EstimatorHandler/IMultiAgentHandler.cpp
+
 
 )
 

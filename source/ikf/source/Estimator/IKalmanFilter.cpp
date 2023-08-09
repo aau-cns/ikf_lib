@@ -205,6 +205,7 @@ bool IKalmanFilter::get_belief_at_t(const Timestamp &t, pBelief_t &bel, const ik
             }
             MeasData pseudo_meas_b = MeasData::lin_interpolate(stamped_meas_prev.data, stamped_meas_after.data, t);
 
+            // ACCESS TO MODEL
             ikf::ProcessMeasResult_t res = progapation_measurement(pseudo_meas_b);
 
             HistMeasPropagation.insert(pseudo_meas_b, t);

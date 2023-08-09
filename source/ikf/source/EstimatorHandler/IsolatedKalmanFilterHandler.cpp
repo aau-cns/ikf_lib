@@ -1,21 +1,21 @@
 /******************************************************************************
-* FILENAME:     IsolatedKalmanFilterHandler.cpp
-* PURPOSE:      Part of the ikf_lib
-* AUTHOR:       Roland Jung
-* MAIL:         roland.jung@ieee.org
-* VERSION:      v0.0.1
-* CREATION:     03.02.2023
-*
-* Copyright (C) 2023 Roland Jung, Control of Networked Systems, University of Klagenfurt, Austria.
-*
-* All rights reserved.
-*
-* This software is licensed under the terms of the BSD-2-Clause-License with
-* no commercial use allowed, the full terms of which are made available
-* in the LICENSE file. No license in patents is granted.
-*
-* You can contact the author at <roland.jung@aau.at>
-******************************************************************************/
+ * FILENAME:     IsolatedKalmanFilterHandler.cpp
+ * PURPOSE:      Part of the ikf_lib
+ * AUTHOR:       Roland Jung
+ * MAIL:         roland.jung@ieee.org
+ * VERSION:      v0.0.1
+ * CREATION:     03.02.2023
+ *
+ * Copyright (C) 2023 Roland Jung, Control of Networked Systems, University of Klagenfurt, Austria.
+ *
+ * All rights reserved.
+ *
+ * This software is licensed under the terms of the BSD-2-Clause-License with
+ * no commercial use allowed, the full terms of which are made available
+ * in the LICENSE file. No license in patents is granted.
+ *
+ * You can contact the author at <roland.jung@aau.at>
+ ******************************************************************************/
 #include <ikf/EstimatorHandler/IsolatedKalmanFilterHandler.hpp>
 #include <ikf/Logger/Logger.hpp>
 #include <ikf/utils/eigen_utils.hpp>
@@ -50,14 +50,12 @@ bool IsolatedKalmanFilterHandler::remove(const size_t ID) {
   return false;
 }
 
-bool IsolatedKalmanFilterHandler::exists(const size_t ID) {
-  return (id_dict.find(ID) != id_dict.end());
-}
+bool IsolatedKalmanFilterHandler::exists(const size_t ID) { return (id_dict.find(ID) != id_dict.end()); }
 
 std::vector<size_t> IsolatedKalmanFilterHandler::get_instance_ids() {
   std::vector<size_t> IDs;
   IDs.reserve(id_dict.size());
-  for (auto const& elem : id_dict) {
+  for (auto const &elem : id_dict) {
     IDs.push_back(elem.first);
   }
   return IDs;
@@ -80,10 +78,10 @@ bool ikf::IsolatedKalmanFilterHandler::insert_measurement(const MeasData &m, con
 
 void IsolatedKalmanFilterHandler::sort_measurements_from_t(const Timestamp &t) {
   Timestamp t_latest;
-  if(HistMeas.get_latest_t(t_latest)) {
+  if (HistMeas.get_latest_t(t_latest)) {
     TMultiHistoryBuffer<MeasData> meas = HistMeas.get_between_t1_t2(t, t_latest);
 
-    if(!meas.empty()) {
+    if (!meas.empty()) {
       HistMeas.remove_after_t(t);
       HistMeas.remove_at_t(t);
 
@@ -108,7 +106,6 @@ void IsolatedKalmanFilterHandler::sort_measurements_from_t(const Timestamp &t) {
         }
       });
     }
-
   }
 }
 
@@ -141,15 +138,15 @@ bool IsolatedKalmanFilterHandler::redo_updates_from_t(const Timestamp &t) {
   remove_beliefs_from_t(t);
   Timestamp t_last;
   if (HistMeas.get_latest_t(t_last)) {
-    Logger::ikf_logger()->info("IsolatedKalmanFilterHandler::redo_updates_from_t() t=" + t.str() + ", t_last=" + t_last.str());
+    Logger::ikf_logger()->info("IsolatedKalmanFilterHandler::redo_updates_from_t() t=" + t.str()
+                               + ", t_last=" + t_last.str());
 
     if (t == t_last) {
       auto vec = HistMeas.get_all_at_t(t);
       for (MeasData &m : vec) {
         this->delegate_measurement(m);
       }
-    }
-    else {
+    } else {
       HistMeas.foreach_between_t1_t2(t, t_last, [this](MeasData const &m) { this->delegate_measurement(m); });
     }
     return true;
@@ -160,15 +157,15 @@ bool IsolatedKalmanFilterHandler::redo_updates_from_t(const Timestamp &t) {
 bool IsolatedKalmanFilterHandler::redo_updates_after_t(const Timestamp &t) {
   remove_beliefs_after_t(t);
   Timestamp t_after, t_last;
-  if (HistMeas.get_after_t(t, t_after) &&  HistMeas.get_latest_t(t_last)) {
-    Logger::ikf_logger()->info("IsolatedKalmanFilterHandler::redo_updates_after_t() t_after=" + t_after.str() + ", t_last=" + t_last.str());
+  if (HistMeas.get_after_t(t, t_after) && HistMeas.get_latest_t(t_last)) {
+    Logger::ikf_logger()->info("IsolatedKalmanFilterHandler::redo_updates_after_t() t_after=" + t_after.str()
+                               + ", t_last=" + t_last.str());
     if (t_after == t_last) {
       auto vec = HistMeas.get_all_at_t(t_after);
       for (MeasData &m : vec) {
         this->delegate_measurement(m);
       }
-    }
-    else {
+    } else {
       HistMeas.foreach_between_t1_t2(t_after, t_last, [this](MeasData const &m) { this->delegate_measurement(m); });
     }
     return true;
@@ -177,13 +174,13 @@ bool IsolatedKalmanFilterHandler::redo_updates_after_t(const Timestamp &t) {
 }
 
 void IsolatedKalmanFilterHandler::remove_beliefs_after_t(const Timestamp &t) {
-  for (auto& elem : id_dict) {
+  for (auto &elem : id_dict) {
     elem.second->remove_after_t(t);
   }
 }
 
 void IsolatedKalmanFilterHandler::remove_beliefs_from_t(const Timestamp &t) {
-  for (auto& elem : id_dict) {
+  for (auto &elem : id_dict) {
     elem.second->remove_from_t(t);
   }
 }
@@ -196,26 +193,10 @@ std::shared_ptr<IIsolatedKalmanFilter> IsolatedKalmanFilterHandler::get(const si
   return std::shared_ptr<IIsolatedKalmanFilter>(nullptr);
 }
 
-
 void IsolatedKalmanFilterHandler::reset() {
-  for (auto& elem : id_dict) {
+  for (auto &elem : id_dict) {
     elem.second->reset();
   }
-}
-
-bool ikf::IsolatedKalmanFilterHandler::get_belief_at_t(const size_t ID, const Timestamp &t, pBelief_t &bel,
-                                                       const eGetBeliefStrategy type) {
-  if (exists(ID)) {
-    return get(ID)->get_belief_at_t(t, bel, type);
-  }
-  return false;
-}
-
-bool ikf::IsolatedKalmanFilterHandler::get_prop_meas_at_t(const size_t ID, const Timestamp &t, MeasData &m) {
-  if (exists(ID)) {
-    return get(ID)->get_prop_meas_at_t(t, m);
-  }
-  return false;
 }
 
 bool IsolatedKalmanFilterHandler::is_order_violated(const MeasData &m) {
@@ -223,14 +204,14 @@ bool IsolatedKalmanFilterHandler::is_order_violated(const MeasData &m) {
     auto meas_arr = HistMeas.get_all_at_t(m.t_m);
 
     if (m.obs_type == eObservationType::PROPAGATION) {
-      for (MeasData & m_ : meas_arr) {
-        if (m_.obs_type == eObservationType::PRIVATE_OBSERVATION ||
-            m_.obs_type == eObservationType::JOINT_OBSERVATION ){
+      for (MeasData &m_ : meas_arr) {
+        if (m_.obs_type == eObservationType::PRIVATE_OBSERVATION
+            || m_.obs_type == eObservationType::JOINT_OBSERVATION) {
           return true;
         }
       }
     } else if (m.obs_type == eObservationType::PRIVATE_OBSERVATION) {
-      for (MeasData & m_ : meas_arr) {
+      for (MeasData &m_ : meas_arr) {
         if (m_.obs_type == eObservationType::JOINT_OBSERVATION) {
           return true;
         }
@@ -427,10 +408,10 @@ bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen
                         "Joint apos covariance is not PSD at t=" + t.str());
 
     // IMPORTANT: MAINTAIN ORDER STRICKTLY
-    // 1) add correction terms in the appropriate correction buffers!
+    // 1) add correction terms on all a aprior factorized cross-covariances!
     apply_corrections_at_t(res.Sigma_apos, dict_bel, t);
 
-    // 2) set a corrected factorized a posterioiry cross-covariance
+    // 2) afterwards, overwrite/set factorized a posterioiry cross-covariance (apply no corrections afterwards on them)
     split_right_upper_covariance(res.Sigma_apos, dict_bel, t);
 
     // 3) correct beliefs implace!
