@@ -113,14 +113,14 @@ ProcessMeasResult_t IsolatedKalmanFilterHandler::process_measurement(const MeasD
   ProcessMeasResult_t res = delegate_measurement(m);
   bool order_violated = is_order_violated(m);
   if (order_violated) {
-    HistMeas.insert(m, m.t_m);
+    insert_measurement(m, m.t_m);
     sort_measurements_from_t(m.t_m);
     redo_updates_from_t(m.t_m);
   } else {
     if (!res.rejected && HistMeas.exist_after_t(m.t_m)) {
       redo_updates_after_t(m.t_m);
     }
-    HistMeas.insert(m, m.t_m);
+    insert_measurement(m, m.t_m);
   }
   HistMeas.check_horizon();
   return res;
@@ -197,6 +197,21 @@ void IsolatedKalmanFilterHandler::reset() {
   for (auto &elem : id_dict) {
     elem.second->reset();
   }
+}
+
+bool ikf::IsolatedKalmanFilterHandler::get_belief_at_t(const size_t ID, const Timestamp &t, pBelief_t &bel,
+                                                       const eGetBeliefStrategy type) {
+  if (exists(ID)) {
+    return get(ID)->get_belief_at_t(t, bel, type);
+  }
+  return false;
+}
+
+bool ikf::IsolatedKalmanFilterHandler::get_prop_meas_at_t(const size_t ID, const Timestamp &t, MeasData &m) {
+  if (exists(ID)) {
+    return get(ID)->get_prop_meas_at_t(t, m);
+  }
+  return false;
 }
 
 bool IsolatedKalmanFilterHandler::is_order_violated(const MeasData &m) {

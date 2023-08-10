@@ -176,6 +176,10 @@ ProcessMeasResult_t IIsolatedKalmanFilter::delegate_measurement(const MeasData &
   return res;
 }
 
+bool IIsolatedKalmanFilter::insert_measurement(const MeasData &m, const Timestamp &t) {
+  return m_pHandler->insert_measurement(m, t);
+}
+
 // KF: Algorithm 8 in [1]
 bool IIsolatedKalmanFilter::apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab,
                                               const Timestamp &t_a, const Timestamp &t_b) {

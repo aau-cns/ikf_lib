@@ -63,13 +63,10 @@ std::map<size_t, pBelief_t> DecoupledPropagationHandler::get_dict_bel(const std:
   std::vector<size_t> IDs = get_instance_ids();
   for (auto const id : IDs) {
     pBelief_t bel_apri;
-    if (!get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::EXACT)) {
-      if (!get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::LINEAR_INTERPOL_MEAS)) {
-        RTV_EXPECT_TRUE_THROW(get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF),
-                              "Could not obtain belief");
-      }
+    if (!get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::LINEAR_INTERPOL_MEAS)) {
+      RTV_EXPECT_TRUE_THROW(get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF),
+                            "Could not obtain belief");
     }
-
     dict_bel.insert({id, bel_apri});
   }
   return dict_bel;

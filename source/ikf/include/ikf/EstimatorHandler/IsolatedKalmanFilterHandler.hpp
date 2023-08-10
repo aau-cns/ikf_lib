@@ -62,8 +62,9 @@ public:
                                  const Eigen::MatrixXd& R, const Timestamp& t,
                                  const KalmanFilter::CorrectionCfg_t& cfg);
 
-protected:
   virtual bool insert_measurement(MeasData const& m, Timestamp const& t);
+
+protected:
 
   void sort_measurements_from_t(Timestamp const& t);
   /////////////////////////////////////////////////////
