@@ -25,7 +25,9 @@
 
 namespace  ikf {
 
-IIsolatedKalmanFilterCorr::IIsolatedKalmanFilterCorr(std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler, const size_t ID, const bool handle_delayed_meas, const double horizon_sec) : IIsolatedKalmanFilter(ptr_Handler, ID, handle_delayed_meas, horizon_sec), HistCorr(horizon_sec) {}
+IIsolatedKalmanFilterCorr::IIsolatedKalmanFilterCorr(std::shared_ptr<IDICOHandler> ptr_Handler, const size_t ID,
+                                                     const double horizon_sec)
+  : IIsolatedKalmanFilter(ptr_Handler, ID, horizon_sec), HistCorr(horizon_sec) {}
 
 IIsolatedKalmanFilterCorr::~IIsolatedKalmanFilterCorr() {}
 

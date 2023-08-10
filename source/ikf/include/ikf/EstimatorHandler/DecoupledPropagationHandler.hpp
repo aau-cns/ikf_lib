@@ -25,7 +25,7 @@ namespace ikf {
 
 class IKF_API DecoupledPropagationHandler : public IsolatedKalmanFilterHandler {
 public:
-  DecoupledPropagationHandler(bool const handle_delayed = true, double const horizon_sec = 1.0);
+  DecoupledPropagationHandler(double const horizon_sec = 1.0);
   ~DecoupledPropagationHandler() = default;
 
   virtual bool apply_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::MatrixXd& R,

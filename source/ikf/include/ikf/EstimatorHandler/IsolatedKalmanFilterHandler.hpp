@@ -18,66 +18,29 @@
 ******************************************************************************/
 #ifndef ISOLATEDKALMANFILTERHANDLER_HPP
 #define ISOLATEDKALMANFILTERHANDLER_HPP
+#include <ikf/Estimator/IIsolatedKalmanFilter.hpp>
+#include <ikf/EstimatorHandler/IDICOHandler.hpp>
 #include <ikf/ikf_api.h>
 #include <memory>
-#include <ikf/Estimator/IIsolatedKalmanFilter.hpp>
 
 namespace ikf {
 
-
-class IKF_API IsolatedKalmanFilterHandler {
-
-
+class IKF_API IsolatedKalmanFilterHandler : public IDICOHandler {
 public:
-  IsolatedKalmanFilterHandler(bool const handle_delayed = true, double const horizon_sec = 1.0);
+  IsolatedKalmanFilterHandler(double const horizon_sec = 1.0);
   ~IsolatedKalmanFilterHandler() = default;
-
-  bool add(pIKF_t p_IKF);
-  virtual pIKF_t get(const size_t ID);
-  bool remove(const size_t ID);
-  bool exists(const size_t ID);
-  std::vector<size_t> get_instance_ids();
-  double horizon_sec() const;
-  void set_horizon(double const t_hor);
-  void reset();
-
-  bool get_belief_at_t(size_t const ID, Timestamp const& t, pBelief_t& bel,
-                       eGetBeliefStrategy const type = eGetBeliefStrategy::EXACT);
-
-  bool get_prop_meas_at_t(size_t const ID, Timestamp const& t, MeasData& m);
-
-  /// \brief process_measurement: If the m_handle_delayed_meas == true, the IKF-Handler is a centralized entity hanndle
-  /// all incomming measurements and is responsible to handle delayed measurements. \param m \return
-  virtual ProcessMeasResult_t process_measurement(MeasData const& m);
 
   /// Generic fusion algorithm for M-participants:
   /// - the state dim can be infered from the cols of the H matrices
   /// - IDs of particants can be obtained through the dictionary keys.
-  ///
-  ///
   virtual bool apply_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::MatrixXd& R,
                                  const Eigen::VectorXd& r, const Timestamp& t,
-                                 const KalmanFilter::CorrectionCfg_t& cfg);
+                                 const KalmanFilter::CorrectionCfg_t& cfg) override;
   virtual bool apply_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::VectorXd& z,
                                  const Eigen::MatrixXd& R, const Timestamp& t,
-                                 const KalmanFilter::CorrectionCfg_t& cfg);
-
-  virtual bool insert_measurement(MeasData const& m, Timestamp const& t);
+                                 const KalmanFilter::CorrectionCfg_t& cfg) override;
 
 protected:
-
-  void sort_measurements_from_t(Timestamp const& t);
-  /////////////////////////////////////////////////////
-  /// Interface for IKF handles to reprocess measurements
-  TMultiHistoryBuffer<MeasData> get_measurements_from_t(Timestamp const& t);
-  TMultiHistoryBuffer<MeasData> get_measurements_after_t(Timestamp const& t);
-  bool is_order_violated(MeasData const& m);
-  virtual bool redo_updates_from_t(const Timestamp &t);
-  virtual bool redo_updates_after_t(const Timestamp &t);
-  virtual ProcessMeasResult_t delegate_measurement(MeasData const& m);
-  virtual void remove_beliefs_after_t(Timestamp const& t);
-  virtual void remove_beliefs_from_t(Timestamp const& t);
-
   virtual Eigen::MatrixXd get_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, Timestamp const& t);
   virtual void set_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd& Sigma_IJ,
                                  const Timestamp& t);
@@ -98,10 +61,6 @@ protected:
   void correct_beliefs_implace(Eigen::MatrixXd& Sigma_apos, Eigen::VectorXd& delta_mean,
                                const std::map<size_t, pBelief_t>& dict_bel);
 
-  std::unordered_map<size_t, std::shared_ptr<IIsolatedKalmanFilter>> id_dict;
-  bool m_handle_delayed_meas = true;
-  TTimeHorizonBuffer<MeasData, TMultiHistoryBuffer<MeasData>> HistMeas;
-  double m_horzion_sec;
 };  // class IsolatedKalmanFilterHandler
 
 }  // namespace ikf

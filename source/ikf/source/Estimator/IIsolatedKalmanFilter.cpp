@@ -27,8 +27,8 @@
 
 namespace ikf {
 
-IIsolatedKalmanFilter::IIsolatedKalmanFilter(std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler, const size_t ID,
-                                             const bool handle_delayed_meas, const double horizon_sec)
+IIsolatedKalmanFilter::IIsolatedKalmanFilter(std::shared_ptr<IDICOHandler> ptr_Handler, const size_t ID,
+                                             const double horizon_sec)
   : IKalmanFilter(horizon_sec, false), m_pHandler(ptr_Handler), m_ID(ID) {
   Logger::ikf_logger()->info("IIsolatedKalmanFilter: horizon_sec=" + std::to_string(horizon_sec));
 }
@@ -161,6 +161,10 @@ bool IIsolatedKalmanFilter::apply_correction_at_t(const Timestamp &t, const Eige
   return apply_correction_at_t(t, Lambda);
 }
 
+bool IIsolatedKalmanFilter::set_DICOHandler(std::shared_ptr<IDICOHandler> DICOHandler_ptr) {
+  m_pHandler = DICOHandler_ptr;
+  return true;
+}
 
 // Algorithm 7 in [1]
 ProcessMeasResult_t IIsolatedKalmanFilter::delegate_measurement(const MeasData &m) {
@@ -265,6 +269,12 @@ bool IIsolatedKalmanFilter::apply_private_observation(pBelief_t &bel_II_apri, co
     }
   }
   return false;
+}
+
+bool IIsolatedKalmanFilter::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H, const Eigen::MatrixXd &R,
+                                              const Eigen::VectorXd &r, const Timestamp &t,
+                                              const KalmanFilter::CorrectionCfg_t &cfg) {
+  return m_pHandler->apply_observation(dict_H, R, r, t, cfg);
 }
 
 }  // namespace ikf

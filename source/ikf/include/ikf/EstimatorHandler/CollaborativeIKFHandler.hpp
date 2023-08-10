@@ -26,8 +26,7 @@ namespace ikf {
 
 class IKF_API CollaborativeIKFHandler : public IsolatedKalmanFilterHandler {
 public:
-  CollaborativeIKFHandler(MultiAgentHdl_ptr pAgentHdler, bool const handle_delayed = true,
-                          double const horizon_sec = 1.0);
+  CollaborativeIKFHandler(MultiAgentHdl_ptr pAgentHdler, double const horizon_sec = 1.0);
   ~CollaborativeIKFHandler() = default;
 
   virtual bool apply_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::MatrixXd& R,

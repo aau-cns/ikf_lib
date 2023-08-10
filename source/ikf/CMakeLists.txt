@@ -44,6 +44,8 @@ set(headers
  #include/ikf/Estimator/IDiCoFilter.hpp
  include/ikf/Estimator/IIsolatedKalmanFilter.hpp
  include/ikf/Estimator/IIsolatedKalmanFilterCorr.hpp
+ include/ikf/EstimatorHandler/IDICOHandler.hpp
+
  include/ikf/EstimatorHandler/IsolatedKalmanFilterHandler.hpp
  include/ikf/EstimatorHandler/DecoupledPropagationHandler.hpp
  include/ikf/EstimatorHandler/CollaborativeIKFHandler.hpp
@@ -99,6 +101,7 @@ set(sources
  source/EstimatorStd/IKFHandlerStd.cpp
 
  #source/EstimatorHandler/IDiCoFilterHandler.cpp
+ source/EstimatorHandler/IDICOHandler.cpp
  source/EstimatorHandler/IsolatedKalmanFilterHandler.cpp
  source/EstimatorHandler/DecoupledPropagationHandler.cpp
  source/EstimatorHandler/CollaborativeIKFHandler.cpp

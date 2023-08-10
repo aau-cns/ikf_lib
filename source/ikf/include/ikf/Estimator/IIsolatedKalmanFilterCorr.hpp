@@ -22,8 +22,9 @@
 ******************************************************************************/
 #ifndef IISOLATEDKALMANFILTERCORR_HPP
 #define IISOLATEDKALMANFILTERCORR_HPP
-#include <ikf/ikf_api.h>
 #include "ikf/Estimator/IIsolatedKalmanFilter.hpp"
+#include <ikf/EstimatorHandler/IDICOHandler.hpp>
+#include <ikf/ikf_api.h>
 
 namespace ikf {
 
@@ -35,7 +36,7 @@ namespace ikf {
 ///
 class IKF_API IIsolatedKalmanFilterCorr: public IIsolatedKalmanFilter {
 public:
-  IIsolatedKalmanFilterCorr(std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler, size_t const ID, bool const handle_delayed_meas=true , double const horizon_sec=1.0);
+  IIsolatedKalmanFilterCorr(std::shared_ptr<IDICOHandler> ptr_Handler, size_t const ID, double const horizon_sec = 1.0);
   ~IIsolatedKalmanFilterCorr();
 
   void reset() override;

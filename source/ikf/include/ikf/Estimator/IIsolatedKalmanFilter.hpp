@@ -31,7 +31,7 @@
 
 namespace ikf {
 
-class IsolatedKalmanFilterHandler;
+class IDICOHandler;
 
 ///
 /// \brief The IsolatedKalmanFilter class: A modular and decoupled sensor fusion strategy by Roland Jung and Stephan
@@ -44,7 +44,7 @@ class IsolatedKalmanFilterHandler;
 /// benefits of the state decoupling regarding scalabilty and modularity. The fusion center underlines/emphasises the
 /// responsibilties. It is also an oppurtonity to implement and use different decoupling strategies by replacing the FC
 /// and the handler to the filter intance.
-/// - The local fusion center (IsolatedKalmanFilterHandler) is responsible for
+/// - The local fusion center (IDICOHandler) is responsible for
 /// --- stacking the beliefs
 /// --- stacking measurement matrices
 /// --- to call the KF update step (outlier rejection)
@@ -76,8 +76,7 @@ class IsolatedKalmanFilterHandler;
 ///
 class IKF_API IIsolatedKalmanFilter: public IKalmanFilter {
 public:
-  IIsolatedKalmanFilter(std::shared_ptr<IsolatedKalmanFilterHandler> ptr_Handler, size_t const ID,
-                        bool const handle_delayed_meas = false, double const horizon_sec = 1.0);
+  IIsolatedKalmanFilter(std::shared_ptr<IDICOHandler> ptr_Handler, size_t const ID, double const horizon_sec = 1.0);
   virtual ~IIsolatedKalmanFilter() {}
 
   size_t ID() const;
@@ -96,9 +95,25 @@ public:
   virtual bool apply_correction_at_t(Timestamp const& t, Eigen::MatrixXd const& Sigma_apri,
                                      Eigen::MatrixXd const Sigma_apos);
 
+  // change the fusion strategy at runtime (make sure that the new DICOHandler has the measurement buffer copied):
+  virtual bool set_DICOHandler(std::shared_ptr<IDICOHandler> DICOHandler_ptr);
+
 protected:
   /// FRIEND:
-  friend IsolatedKalmanFilterHandler;
+  friend IDICOHandler;
+  ///////////////////////////////////////////////////////////////////////////////////
+  /// IDICOHandler interface:
+  ///
+  /// \brief delegate_measurement: redirects measurement either to progapation_measurement(),
+  /// local_private_measurement(), or local_joint_measurement() based on the measurement's eObservationType
+  /// \param m
+  /// \return ProcessMeasResult_t
+  virtual ProcessMeasResult_t delegate_measurement(MeasData const& m) override;
+
+  virtual void remove_after_t(Timestamp const& t);
+  virtual void remove_from_t(Timestamp const& t);
+  /// IDICOHandler interface:
+  ///////////////////////////////////////////////////////////////////////////////////
 
   ///////////////////////////////////////////////////////////////////////////////////
   /// pure virtual method
@@ -108,21 +123,7 @@ protected:
 
   // HOOK for IKalmanFilter
   virtual bool insert_measurement(MeasData const& m, Timestamp const& t) override;
-  ///////////////////////////////////////////////////////////////////////////////////
-  /// IsolatedKalmanFilterHandler interface:
-  ///
-  /// \brief delegate_measurement: redirects measurement either to progapation_measurement(),
-  /// local_private_measurement(), or local_joint_measurement() based on the measurement's eObservationType
-  /// \param m
-  /// \return ProcessMeasResult_t
-  virtual ProcessMeasResult_t delegate_measurement(MeasData const& m) override;
 
-
-  /// IsolatedKalmanFilterHandler interface:
-  ///////////////////////////////////////////////////////////////////////////////////
-
-  virtual void remove_after_t(Timestamp const& t);
-  virtual void remove_from_t(Timestamp const& t);
   virtual bool redo_updates_after_t(Timestamp const& t) override;
 
   bool get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J, Eigen::MatrixXd &FFC);
@@ -160,12 +161,16 @@ protected:
   bool apply_private_observation(pBelief_t& bel_II_apri, const Eigen::MatrixXd& H_II, const Eigen::MatrixXd& R,
                                  const Eigen::VectorXd& r, const KalmanFilter::CorrectionCfg_t& cfg) override;
 
+  bool apply_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::MatrixXd& R,
+                         const Eigen::VectorXd& r, const ikf::Timestamp& t,
+                         const ikf::KalmanFilter::CorrectionCfg_t& cfg);
+
   // call m_pHandler->apply_observation(...)
   //  bool apply_private_observation(pBelief_t& bel_II_apri, const size_t ID_I, const Eigen::MatrixXd& H_II,
   //                                 const Eigen::MatrixXd& R, const Eigen::VectorXd& r,
   //                                 const KalmanFilter::CorrectionCfg_t& cfg);
 
-  std::shared_ptr<IsolatedKalmanFilterHandler> m_pHandler;
+  std::shared_ptr<IDICOHandler> m_pHandler;
   std::unordered_map<size_t, TTimeHorizonBuffer<Eigen::MatrixXd>> HistCrossCovFactors;
   size_t m_ID;
 

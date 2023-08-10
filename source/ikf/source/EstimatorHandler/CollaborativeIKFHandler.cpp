@@ -22,9 +22,8 @@
 
 namespace ikf {
 
-CollaborativeIKFHandler::CollaborativeIKFHandler(MultiAgentHdl_ptr pAgentHdler, const bool handle_delayed,
-                                                 const double horizon_sec)
-  : IsolatedKalmanFilterHandler(handle_delayed, horizon_sec), m_pAgentHandler(pAgentHdler) {
+CollaborativeIKFHandler::CollaborativeIKFHandler(MultiAgentHdl_ptr pAgentHdler, const double horizon_sec)
+  : IsolatedKalmanFilterHandler(horizon_sec), m_pAgentHandler(pAgentHdler) {
   Logger::ikf_logger()->info("CollaborativeIKFHandler will inter-agent updates through the agent handler!");
 }
 

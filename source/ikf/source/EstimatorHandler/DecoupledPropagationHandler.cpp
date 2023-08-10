@@ -22,8 +22,8 @@
 
 namespace ikf {
 
-DecoupledPropagationHandler::DecoupledPropagationHandler(const bool handle_delayed, const double horizon_sec)
-  : IsolatedKalmanFilterHandler(handle_delayed, horizon_sec) {
+DecoupledPropagationHandler::DecoupledPropagationHandler(const double horizon_sec)
+  : IsolatedKalmanFilterHandler(horizon_sec) {
   Logger::ikf_logger()->info("DecoupledPropagationHandler will perform updates on the local full-state!");
 }
 
