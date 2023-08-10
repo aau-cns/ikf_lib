@@ -28,13 +28,18 @@
 
 namespace ikf {
 
-enum class eGetBeliefStrategy {
-  EXACT = 0,   // a belief is expected at a given timestamp
+enum class IKF_API eGetBeliefStrategy {
+  EXACT = 0,    // a belief is expected at a given timestamp
   CLOSEST = 1,  // if exist, return the closes belief in HistBelief (if any)
-  LINEAR_INTERPOL_BELIEF = 2, // if exist, interpolate between two beliefs and add them to the HistBelief, else PREDICT_BELIEF
-  LINEAR_INTERPOL_MEAS = 3, // if exist, interpolate between proprioceptive measurements linearly and perform a pseudo prediction step.
-  PREDICT_BELIEF = 4, // if KF has a prediction model, a belief is predicted
+  LINEAR_INTERPOL_BELIEF
+  = 2,  // if exist, interpolate between two beliefs and add them to the HistBelief, else PREDICT_BELIEF
+  LINEAR_INTERPOL_MEAS
+  = 3,  // if exist, interpolate between proprioceptive measurements linearly and perform a pseudo prediction step.
+  PREDICT_BELIEF = 4,  // if KF has a prediction model, a belief is predicted
 };
+
+std::string IKF_API to_string(const eGetBeliefStrategy e);
+eGetBeliefStrategy IKF_API str2eGetBeliefStrategy(const std::string &str);
 
 ///
 /// \brief The IKalmanFilter class

@@ -476,4 +476,37 @@ bool IKalmanFilter::apply_private_observation(pBelief_t &bel_II_apri, const Eige
   return !res.rejected;
 }
 
+eGetBeliefStrategy str2eGetBeliefStrategy(const std::string &str) {
+  if (str == "EXACT") {
+    return eGetBeliefStrategy::EXACT;
+  } else if (str == "CLOSEST") {
+    return eGetBeliefStrategy::CLOSEST;
+  } else if (str == "LINEAR_INTERPOL_BELIEF") {
+    return eGetBeliefStrategy::LINEAR_INTERPOL_BELIEF;
+  } else if (str == "LINEAR_INTERPOL_MEAS") {
+    return eGetBeliefStrategy::LINEAR_INTERPOL_MEAS;
+  } else if (str == "PREDICT_BELIEF") {
+    return eGetBeliefStrategy::PREDICT_BELIEF;
+  }
+  return eGetBeliefStrategy::EXACT;
+}
+
+std::string to_string(const eGetBeliefStrategy e) {
+  switch (e) {
+  case eGetBeliefStrategy::EXACT:
+    return "EXACT";
+  case eGetBeliefStrategy::CLOSEST:
+    return "CLOSEST";
+  case eGetBeliefStrategy::LINEAR_INTERPOL_BELIEF:
+    return "LINEAR_INTERPOL_BELIEF";
+  case eGetBeliefStrategy::LINEAR_INTERPOL_MEAS:
+    return "LINEAR_INTERPOL_MEAS";
+  case eGetBeliefStrategy::PREDICT_BELIEF:
+    return "PREDICT_BELIEF";
+  default:
+    break;
+  }
+  return "";
+}
+
 }  // namespace ikf
