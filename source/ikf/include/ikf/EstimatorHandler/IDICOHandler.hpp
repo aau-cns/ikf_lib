@@ -16,7 +16,7 @@
 #include <memory>
 
 namespace ikf {
-enum class eDICOStrategy { IKF = 0, DP = 1, CSE_IKF = 2 };
+
 ///
 /// \brief The IDICOHandler class
 /// Abstract base class to hold N-IKF instances defines methods which are issued by the IKF instances.
