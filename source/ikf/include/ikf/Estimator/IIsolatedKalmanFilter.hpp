@@ -94,6 +94,8 @@ public:
   // Eq. 20 in [1]
   virtual bool apply_correction_at_t(Timestamp const& t, Eigen::MatrixXd const& Sigma_apri,
                                      Eigen::MatrixXd const Sigma_apos);
+  // Eq. 15, 21 in [1]
+  virtual bool apply_correction_at_t(Timestamp const& t, Eigen::MatrixXd const& Factor);
 
   // change the fusion strategy at runtime (make sure that the new DICOHandler has the measurement buffer copied):
   virtual bool set_DICOHandler(std::shared_ptr<IDICOHandler> DICOHandler_ptr);
@@ -126,20 +128,17 @@ protected:
 
   virtual bool redo_updates_after_t(Timestamp const& t) override;
 
-  bool get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J, Eigen::MatrixXd &FFC);
+  bool get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J, Eigen::MatrixXd& FFC);
 
   Eigen::MatrixXd get_CrossCovFact_before_t(Timestamp const& t, size_t unique_ID) const;
 
   void propagate_CrossCovFact(Timestamp const& t_a, Timestamp const& t_b, Eigen::MatrixXd const& M_a_b);
-
 
   // Algorithm 3 in [1]
   virtual void check_horizon() override;
 
   // Eq. 8 in [1]
   virtual bool add_correction_at_t(const Timestamp &t_a,Timestamp const& t_b, Eigen::MatrixXd const& Phi_a_b);
-  // Eq. 15, 21 in [1]
-  virtual bool apply_correction_at_t(Timestamp const&t, Eigen::MatrixXd const& Factor);
 
   // Algorithm 7 in [1]
   //virtual ProcessMeasResult_t reprocess_measurement(MeasData const& m);

@@ -12,6 +12,7 @@
 #ifndef IKF_IMULTIAGENTHANDLER_HPP
 #define IKF_IMULTIAGENTHANDLER_HPP
 #include "ikf/Estimator/IKalmanFilter.hpp"
+#include <ikf/EstimatorHandler/IDICOHandler.hpp>
 #include <ikf/ikf_api.h>
 #include <map>
 #include <vector>
@@ -62,13 +63,16 @@ public:
 
   virtual bool redo_updates_after_t(IDAgent_t const ID_agent, const Timestamp& t) = 0;
 
+  void set_local_handler(pDICOHandler_t pHdler) { m_pLocalHandler = pHdler; }
+
 protected:
   agents_ids_t dict_agents_ids;
   IDAgent_t m_AgentID = 0;
+  pDICOHandler_t m_pLocalHandler;
 };
 
 typedef std::shared_ptr<IMultiAgentHandler> MultiAgentHdl_ptr;
 
 }  // namespace ikf
 
-#endif // IMULTIAGENTHANDLER_HPP
+#endif  // IMULTIAGENTHANDLER_HPP
