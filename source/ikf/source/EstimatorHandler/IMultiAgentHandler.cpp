@@ -46,4 +46,23 @@ bool IMultiAgentHandler::exists(const IDEstimator_t ID_est) {
   return false;
 }
 
+std::ostream& operator<<(std::ostream& out, const IMultiAgentHandler& obj) {
+  out << "IMultiAgentHandler:";
+  out << " Agent_ID=[" << obj.m_AgentID << "]" << std::endl;
+  for (auto const& e : obj.dict_agents_ids) {
+    out << "*  other Agent_ID[" << e.first << "]: Sensor IDs: [";
+    for (auto const& i : e.second) {
+      out << i << ",";
+    }
+    out << "]" << std::endl;
+  }
+  return out;
+}
+
+std::string IMultiAgentHandler::str() const {
+  std::stringstream ss;
+  ss << *this;
+  return ss.str();
+}
+
 }  // namespace ikf

@@ -65,6 +65,10 @@ public:
 
   void set_local_handler(pDICOHandler_t pHdler) { m_pLocalHandler = pHdler; }
 
+  friend std::ostream& operator<<(std::ostream& out, const IMultiAgentHandler& obj);
+
+  std::string str() const;
+
 protected:
   agents_ids_t dict_agents_ids;
   IDAgent_t m_AgentID = 0;
