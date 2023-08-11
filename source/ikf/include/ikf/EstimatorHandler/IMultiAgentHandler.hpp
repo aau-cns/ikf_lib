@@ -39,15 +39,15 @@ public:
 
   virtual bool refresh_estimator_IDs(IDAgent_t const ID_agent) = 0;
 
-  virtual bool get_belief_at_t(IDEstimator_t const ID_est, Timestamp const& t, pBelief_t& bel,
+  virtual bool get_belief_at_t(IDEstimator_t const ID_est, Timestamp const& t, pBelief_t bel,
                                eGetBeliefStrategy const type = eGetBeliefStrategy::EXACT)
     = 0;
 
   virtual bool get_others_belief_at_t(IDEstimator_t const ID_I, std::vector<IDEstimator_t> ID_Js, Timestamp const& t,
-                                      pBelief_t& bel, std::map<IDEstimator_t, Eigen::MatrixXd>& FCC_IJs)
+                                      pBelief_t bel, std::map<IDEstimator_t, Eigen::MatrixXd>& FCC_IJs)
     = 0;
 
-  virtual bool set_belief_at_t(IDEstimator_t const ID_est, Timestamp const& t, pBelief_t& bel) = 0;
+  virtual bool set_belief_at_t(IDEstimator_t const ID_est, Timestamp const& t, pBelief_t bel) = 0;
 
   virtual Eigen::MatrixXd get_CrossCovFact_IJ_at_t(const IDEstimator_t ID_I, const IDEstimator_t ID_J,
                                                    Timestamp const& t)
