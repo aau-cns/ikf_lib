@@ -53,7 +53,7 @@ public:
                                                    Timestamp const& t)
     = 0;
 
-  virtual void set_CrossCovFact_IJ_at_t(const IDEstimator_t ID_I, const IDEstimator_t ID_J,
+  virtual bool set_CrossCovFact_IJ_at_t(const IDEstimator_t ID_I, const IDEstimator_t ID_J,
                                         const Eigen::MatrixXd& FCC_IJ, const Timestamp& t)
     = 0;
 
