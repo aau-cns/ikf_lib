@@ -29,6 +29,15 @@ std::vector<IMultiAgentHandler::IDEstimator_t> IMultiAgentHandler::get_estimator
   return std::vector<IDEstimator_t>(IDs.begin(), IDs.end());
 }
 
+std::vector<IMultiAgentHandler::IDAgent_t> IMultiAgentHandler::get_agent_IDs() {
+  std::vector<IDAgent_t> IDs;
+  IDs.reserve(dict_agents_ids.size());
+  for (auto const& e : dict_agents_ids) {
+    IDs.push_back(e.first);
+  }
+  return IDs;
+}
+
 IMultiAgentHandler::IDAgent_t IMultiAgentHandler::estimatorID2agentID(const IDEstimator_t ID_est) {
   for (auto const& e : dict_agents_ids) {
     if (std::find(e.second.begin(), e.second.end(), ID_est) != e.second.end()) {

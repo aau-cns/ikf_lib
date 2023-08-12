@@ -31,6 +31,7 @@ public:
   IDAgent_t ID() const;
 
   virtual std::vector<IDEstimator_t> get_estimator_IDs();
+  virtual std::vector<IDAgent_t> get_agent_IDs();
 
   IDAgent_t estimatorID2agentID(IDEstimator_t const ID_est);
   bool exists(IDEstimator_t const ID_est);
