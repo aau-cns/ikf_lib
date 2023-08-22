@@ -198,6 +198,10 @@ void IDICOHandler::reset() {
   }
 }
 
+size_t IDICOHandler::get_propagation_sensor_ID(const size_t ID) { return m_PropSensor_ID; }
+
+void IDICOHandler::set_propagation_sensor_ID(const size_t ID) { m_PropSensor_ID = ID; }
+
 bool ikf::IDICOHandler::get_belief_at_t(const size_t ID, const Timestamp &t, pBelief_t &bel,
                                         const eGetBeliefStrategy type) {
   if (exists(ID)) {

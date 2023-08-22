@@ -162,8 +162,9 @@ bool IKalmanFilter::get_belief_at_t(const Timestamp &t, pBelief_t &bel, const ik
           // upper bound
           bel = stamped_bel_after.data;
           return true;
-        }
-        else {
+        } else {
+          Logger::ikf_logger()->error(
+            "IKalmanFilter::get_belief_at_t: NO BOUNDING measurements for CLOSEST found! at t=" + t.str());
           //  no bounds
           return false;
         }
@@ -198,9 +199,12 @@ bool IKalmanFilter::get_belief_at_t(const Timestamp &t, pBelief_t &bel, const ik
             // bounded between two measurements
 
             if (!HistBelief.exist_at_t(stamped_meas_prev.stamp)) {
-              Logger::ikf_logger()->error("IKalmanFilter::get_belief_at_t: No blief exist at t= " +
-                                          stamped_meas_prev.stamp.str() + " in LINEAR_INTERPOL_MEAS");
-              // no bounds
+              Logger::ikf_logger()->error("IKalmanFilter::get_belief_at_t: No blief exist at t= "
+                                          + stamped_meas_prev.stamp.str() + " in LINEAR_INTERPOL_MEAS");
+
+              Logger::ikf_logger()->error(
+                "IKalmanFilter::get_belief_at_t: NO BOUNDING measurements for LINEAR_INTERPOL_MEAS found! at t="
+                + t.str());
               return false;
             }
             MeasData pseudo_meas_b = MeasData::lin_interpolate(stamped_meas_prev.data, stamped_meas_after.data, t);
@@ -216,16 +220,25 @@ bool IKalmanFilter::get_belief_at_t(const Timestamp &t, pBelief_t &bel, const ik
               return false;
             }
 
+            if (res.rejected) {
+              Logger::ikf_logger()->error(
+                "IKalmanFilter::get_belief_at_t: pseudo measurement for LINEAR_INTERPOL_MEAS was REJECTED! at t="
+                + t.str());
+            }
+
             // if not rejected, it will insert a new element into HistBeliefs
             return !res.rejected && HistBelief.get_at_t(t, bel);
-          }
-          else {
-            //  no bounds
+          } else {
+            Logger::ikf_logger()->error(
+              "IKalmanFilter::get_belief_at_t: NO BOUNDING measurements for LINEAR_INTERPOL_MEAS found! at t="
+              + t.str());
             return false;
           }
         }
         else {
           // no proprioceptive measurements available!
+          Logger::ikf_logger()->error(
+            "IKalmanFilter::get_belief_at_t: NO MEASUREMENTS for LINEAR_INTERPOL_MEAS found! at t=" + t.str());
           return false;
         }
         break;

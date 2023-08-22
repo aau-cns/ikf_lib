@@ -36,7 +36,9 @@ public:
   IDAgent_t estimatorID2agentID(IDEstimator_t const ID_est);
   bool exists(IDEstimator_t const ID_est);
 
+  virtual void request_agent_IDs() = 0;
   virtual bool refresh_lookup_table() = 0;
+  virtual IDEstimator_t get_propagation_sensor_ID(IDEstimator_t const ID) = 0;
 
   virtual bool refresh_estimator_IDs(IDAgent_t const ID_agent) = 0;
 

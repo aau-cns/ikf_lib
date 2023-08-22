@@ -37,8 +37,12 @@ public:
   void set_horizon(double const t_hor);
   void reset();
 
-  bool get_belief_at_t(size_t const ID, Timestamp const& t, pBelief_t& bel,
-                       eGetBeliefStrategy const type = eGetBeliefStrategy::EXACT);
+  // TODO: hack needed for mmsf::SensorEstimatorHandler
+  virtual size_t get_propagation_sensor_ID(size_t const ID = 0);
+  void set_propagation_sensor_ID(size_t const ID);
+
+  virtual bool get_belief_at_t(size_t const ID, Timestamp const& t, pBelief_t& bel,
+                               eGetBeliefStrategy const type = eGetBeliefStrategy::EXACT);
 
   bool get_prop_meas_at_t(size_t const ID, Timestamp const& t, MeasData& m);
 
@@ -76,6 +80,8 @@ protected:
   bool m_handle_delayed_meas = true;
   TTimeHorizonBuffer<MeasData, TMultiHistoryBuffer<MeasData>> HistMeas;
   double m_horzion_sec;
+
+  size_t m_PropSensor_ID{0};
 };
 
 typedef std::shared_ptr<IDICOHandler> pDICOHandler_t;

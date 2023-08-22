@@ -29,6 +29,11 @@ public:
   CollaborativeIKFHandler(MultiAgentHdl_ptr pAgentHdler, double const horizon_sec = 1.0);
   ~CollaborativeIKFHandler() = default;
 
+  virtual size_t get_propagation_sensor_ID(size_t const ID = 0) override;
+
+  virtual bool get_belief_at_t(size_t const ID, Timestamp const& t, pBelief_t& bel,
+                               eGetBeliefStrategy const type = eGetBeliefStrategy::EXACT) override;
+
   virtual bool apply_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::MatrixXd& R,
                                  const Eigen::VectorXd& r, const Timestamp& t,
                                  const KalmanFilter::CorrectionCfg_t& cfg) override;

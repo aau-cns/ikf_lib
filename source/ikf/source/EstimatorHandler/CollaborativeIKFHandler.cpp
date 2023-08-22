@@ -27,6 +27,30 @@ CollaborativeIKFHandler::CollaborativeIKFHandler(MultiAgentHdl_ptr pAgentHdler, 
   Logger::ikf_logger()->info("CollaborativeIKFHandler will inter-agent updates through the agent handler!");
 }
 
+size_t ikf::CollaborativeIKFHandler::get_propagation_sensor_ID(const size_t ID) {
+  if (ID == 0 || exists(ID)) {
+    return m_PropSensor_ID;
+  } else {
+    return m_pAgentHandler->get_propagation_sensor_ID(ID);
+  }
+}
+
+bool CollaborativeIKFHandler::get_belief_at_t(const size_t ID, const Timestamp &t, pBelief_t &bel,
+                                              const eGetBeliefStrategy type) {
+  if (exists(ID)) {
+    return get(ID)->get_belief_at_t(t, bel, type);
+  } else {
+    ikf::Logger::ikf_logger()->warn("CollaborativeIKFHandler::get_belief_at_t() from non-local estimator ["
+                                    + std::to_string(ID) + "] using the agent handler");
+    bool res = m_pAgentHandler->get_belief_at_t(ID, t, bel, type);
+    if (!res) {
+      ikf::Logger::ikf_logger()->error("CollaborativeIKFHandler::get_belief_at_t() from non-local estimator ["
+                                       + std::to_string(ID) + "] failed");
+    }
+    return res;
+  }
+}
+
 std::map<size_t, pBelief_t> CollaborativeIKFHandler::get_dict_bel(const std::map<size_t, Eigen::MatrixXd> &dict_H,
                                                                   const Timestamp &t) {
   std::map<size_t, pBelief_t> dict_bel;
