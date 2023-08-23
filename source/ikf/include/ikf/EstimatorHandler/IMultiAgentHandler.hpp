@@ -46,8 +46,23 @@ public:
                                eGetBeliefStrategy const type = eGetBeliefStrategy::EXACT)
     = 0;
 
-  virtual bool get_others_belief_at_t(IDEstimator_t const ID_I, std::vector<IDEstimator_t> ID_Js, Timestamp const& t,
-                                      pBelief_t bel, std::map<IDEstimator_t, Eigen::MatrixXd>& FCC_IJs)
+  // accelerates fetching the linearization points of measurement jacobians.
+  virtual bool get_beliefs_at_t(std::vector<IDEstimator_t> const& IDs, std::vector<eGetBeliefStrategy> const& types,
+                                Timestamp const& t, std::map<IDEstimator_t, pBelief_t>& beliefs)
+    = 0;
+
+  // accelerates stacking a priori joint beliefs.
+  virtual bool get_beliefs_and_FCC_at_t(std::vector<IDEstimator_t> const& IDs,
+                                        std::vector<IDEstimator_t> const& ID_participants, Timestamp const& t,
+                                        std::map<IDEstimator_t, pBelief_t>& beliefs,
+                                        std::map<size_t, std::map<size_t, Eigen::MatrixXd>>& dict_FFC)
+    = 0;
+
+  // accelerates splitting a posteriori beliefs.
+  virtual bool set_beliefs_and_FCC_at_t(std::vector<IDEstimator_t> const& ID_participants, Timestamp const& t,
+                                        std::map<IDEstimator_t, pBelief_t> const& beliefs,
+                                        std::map<size_t, std::map<size_t, Eigen::MatrixXd>> const& dict_FFC,
+                                        bool const calc_correction = true, bool const redo_update = true)
     = 0;
 
   virtual bool set_belief_at_t(IDEstimator_t const ID_est, Timestamp const& t, pBelief_t bel) = 0;
