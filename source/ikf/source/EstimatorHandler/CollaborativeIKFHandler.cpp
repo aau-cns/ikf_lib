@@ -201,6 +201,14 @@ bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::Ma
     for (auto const &id : ID_remote_participants) {
       m_pAgentHandler->set_belief_at_t(id, t, dict_bel.at(id));
     }
+
+    // 5) redo updates after t
+    for (auto const &id : ID_agents) {
+      if (!m_pAgentHandler->redo_updates_after_t(id, t)) {
+        ikf::Logger::ikf_logger()->warn("CollaborativeIKFHandler::apply_observation(): redo_update(agent={:d}) failed",
+                                        id);
+      }
+    }
   }
   return !res.rejected;
 }
