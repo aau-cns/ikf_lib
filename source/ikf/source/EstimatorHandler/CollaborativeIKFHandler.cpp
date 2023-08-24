@@ -174,7 +174,8 @@ void CollaborativeIKFHandler::set_Sigma_IJ_at_t(const size_t ID_I, const size_t 
 }
 
 void CollaborativeIKFHandler::apply_corrections_at_t(Eigen::MatrixXd &Sigma_apos,
-                                                     const std::map<size_t, pBelief_t> &dict_bel, const Timestamp &t) {
+                                                     const std::map<size_t, pBelief_t> &dict_bel, const Timestamp &t,
+                                                     bool const only_local_beliefs) {
   size_t row_start = 0;
   for (auto const &e_i : dict_bel) {
     size_t dim_I = e_i.second->es_dim();
@@ -182,7 +183,7 @@ void CollaborativeIKFHandler::apply_corrections_at_t(Eigen::MatrixXd &Sigma_apos
     Eigen::MatrixXd Sigma_II_apos = Sigma_apos.block(row_start, row_start, dim_I, dim_I);
     if (exists(e_i.first)) {
       get(e_i.first)->apply_correction_at_t(t, e_i.second->Sigma(), Sigma_II_apos);
-    } else {
+    } else if (!only_local_beliefs) {
       m_pAgentHandler->apply_correction_at_t(e_i.first, t, e_i.second->Sigma(), Sigma_II_apos);
     }
     row_start += dim_I;
@@ -193,17 +194,26 @@ bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::Ma
                                                 const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t,
                                                 const KalmanFilter::CorrectionCfg_t &cfg) {
   std::set<IMultiAgentHandler::IDAgent_t> ID_agents;
-  std::vector<IMultiAgentHandler::IDEstimator_t> ID_remote_participants;
+  std::vector<IMultiAgentHandler::IDEstimator_t> remote_IDs;
+  std::vector<IMultiAgentHandler::IDEstimator_t> local_IDs;
+
   for (auto const &e : dict_H) {
     if (!exists(e.first)) {
       ID_agents.insert(m_pAgentHandler->estimatorID2agentID(e.first));
-      ID_remote_participants.push_back(e.first);
+      remote_IDs.push_back(e.first);
+    } else {
+      local_IDs.push_back(e.first);
     }
   }
 
   // only local instances involved... we are done here!
-  if (ID_remote_participants.size() == 0) {
+  if (remote_IDs.size() == 0) {
     return IsolatedKalmanFilterHandler::apply_observation(dict_H, R, r, t, cfg);
+  }
+
+  if (ID_agents.size() == 1) {
+    // we can perform an optimized update using jumbo messages!
+    return apply_inter_agent_observation(dict_H, R, r, t, cfg, remote_IDs, local_IDs);
   }
 
   Eigen::MatrixXd H = stack_H(dict_H);
@@ -224,7 +234,7 @@ bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::Ma
 
     // IMPORTANT: MAINTAIN ORDER STRICKTLY
     // 1) add correction terms on all a aprior factorized cross-covariances!
-    apply_corrections_at_t(res.Sigma_apos, dict_bel, t);
+    apply_corrections_at_t(res.Sigma_apos, dict_bel, t, false);
 
     // 2) afterwards, overwrite/set factorized a posterioiry cross-covariance (apply no corrections afterwards on them)
     split_right_upper_covariance(res.Sigma_apos, dict_bel, t);
@@ -233,7 +243,7 @@ bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::Ma
     correct_beliefs_implace(res.Sigma_apos, res.delta_mean, dict_bel);
 
     // 4) send corrected beliefs back
-    for (auto const &id : ID_remote_participants) {
+    for (auto const &id : remote_IDs) {
       m_pAgentHandler->set_belief_at_t(id, t, dict_bel.at(id));
     }
 
@@ -284,7 +294,7 @@ bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::Ma
 
     // IMPORTANT: MAINTAIN ORDER STRICKTLY
     // 1) add correction terms on all a aprior factorized cross-covariances!
-    apply_corrections_at_t(res.Sigma_apos, dict_bel, t);
+    apply_corrections_at_t(res.Sigma_apos, dict_bel, t, false);
 
     // 2) afterwards, overwrite/set factorized a posterioiry cross-covariance (apply no corrections afterwards on them)
     split_right_upper_covariance(res.Sigma_apos, dict_bel, t);
@@ -298,6 +308,212 @@ bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::Ma
     }
   }
   return !res.rejected;
+}
+
+bool CollaborativeIKFHandler::apply_inter_agent_observation(
+  const std::map<size_t, Eigen::MatrixXd> &dict_H, const Eigen::MatrixXd &R, const Eigen::VectorXd &r,
+  const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg,
+  const std::vector<IMultiAgentHandler::IDEstimator_t> &remote_IDs,
+  const std::vector<IMultiAgentHandler::IDEstimator_t> &local_IDs) {
+  std::vector<IMultiAgentHandler::IDEstimator_t> ID_participants = remote_IDs;
+  ID_participants.insert(ID_participants.end(), local_IDs.begin(), local_IDs.end());
+
+  Eigen::MatrixXd H = stack_H(dict_H);
+  std::map<IMultiAgentHandler::IDEstimator_t, pBelief_t> remote_beliefs, local_beliefs;
+  std::map<size_t, std::map<size_t, Eigen::MatrixXd>> remote_FFCs, local_FFCs;
+  if (!get_local_beliefs_and_FCC_at_t(local_IDs, ID_participants, t, local_beliefs, local_FFCs)) {
+    ikf::Logger::ikf_logger()->error(
+      "CollaborativeIKFHandler::apply_inter_agent_observation: failed to obtain local data...");
+    return false;
+  }
+  if (!m_pAgentHandler->get_beliefs_and_FCC_at_t(remote_IDs, ID_participants, t, remote_beliefs, remote_FFCs)) {
+    ikf::Logger::ikf_logger()->error(
+      "CollaborativeIKFHandler::apply_inter_agent_observation: failed to obtain remote data...");
+    return false;
+  }
+
+  // STACK BELIEFS AND Factorized-Cross-Covariances (FFCs)
+  std::map<IMultiAgentHandler::IDEstimator_t, pBelief_t> dict_bel;
+  dict_bel.insert(local_beliefs.begin(), local_beliefs.end());
+  dict_bel.insert(remote_beliefs.begin(), remote_beliefs.end());
+  std::map<size_t, std::map<size_t, Eigen::MatrixXd>> FCCs;
+  FCCs.insert(local_FFCs.begin(), local_FFCs.end());
+  FCCs.insert(remote_FFCs.begin(), remote_FFCs.end());
+
+  Eigen::MatrixXd Sigma_apri = stack_Sigma_locally(dict_bel, t, FCCs);
+
+  // stack individual's covariances:
+  Sigma_apri = utils::stabilize_covariance(Sigma_apri);
+  RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_apri), "Joint apri covariance is not PSD at t=" + t.str());
+
+  KalmanFilter::CorrectionResult_t res;
+  res = KalmanFilter::correction_step(H, R, r, Sigma_apri, cfg);
+  if (!res.rejected) {
+    RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(res.Sigma_apos),
+                        "Joint apos covariance is not PSD at t=" + t.str());
+
+    // IMPORTANT: MAINTAIN ORDER STRICKTLY
+    // 1) LOCAL: add correction terms on all a aprior factorized cross-covariances!
+    apply_corrections_at_t(res.Sigma_apos, dict_bel, t, true);
+
+    // 2) LOCAL: afterwards, overwrite/set factorized a posterioiry cross-covariance (apply no corrections afterwards on
+    // them)
+    split_Sigma_locally(res.Sigma_apos, dict_bel, FCCs);
+
+    for (auto const &ID_I : local_IDs) {
+      for (auto const &e : FCCs.at(ID_I)) {
+        size_t const ID_J = e.first;
+        get(ID_I)->set_CrossCovFact_at_t(t, ID_J, e.second);
+      }
+    }
+
+    // 3) correct beliefs implace! will change local_beliefs and remote_beliefs as well!
+    correct_beliefs_implace(res.Sigma_apos, res.delta_mean, dict_bel);
+
+    // 4) send info to other agent:
+    remote_FFCs.clear();
+    for (auto const &ID_I : remote_IDs) {
+      remote_FFCs[ID_I] = FCCs[ID_I];
+    }
+    if (!m_pAgentHandler->set_beliefs_and_FCC_at_t(t, remote_beliefs, remote_FFCs, true, true)) {
+      ikf::Logger::ikf_logger()->error(
+        "CollaborativeIKFHandler::apply_inter_agent_observation: failed set belief on remote agent...");
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool CollaborativeIKFHandler::get_local_beliefs_and_FCC_at_t(
+  const std::vector<IMultiAgentHandler::IDEstimator_t> &IDs,
+  const std::vector<IMultiAgentHandler::IDEstimator_t> &ID_participants, const Timestamp &t,
+  std::map<IMultiAgentHandler::IDEstimator_t, pBelief_t> &beliefs,
+  std::map<size_t, std::map<size_t, Eigen::MatrixXd>> &dict_FFC) {
+  beliefs.clear();
+  dict_FFC.clear();
+  for (size_t idx = 0; idx < IDs.size(); idx++) {
+    auto ID_I = IDs.at(idx);
+    if (exists(ID_I)) {
+      ikf::pBelief_t pBel;
+      ikf::eGetBeliefStrategy type = ikf::eGetBeliefStrategy::EXACT;
+      if (get(ID_I)->get_belief_at_t(t, pBel, type)) {
+        beliefs.insert({ID_I, pBel});
+      }
+    } else {
+      ikf::Logger::ikf_logger()->error(
+        "CollaborativeIKFHandler::get_local_beliefs_and_FCC_at_t: unknown local ID=[{:}]", ID_I);
+      return false;
+    }
+  }  // for-loop local ids:
+  for (size_t const &ID_I : IDs) {
+    for (size_t const &ID_P : ID_participants) {
+      if (ID_I != ID_P) {
+        if (exists(ID_I)) {
+          Eigen::MatrixXd FFC_IJ = get(ID_I)->get_CrossCovFact_at_t(t, ID_P);
+
+          if (dict_FFC.find(ID_I) != dict_FFC.end()) {
+            dict_FFC[ID_I] = std::map<size_t, Eigen::MatrixXd>();
+          }
+          dict_FFC[ID_I].insert({ID_P, FFC_IJ});
+        } else {
+          ikf::Logger::ikf_logger()->error(
+            "CollaborativeIKFHandler::get_local_beliefs_and_FCC_at_t: unknown local ID=[{:}]", ID_I);
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+Eigen::MatrixXd CollaborativeIKFHandler::stack_Sigma_locally(
+  const std::map<size_t, pBelief_t> &dict_bel, const Timestamp &t,
+  std::map<size_t, std::map<size_t, Eigen::MatrixXd>> &dict_FFC) {
+  size_t state_dim = 0;
+  for (auto const &e : dict_bel) {
+    state_dim += e.second->es_dim();
+  }
+  Eigen::MatrixXd Sigma = Eigen::MatrixXd::Zero(state_dim, state_dim);
+
+  size_t row_start = 0;
+  for (auto const &e_i : dict_bel) {
+    size_t id_row = e_i.first;
+    size_t state_dim_row = e_i.second->es_dim();
+    size_t col_start = 0;
+    for (auto const &e_j : dict_bel) {
+      size_t id_col = e_j.first;
+      size_t state_dim_col = e_j.second->es_dim();
+      if (id_row == id_col) {
+        Sigma.block(row_start, col_start, state_dim_row, state_dim_col) = e_i.second->Sigma();
+      } else {
+        // obtain only the upper triangular part (if dict_bel was sorted ascending)
+        if (id_row < id_col) {
+          Eigen::MatrixXd SigmaFact_IJ = dict_FFC.at(id_row).at(id_col);
+          Eigen::MatrixXd SigmaFact_JI = dict_FFC.at(id_row).at(id_col);
+          Eigen::MatrixXd Sigma_IJ;
+          if (SigmaFact_IJ.size() && SigmaFact_JI.size()) {
+            RTV_EXPECT_TRUE_MSG(SigmaFact_IJ.cols() == SigmaFact_JI.cols(), "get_crosscov wrong dims @t=" + t.str());
+            Sigma_IJ = SigmaFact_IJ * SigmaFact_JI.transpose();
+          }
+          if (Sigma_IJ.size()) {
+            Sigma.block(row_start, col_start, state_dim_row, state_dim_col) = Sigma_IJ;
+            Sigma.block(col_start, row_start, state_dim_col, state_dim_row) = Sigma_IJ.transpose();
+          }
+        }
+      }
+      col_start += state_dim_col;
+    }
+    row_start += state_dim_row;
+  }
+
+  return Sigma;
+}
+
+void CollaborativeIKFHandler::split_Sigma_locally(Eigen::MatrixXd &Sigma, const std::map<size_t, pBelief_t> &dict_bel,
+                                                  std::map<size_t, std::map<size_t, Eigen::MatrixXd>> &dict_FCC) {
+  std::vector<size_t> IDs;
+  for (auto const &e : dict_bel) {
+    IDs.push_back(e.first);
+  }
+
+  dict_FCC.clear();
+
+  size_t row_start = 0, col_start_offset = 0;
+  for (size_t i = 0; i < IDs.size() - 1; i++) {
+    size_t dim_i = dict_bel.at(IDs.at(i))->es_dim();
+    col_start_offset += dim_i;
+    size_t ID_I = IDs.at(i);
+    size_t col_start = col_start_offset;
+    for (size_t j = i + 1; j < IDs.size(); j++) {
+      size_t dim_j = dict_bel.at(IDs.at(j))->es_dim();
+      size_t ID_J = IDs.at(j);
+      Eigen::MatrixXd Sigma_IJ = Sigma.block(row_start, col_start, dim_i, dim_j);
+      // set_Sigma_IJ_at_t(ID_I, ID_J, Sigma_IJ_apos, t);
+      Eigen::MatrixXd FCC_JI, FCC_IJ;
+      if (ID_I < ID_J) {
+        FCC_IJ = Sigma_IJ;
+        FCC_JI = Eigen::MatrixXd::Identity(FCC_IJ.cols(), FCC_IJ.cols());
+      } else {
+        FCC_JI = Sigma_IJ.transpose();
+        FCC_IJ = Eigen::MatrixXd::Identity(FCC_JI.cols(), FCC_JI.cols());
+      }
+
+      // insert FCCs in dictionary
+      if (dict_FCC.find(ID_I) != dict_FCC.end()) {
+        dict_FCC[ID_I] = std::map<size_t, Eigen::MatrixXd>();
+      }
+      dict_FCC[ID_I].insert({ID_J, FCC_IJ});
+
+      if (dict_FCC.find(ID_J) != dict_FCC.end()) {
+        dict_FCC[ID_J] = std::map<size_t, Eigen::MatrixXd>();
+      }
+      dict_FCC[ID_J].insert({ID_I, FCC_JI});
+
+      col_start += dim_j;
+    }
+    row_start += dim_i;
+  }
 }
 
 }  // namespace ikf

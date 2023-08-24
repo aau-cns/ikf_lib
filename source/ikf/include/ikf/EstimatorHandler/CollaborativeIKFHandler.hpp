@@ -45,6 +45,24 @@ public:
                                  const KalmanFilter::CorrectionCfg_t& cfg) override;
 
 protected:
+  bool apply_inter_agent_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::MatrixXd& R,
+                                     const Eigen::VectorXd& r, const Timestamp& t,
+                                     const KalmanFilter::CorrectionCfg_t& cfg,
+                                     std::vector<IMultiAgentHandler::IDEstimator_t> const& remote_IDs,
+                                     std::vector<IMultiAgentHandler::IDEstimator_t> const& local_IDs);
+
+  bool get_local_beliefs_and_FCC_at_t(std::vector<IMultiAgentHandler::IDEstimator_t> const& IDs,
+                                      std::vector<IMultiAgentHandler::IDEstimator_t> const& ID_participants,
+                                      Timestamp const& t,
+                                      std::map<IMultiAgentHandler::IDEstimator_t, pBelief_t>& beliefs,
+                                      std::map<size_t, std::map<size_t, Eigen::MatrixXd>>& dict_FFC);
+
+  Eigen::MatrixXd stack_Sigma_locally(const std::map<size_t, pBelief_t>& dict_bel, const Timestamp& t,
+                                      std::map<size_t, std::map<size_t, Eigen::MatrixXd>>& dict_FFC);
+
+  void split_Sigma_locally(Eigen::MatrixXd& Sigma, const std::map<size_t, pBelief_t>& dict_bel,
+                           std::map<size_t, std::map<size_t, Eigen::MatrixXd>>& dict_FCC);
+
   virtual std::map<size_t, pBelief_t> get_dict_bel(const std::map<size_t, Eigen::MatrixXd>& dict_H,
                                                    Timestamp const& t) override;
 
@@ -52,8 +70,8 @@ protected:
   virtual void set_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd& Sigma_IJ,
                                  const Timestamp& t) override;
 
-  virtual void apply_corrections_at_t(Eigen::MatrixXd& Sigma_apos, const std::map<size_t, pBelief_t>& dict_bel,
-                                      Timestamp const& t) override;
+  void apply_corrections_at_t(Eigen::MatrixXd& Sigma_apos, const std::map<size_t, pBelief_t>& dict_bel,
+                              Timestamp const& t, const bool only_local_beliefs);
 
   MultiAgentHdl_ptr m_pAgentHandler;
 };  // class CollaborativeIKFHandler
