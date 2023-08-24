@@ -412,7 +412,7 @@ bool CollaborativeIKFHandler::get_local_beliefs_and_FCC_at_t(
         if (exists(ID_I)) {
           Eigen::MatrixXd FFC_IJ = get(ID_I)->get_CrossCovFact_at_t(t, ID_P);
 
-          if (dict_FFC.find(ID_I) != dict_FFC.end()) {
+          if (dict_FFC.find(ID_I) == dict_FFC.end()) {
             dict_FFC[ID_I] = std::map<size_t, Eigen::MatrixXd>();
           }
           dict_FFC[ID_I].insert({ID_P, FFC_IJ});
@@ -436,11 +436,16 @@ Eigen::MatrixXd CollaborativeIKFHandler::stack_Sigma_locally(
   }
   Eigen::MatrixXd Sigma = Eigen::MatrixXd::Zero(state_dim, state_dim);
 
+  RTV_EXPECT_TRUE_THROW(dict_FFC.size() == dict_bel.size(),
+                        "CollaborativeIKFHandler::stack_Sigma_locally: not enough rows in FFCs");
+
   size_t row_start = 0;
   for (auto const &e_i : dict_bel) {
     size_t id_row = e_i.first;
     size_t state_dim_row = e_i.second->es_dim();
     size_t col_start = 0;
+    RTV_EXPECT_TRUE_THROW(dict_FFC[id_row].size() == dict_bel.size() - 1,
+                          "CollaborativeIKFHandler::stack_Sigma_locally: not enough cols in FFCs");
     for (auto const &e_j : dict_bel) {
       size_t id_col = e_j.first;
       size_t state_dim_col = e_j.second->es_dim();
@@ -450,7 +455,7 @@ Eigen::MatrixXd CollaborativeIKFHandler::stack_Sigma_locally(
         // obtain only the upper triangular part (if dict_bel was sorted ascending)
         if (id_row < id_col) {
           Eigen::MatrixXd SigmaFact_IJ = dict_FFC.at(id_row).at(id_col);
-          Eigen::MatrixXd SigmaFact_JI = dict_FFC.at(id_row).at(id_col);
+          Eigen::MatrixXd SigmaFact_JI = dict_FFC.at(id_col).at(id_row);
           Eigen::MatrixXd Sigma_IJ;
           if (SigmaFact_IJ.size() && SigmaFact_JI.size()) {
             RTV_EXPECT_TRUE_MSG(SigmaFact_IJ.cols() == SigmaFact_JI.cols(), "get_crosscov wrong dims @t=" + t.str());
