@@ -59,8 +59,7 @@ public:
     = 0;
 
   // accelerates splitting a posteriori beliefs.
-  virtual bool set_beliefs_and_FCC_at_t(std::vector<IDEstimator_t> const& ID_participants, Timestamp const& t,
-                                        std::map<IDEstimator_t, pBelief_t> const& beliefs,
+  virtual bool set_beliefs_and_FCC_at_t(Timestamp const& t, std::map<IDEstimator_t, pBelief_t> const& beliefs,
                                         std::map<size_t, std::map<size_t, Eigen::MatrixXd>> const& dict_FFC,
                                         bool const calc_correction = true, bool const redo_update = true)
     = 0;
