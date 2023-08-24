@@ -34,6 +34,9 @@ public:
   virtual bool get_belief_at_t(size_t const ID, Timestamp const& t, pBelief_t& bel,
                                eGetBeliefStrategy const type = eGetBeliefStrategy::EXACT) override;
 
+  virtual bool get_beliefs_at_t(std::vector<size_t> const& IDs, std::vector<eGetBeliefStrategy> const& types,
+                                Timestamp const& t, std::map<size_t, pBelief_t>& beliefs) override;
+
   virtual bool apply_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::MatrixXd& R,
                                  const Eigen::VectorXd& r, const Timestamp& t,
                                  const KalmanFilter::CorrectionCfg_t& cfg) override;

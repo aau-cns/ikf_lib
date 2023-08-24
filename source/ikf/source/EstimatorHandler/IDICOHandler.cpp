@@ -110,6 +110,16 @@ void IDICOHandler::sort_measurements_from_t(const Timestamp &t) {
 }
 
 ProcessMeasResult_t IDICOHandler::process_measurement(const MeasData &m) {
+  // if there are open request, use the oldest one, before processing the new measurmeent
+  if (HistRedoUpdateRequest.size()) {
+    Timestamp t_oldest;
+    HistRedoUpdateRequest.get_oldest_t(t_oldest);
+    HistRedoUpdateRequest.clear();
+    redo_updates_after_t(t_oldest);
+    ikf::Logger::ikf_logger()->info(
+      "IDICOHandler::process_measurement(): requested redo update after t=" + t_oldest.str() + " processed!");
+  }
+
   ProcessMeasResult_t res = delegate_measurement(m);
   bool order_violated = is_order_violated(m);
   if (order_violated) {
@@ -210,6 +220,23 @@ bool ikf::IDICOHandler::get_belief_at_t(const size_t ID, const Timestamp &t, pBe
   return false;
 }
 
+bool ikf::IDICOHandler::get_beliefs_at_t(const std::vector<size_t> &IDs, const std::vector<eGetBeliefStrategy> &types,
+                                         const Timestamp &t, std::map<size_t, pBelief_t> &beliefs) {
+  bool res = true;
+  beliefs.clear();
+  for (size_t idx = 0; idx < IDs.size(); idx++) {
+    size_t ID = IDs.at(idx);
+    auto type = types.at(idx);
+    pBelief_t bel;
+    bool success = get_belief_at_t(ID, t, bel, type);
+    if (success) {
+      beliefs.insert({ID, bel});
+    }
+    res &= success;
+  }  // for-loop
+  return res;
+}
+
 bool ikf::IDICOHandler::get_prop_meas_at_t(const size_t ID, const Timestamp &t, MeasData &m) {
   if (exists(ID)) {
     return get(ID)->get_prop_meas_at_t(t, m);
@@ -237,6 +264,11 @@ bool IDICOHandler::is_order_violated(const MeasData &m) {
     }
   }
   return false;
+}
+
+bool ikf::IDICOHandler::schedule_redo_updates_after_t(const Timestamp &t) {
+  HistRedoUpdateRequest.insert(true, t);
+  return true;
 }
 
 }  // namespace ikf

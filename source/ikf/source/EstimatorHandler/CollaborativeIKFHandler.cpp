@@ -51,6 +51,41 @@ bool CollaborativeIKFHandler::get_belief_at_t(const size_t ID, const Timestamp &
   }
 }
 
+bool CollaborativeIKFHandler::get_beliefs_at_t(const std::vector<size_t> &IDs,
+                                               const std::vector<eGetBeliefStrategy> &types, const Timestamp &t,
+                                               std::map<size_t, pBelief_t> &beliefs) {
+  std::vector<size_t> local_IDs, remote_IDs;
+  std::vector<eGetBeliefStrategy> local_types, remote_types;
+  std::map<size_t, pBelief_t> local_beliefs, remote_beliefs;
+
+  for (size_t idx = 0; idx < IDs.size(); idx++) {
+    if (exists(IDs.at(idx))) {
+      local_IDs.push_back(IDs.at(idx));
+      local_types.push_back(types.at(idx));
+    } else {
+      remote_IDs.push_back(IDs.at(idx));
+      remote_types.push_back(types.at(idx));
+    }
+  }
+
+  bool res = true;
+  if (local_IDs.size()) {
+    res &= IDICOHandler::get_beliefs_at_t(local_IDs, local_types, t, local_beliefs);
+  }
+  if (remote_IDs.size()) {
+    if (!m_pAgentHandler->get_beliefs_at_t(remote_IDs, remote_types, t, remote_beliefs)) {
+      res = false;
+      ikf::Logger::ikf_logger()->error("CollaborativeIKFHandler::get_beliefs_at_t() from non-local estimators failed");
+    }
+  }
+
+  beliefs.clear();
+  beliefs.insert(local_beliefs.begin(), local_beliefs.end());
+  beliefs.insert(remote_beliefs.begin(), remote_beliefs.end());
+
+  return res;
+}
+
 std::map<size_t, pBelief_t> CollaborativeIKFHandler::get_dict_bel(const std::map<size_t, Eigen::MatrixXd> &dict_H,
                                                                   const Timestamp &t) {
   std::map<size_t, pBelief_t> dict_bel;

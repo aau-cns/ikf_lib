@@ -44,6 +44,9 @@ public:
   virtual bool get_belief_at_t(size_t const ID, Timestamp const& t, pBelief_t& bel,
                                eGetBeliefStrategy const type = eGetBeliefStrategy::EXACT);
 
+  virtual bool get_beliefs_at_t(std::vector<size_t> const& IDs, std::vector<eGetBeliefStrategy> const& types,
+                                Timestamp const& t, std::map<size_t, pBelief_t>& beliefs);
+
   bool get_prop_meas_at_t(size_t const ID, Timestamp const& t, MeasData& m);
 
   virtual ProcessMeasResult_t process_measurement(MeasData const& m);
@@ -63,6 +66,7 @@ public:
   void print_HistMeas(std::ostream& out, size_t max);
 
   virtual bool redo_updates_after_t(const Timestamp& t);
+  virtual bool schedule_redo_updates_after_t(const Timestamp& t);
 
 protected:
   void sort_measurements_from_t(Timestamp const& t);
@@ -82,6 +86,7 @@ protected:
   double m_horzion_sec;
 
   size_t m_PropSensor_ID{0};
+  THistoryBuffer<bool> HistRedoUpdateRequest;
 };
 
 typedef std::shared_ptr<IDICOHandler> pDICOHandler_t;
