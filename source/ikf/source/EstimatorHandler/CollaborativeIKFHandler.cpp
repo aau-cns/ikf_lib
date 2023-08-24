@@ -500,12 +500,12 @@ void CollaborativeIKFHandler::split_Sigma_locally(Eigen::MatrixXd &Sigma, const 
       }
 
       // insert FCCs in dictionary
-      if (dict_FCC.find(ID_I) != dict_FCC.end()) {
+      if (dict_FCC.find(ID_I) == dict_FCC.end()) {
         dict_FCC[ID_I] = std::map<size_t, Eigen::MatrixXd>();
       }
       dict_FCC[ID_I].insert({ID_J, FCC_IJ});
 
-      if (dict_FCC.find(ID_J) != dict_FCC.end()) {
+      if (dict_FCC.find(ID_J) == dict_FCC.end()) {
         dict_FCC[ID_J] = std::map<size_t, Eigen::MatrixXd>();
       }
       dict_FCC[ID_J].insert({ID_I, FCC_JI});
