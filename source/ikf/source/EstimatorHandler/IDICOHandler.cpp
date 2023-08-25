@@ -19,6 +19,7 @@ IDICOHandler::IDICOHandler(const double horizon_sec) : HistMeas(horizon_sec), m_
 }
 
 bool IDICOHandler::add(pIKF_t p_IKF) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
   if (!exists(p_IKF->ID())) {
     // either one is handling delayed measurements!
     p_IKF->handle_delayed_meas(false);
@@ -30,6 +31,8 @@ bool IDICOHandler::add(pIKF_t p_IKF) {
 }
 
 bool IDICOHandler::remove(const size_t ID) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+
   auto elem = get(ID);
   if (elem) {
     id_dict.erase(elem->ID());
@@ -38,9 +41,14 @@ bool IDICOHandler::remove(const size_t ID) {
   return false;
 }
 
-bool IDICOHandler::exists(const size_t ID) { return (id_dict.find(ID) != id_dict.end()); }
+bool IDICOHandler::exists(const size_t ID) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+  return (id_dict.find(ID) != id_dict.end());
+}
 
 std::vector<size_t> IDICOHandler::get_instance_ids() {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+
   std::vector<size_t> IDs;
   IDs.reserve(id_dict.size());
   for (auto const &elem : id_dict) {
@@ -52,6 +60,8 @@ std::vector<size_t> IDICOHandler::get_instance_ids() {
 double ikf::IDICOHandler::horizon_sec() const { return m_horzion_sec; }
 
 void IDICOHandler::set_horizon(const double t_hor) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+
   m_horzion_sec = t_hor;
   for (auto const &elem : id_dict) {
     elem.second->set_horizon(m_horzion_sec);
@@ -60,11 +70,15 @@ void IDICOHandler::set_horizon(const double t_hor) {
 }
 
 bool ikf::IDICOHandler::insert_measurement(const MeasData &m, const Timestamp &t) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+
   HistMeas.insert(m, t);
   return true;
 }
 
 void IDICOHandler::print_HistMeas(std::ostream &out, size_t max) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+
   size_t cnt = 0;
   out << "|\t t_p \t |\t t_m \t |\t ID \t |\t type \t|" << std::endl;
   HistMeas.foreach ([&cnt, max, &out](ikf::MeasData const &i) {
@@ -77,6 +91,8 @@ void IDICOHandler::print_HistMeas(std::ostream &out, size_t max) {
 }
 
 void IDICOHandler::sort_measurements_from_t(const Timestamp &t) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+
   Timestamp t_latest;
   if (HistMeas.get_latest_t(t_latest)) {
     TMultiHistoryBuffer<MeasData> meas = HistMeas.get_between_t1_t2(t, t_latest);
@@ -110,11 +126,16 @@ void IDICOHandler::sort_measurements_from_t(const Timestamp &t) {
 }
 
 ProcessMeasResult_t IDICOHandler::process_measurement(const MeasData &m) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+
   // if there are open request, use the oldest one, before processing the new measurmeent
   if (HistRedoUpdateRequest.size()) {
     Timestamp t_oldest;
-    HistRedoUpdateRequest.get_oldest_t(t_oldest);
-    HistRedoUpdateRequest.clear();
+    {
+      std::scoped_lock lk(m_mtx_histRUR);
+      HistRedoUpdateRequest.get_oldest_t(t_oldest);
+      HistRedoUpdateRequest.clear();
+    }
     redo_updates_after_t(t_oldest);
     ikf::Logger::ikf_logger()->info(
       "IDICOHandler::process_measurement(): requested redo update after t=" + t_oldest.str() + " processed!");
@@ -195,6 +216,8 @@ void IDICOHandler::remove_beliefs_from_t(const Timestamp &t) {
 }
 
 std::shared_ptr<IIsolatedKalmanFilter> IDICOHandler::get(const size_t ID) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+
   auto it = id_dict.find(ID);
   if (it != id_dict.end()) {
     return it->second;
@@ -203,6 +226,8 @@ std::shared_ptr<IIsolatedKalmanFilter> IDICOHandler::get(const size_t ID) {
 }
 
 void IDICOHandler::reset() {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+
   for (auto &elem : id_dict) {
     elem.second->reset();
   }
@@ -214,6 +239,8 @@ void IDICOHandler::set_propagation_sensor_ID(const size_t ID) { m_PropSensor_ID 
 
 bool ikf::IDICOHandler::get_belief_at_t(const size_t ID, const Timestamp &t, pBelief_t &bel,
                                         const eGetBeliefStrategy type) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+
   if (exists(ID)) {
     return get(ID)->get_belief_at_t(t, bel, type);
   }
@@ -222,6 +249,8 @@ bool ikf::IDICOHandler::get_belief_at_t(const size_t ID, const Timestamp &t, pBe
 
 bool ikf::IDICOHandler::get_beliefs_at_t(const std::vector<size_t> &IDs, const std::vector<eGetBeliefStrategy> &types,
                                          const Timestamp &t, std::map<size_t, pBelief_t> &beliefs) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+
   bool res = true;
   beliefs.clear();
   for (size_t idx = 0; idx < IDs.size(); idx++) {
@@ -238,6 +267,8 @@ bool ikf::IDICOHandler::get_beliefs_at_t(const std::vector<size_t> &IDs, const s
 }
 
 bool ikf::IDICOHandler::get_prop_meas_at_t(const size_t ID, const Timestamp &t, MeasData &m) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+
   if (exists(ID)) {
     return get(ID)->get_prop_meas_at_t(t, m);
   }
@@ -267,6 +298,7 @@ bool IDICOHandler::is_order_violated(const MeasData &m) {
 }
 
 bool ikf::IDICOHandler::schedule_redo_updates_after_t(const Timestamp &t) {
+  std::scoped_lock lk(m_mtx_histRUR);
   HistRedoUpdateRequest.insert(true, t);
   return true;
 }

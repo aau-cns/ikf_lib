@@ -14,6 +14,7 @@
 #include <ikf/Estimator/IIsolatedKalmanFilter.hpp>
 #include <ikf/ikf_api.h>
 #include <memory>
+#include <mutex>
 
 namespace ikf {
 
@@ -87,6 +88,8 @@ protected:
 
   size_t m_PropSensor_ID{0};
   THistoryBuffer<bool> HistRedoUpdateRequest;
+  std::recursive_mutex m_mtx;
+  std::mutex m_mtx_histRUR;
 };
 
 typedef std::shared_ptr<IDICOHandler> pDICOHandler_t;
