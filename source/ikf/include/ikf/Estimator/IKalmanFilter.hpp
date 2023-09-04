@@ -57,6 +57,8 @@ public:
 
   bool handle_delayed_meas() const;
   void handle_delayed_meas(bool const val);
+  bool enabled() const;
+  void enabled(bool const val);
   virtual void initialize(pBelief_t bel_init);
   virtual void initialize(pBelief_t bel_init, Timestamp const &t);
   virtual void set_horizon(double const t_hor);
@@ -121,6 +123,7 @@ protected:
   TTimeHorizonBuffer<MeasData> HistMeasPropagation;
   double max_time_horizon_sec;
   bool m_handle_delayed_meas = true;  // specifies, if the instance maintains a history of past measurements or not
+  bool m_enabled = true;              // specifies, if the instance processed measurements or not
   KalmanFilter::CorrectionCfg_t m_CorrCfg; // specifies the default correction config.
 
 

@@ -41,6 +41,10 @@ void IKalmanFilter::handle_delayed_meas(const bool val) {
   }
 }
 
+bool IKalmanFilter::enabled() const { return m_enabled; }
+
+void IKalmanFilter::enabled(const bool val) { m_enabled = val; }
+
 void IKalmanFilter::initialize(pBelief_t bel_init) {
   initialize(bel_init, bel_init->timestamp());
 }

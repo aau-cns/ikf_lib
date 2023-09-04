@@ -160,7 +160,9 @@ ProcessMeasResult_t IDICOHandler::process_measurement(const MeasData &m) {
 ProcessMeasResult_t IDICOHandler::delegate_measurement(const MeasData &m) {
   ProcessMeasResult_t res;
   if (exists(m.id_sensor)) {
-    res = id_dict[m.id_sensor]->delegate_measurement(m);
+    if (id_dict[m.id_sensor]->enabled()) {
+      res = id_dict[m.id_sensor]->delegate_measurement(m);
+    }
   }
   return res;
 }
