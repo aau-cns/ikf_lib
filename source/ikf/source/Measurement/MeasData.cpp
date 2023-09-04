@@ -31,7 +31,10 @@ std::string to_string(const eObservationType ot) {
 }
 
 bool MeasData::has_meas_noise() const {
-  return R.size();
+  if (R.size() && R.norm() > 0.01) {
+      return true;
+  }
+  return false;
 }
 
 Eigen::MatrixXd MeasData::get_R() const {
