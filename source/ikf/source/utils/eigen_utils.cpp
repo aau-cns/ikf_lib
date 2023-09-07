@@ -39,6 +39,13 @@ bool utils::is_positive_semidefinite(const Eigen::MatrixXd &A) {
 }
 
 Eigen::MatrixXd utils::horcat(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ) {
+  if (!H_II.size()) {
+    return H_JJ;
+  }
+  if (!H_JJ.size()) {
+    return H_II;
+  }
+
   RTV_EXPECT_TRUE_THROW(H_II.rows() == H_JJ.rows(), "dimension missmatch!");
 
   Eigen::MatrixXd C(H_II.rows(), H_II.cols()+H_JJ.cols());
@@ -71,6 +78,13 @@ Eigen::MatrixXd ikf::utils::horcat(const Eigen::MatrixXd &H_II, const Eigen::Mat
 
 
 Eigen::MatrixXd utils::vertcat(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &H_JJ) {
+  if (!H_II.size()) {
+    return H_JJ;
+  }
+  if (!H_JJ.size()) {
+    return H_II;
+  }
+
   RTV_EXPECT_TRUE_THROW(H_II.cols() == H_JJ.cols(), "dimension missmatch!");
 
   Eigen::MatrixXd C(H_II.rows()+H_JJ.rows(), H_JJ.cols());
@@ -102,6 +116,13 @@ Eigen::MatrixXd ikf::utils::vertcat(const Eigen::MatrixXd &H_II, const Eigen::Ma
 
 
 Eigen::VectorXd utils::vertcat_vec(const Eigen::VectorXd &v_II, const Eigen::VectorXd &v_JJ) {
+  if (!v_II.size()) {
+    return v_JJ;
+  }
+  if (!v_JJ.size()) {
+    return v_II;
+  }
+
   RTV_EXPECT_TRUE_THROW(v_II.cols() == v_JJ.cols(), "dimension missmatch!");
 
   Eigen::VectorXd C(v_II.rows()+v_JJ.rows(), v_JJ.cols());
@@ -119,6 +140,13 @@ Eigen::VectorXd utils::vertcat_vec(const Eigen::VectorXd &v_II, const Eigen::Vec
 
 }
 Eigen::VectorXd utils::horcat_vec(const Eigen::VectorXd &v_II, const Eigen::VectorXd &v_JJ) {
+  if (!v_II.size()) {
+    return v_JJ;
+  }
+  if (!v_JJ.size()) {
+    return v_II;
+  }
+
   RTV_EXPECT_TRUE_THROW(v_II.rows() == v_JJ.rows(), "dimension missmatch!");
 
   Eigen::VectorXd C(v_II.rows(), v_II.cols()+v_JJ.cols());
