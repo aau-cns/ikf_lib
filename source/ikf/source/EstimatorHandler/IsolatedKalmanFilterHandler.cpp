@@ -209,8 +209,11 @@ bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen
   KalmanFilter::CorrectionResult_t res;
   res = KalmanFilter::correction_step(H, R, r, Sigma_apri, cfg);
   if (!res.rejected) {
-    RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(res.Sigma_apos),
-                        "Joint apos covariance is not PSD at t=" + t.str());
+    bool is_psd = utils::is_positive_semidefinite(res.Sigma_apos);
+    RTV_EXPECT_TRUE_MSG(is_psd, "Joint apos covariance is not PSD at t=" + t.str());
+    if (!is_psd) {
+      res.Sigma_apos = utils::stabilize_covariance(res.Sigma_apos, 1e-6);
+    }
 
     // IMPORTANT: MAINTAIN ORDER STRICKTLY
     // 1) add correction terms on all a aprior factorized cross-covariances!
@@ -237,15 +240,18 @@ bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen
 
   Eigen::VectorXd r = z - H * mean_apri;
 
-  // stack individual's covariances:
+  // stack individual's covariances:<
   Sigma_apri = utils::stabilize_covariance(Sigma_apri);
   RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_apri), "Joint apri covariance is not PSD at t=" + t.str());
 
   KalmanFilter::CorrectionResult_t res;
   res = KalmanFilter::correction_step(H, R, r, Sigma_apri, cfg);
   if (!res.rejected) {
-    RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(res.Sigma_apos),
-                        "Joint apos covariance is not PSD at t=" + t.str());
+    bool is_psd = utils::is_positive_semidefinite(res.Sigma_apos);
+    RTV_EXPECT_TRUE_MSG(is_psd, "Joint apos covariance is not PSD at t=" + t.str());
+    if (!is_psd) {
+      res.Sigma_apos = utils::stabilize_covariance(res.Sigma_apos, 1e-6);
+    }
 
     // IMPORTANT: MAINTAIN ORDER STRICKTLY
     // 1) add correction terms in the appropriate correction buffers!

@@ -85,8 +85,11 @@ bool DecoupledPropagationHandler::apply_observation(const std::map<size_t, Eigen
   KalmanFilter::CorrectionResult_t res;
   res = KalmanFilter::correction_step(H, R, r, Sigma_apri, cfg);
   if (!res.rejected) {
-    RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(res.Sigma_apos),
-                        "Joint apos covariance is not PSD at t=" + t.str());
+    bool is_psd = utils::is_positive_semidefinite(res.Sigma_apos);
+    RTV_EXPECT_TRUE_MSG(is_psd, "Joint apos covariance is not PSD at t=" + t.str());
+    if (!is_psd) {
+      res.Sigma_apos = utils::stabilize_covariance(res.Sigma_apos, 1e-6);
+    }
 
     // 2) set a corrected factorized a posterioiry cross-covariance
     split_right_upper_covariance(res.Sigma_apos, dict_bel, t);
@@ -116,8 +119,11 @@ bool DecoupledPropagationHandler::apply_observation(const std::map<size_t, Eigen
   KalmanFilter::CorrectionResult_t res;
   res = KalmanFilter::correction_step(H, R, r, Sigma_apri, cfg);
   if (!res.rejected) {
-    RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(res.Sigma_apos),
-                        "Joint apos covariance is not PSD at t=" + t.str());
+    bool is_psd = utils::is_positive_semidefinite(res.Sigma_apos);
+    RTV_EXPECT_TRUE_MSG(is_psd, "Joint apos covariance is not PSD at t=" + t.str());
+    if (!is_psd) {
+      res.Sigma_apos = utils::stabilize_covariance(res.Sigma_apos, 1e-6);
+    }
 
     // 2) set a corrected factorized a posterioiry cross-covariance
     split_right_upper_covariance(res.Sigma_apos, dict_bel, t);
