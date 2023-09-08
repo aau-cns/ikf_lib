@@ -197,7 +197,7 @@ bool IKalmanFilter::get_belief_at_t(const Timestamp &t, pBelief_t &bel, const ik
       }
       case eGetBeliefStrategy::LINEAR_INTERPOL_MEAS:
       {
-        if(HistMeasPropagation.size() > 0) {
+        if (HistMeasPropagation.size() > 1) {
           TStampedData<MeasData> stamped_meas_prev, stamped_meas_after;
           if(HistMeasPropagation.get_before_t(t, stamped_meas_prev) && HistMeasPropagation.get_after_t(t, stamped_meas_after)) {
             // bounded between two measurements
@@ -238,8 +238,7 @@ bool IKalmanFilter::get_belief_at_t(const Timestamp &t, pBelief_t &bel, const ik
               + t.str());
             return false;
           }
-        }
-        else {
+        } else {
           // no proprioceptive measurements available!
           Logger::ikf_logger()->error(
             "IKalmanFilter::get_belief_at_t: NO MEASUREMENTS for LINEAR_INTERPOL_MEAS found! at t=" + t.str());
@@ -252,6 +251,17 @@ bool IKalmanFilter::get_belief_at_t(const Timestamp &t, pBelief_t &bel, const ik
         // if true, it will insert a new element into HistBeliefs
         bool res =  predict_to(t);
         return res && HistBelief.get_at_t(t, bel);
+      }
+
+      case eGetBeliefStrategy::AUTO: {
+        bool res = false;
+        if (HistMeasPropagation.size() > 1) {
+          res = get_belief_at_t(t, bel, eGetBeliefStrategy::LINEAR_INTERPOL_MEAS);
+        }
+        if (!res) {
+          res = get_belief_at_t(t, bel, eGetBeliefStrategy::PREDICT_BELIEF);
+        }
+        return res;
       }
       default:
       {

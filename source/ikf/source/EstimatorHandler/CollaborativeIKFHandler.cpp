@@ -93,20 +93,10 @@ std::map<size_t, pBelief_t> CollaborativeIKFHandler::get_dict_bel(const std::map
     size_t id = e.first;
     pBelief_t bel_apri;
     if (!exists(id)) {
-      if (!m_pAgentHandler->get_belief_at_t(id, t, bel_apri, eGetBeliefStrategy::EXACT)) {
-        if (!m_pAgentHandler->get_belief_at_t(id, t, bel_apri, eGetBeliefStrategy::LINEAR_INTERPOL_MEAS)) {
-          RTV_EXPECT_TRUE_THROW(m_pAgentHandler->get_belief_at_t(id, t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF),
-                                "Could not obtain belief");
-        }
-      }
-
+      RTV_EXPECT_TRUE_THROW(m_pAgentHandler->get_belief_at_t(id, t, bel_apri, eGetBeliefStrategy::AUTO),
+                            "Could not obtain belief");
     } else {
-      if (!get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::EXACT)) {
-        if (!get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::LINEAR_INTERPOL_MEAS)) {
-          RTV_EXPECT_TRUE_THROW(get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF),
-                                "Could not obtain belief");
-        }
-      }
+      RTV_EXPECT_TRUE_THROW(get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::AUTO), "Could not obtain belief");
     }
 
     dict_bel.insert({id, bel_apri});

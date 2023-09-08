@@ -36,6 +36,7 @@ enum class IKF_API eGetBeliefStrategy {
   LINEAR_INTERPOL_MEAS
   = 3,  // if exist, interpolate between proprioceptive measurements linearly and perform a pseudo prediction step.
   PREDICT_BELIEF = 4,  // if KF has a prediction model, a belief is predicted
+  AUTO = 5,            // 1.) exact, 2.) if(proagation measurements available) 3). linear interpol meas, ele predict.
 };
 
 std::string IKF_API to_string(const eGetBeliefStrategy e);
