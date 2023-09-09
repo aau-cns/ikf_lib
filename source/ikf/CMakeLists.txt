@@ -91,6 +91,7 @@ set(sources
  source/Measurement/MeasData.cpp
  source/Estimate/IBelief.cpp
  source/Estimate/LinearBelief.cpp
+ source/Estimator/ProcessMeasResult_t.cpp
  source/Estimator/KalmanFilter.cpp
  source/Estimator/NormalizedInnovationSquared.cpp
  source/Estimator/IKalmanFilter.cpp
