@@ -207,6 +207,16 @@ Eigen::MatrixXd IKF_API stabilize_covariance(Eigen::MatrixXd const& Sigma, doubl
 
 Eigen::MatrixXd IKF_API symmetrize_covariance(Eigen::MatrixXd const& Sigma);
 
+//
+
+///
+/// \brief Applies a eps on negative eigenvalues. Adapted from Christian Brommer:
+/// https://github.com/aau-cns/mars_lib/blob/main/source/mars/source/nearest_cov.cpp
+/// \param Sigma
+/// \param eps
+/// \return PSD Sigma
+///
+Eigen::MatrixXd IKF_API nearest_covariance(Eigen::MatrixXd const& Sigma, double const eps = 0.001);
 
 template <typename Derived>
 static std::string get_shape(const Eigen::EigenBase<Derived>& x)

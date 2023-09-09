@@ -196,6 +196,7 @@ Eigen::MatrixXd IsolatedKalmanFilterHandler::get_Sigma_IJ_at_t(const size_t ID_I
 bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H,
                                                     const Eigen::MatrixXd &R, const Eigen::VectorXd &r,
                                                     const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
   Eigen::MatrixXd H = stack_H(dict_H);
 
   std::map<size_t, pBelief_t> dict_bel = get_dict_bel(dict_H, t);
@@ -212,7 +213,7 @@ bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen
     bool is_psd = utils::is_positive_semidefinite(res.Sigma_apos);
     RTV_EXPECT_TRUE_MSG(is_psd, "Joint apos covariance is not PSD at t=" + t.str());
     if (!is_psd) {
-      res.Sigma_apos = utils::stabilize_covariance(res.Sigma_apos, 1e-6);
+      res.Sigma_apos = utils::nearest_covariance(res.Sigma_apos, 1e-6);
     }
 
     // IMPORTANT: MAINTAIN ORDER STRICKTLY
@@ -231,6 +232,7 @@ bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen
 bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H,
                                                     const Eigen::VectorXd &z, const Eigen::MatrixXd &R,
                                                     const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
   Eigen::MatrixXd H = stack_H(dict_H);
 
   std::map<size_t, pBelief_t> dict_bel = get_dict_bel(dict_H, t);
@@ -250,7 +252,7 @@ bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen
     bool is_psd = utils::is_positive_semidefinite(res.Sigma_apos);
     RTV_EXPECT_TRUE_MSG(is_psd, "Joint apos covariance is not PSD at t=" + t.str());
     if (!is_psd) {
-      res.Sigma_apos = utils::stabilize_covariance(res.Sigma_apos, 1e-6);
+      res.Sigma_apos = utils::nearest_covariance(res.Sigma_apos, 1e-6);
     }
 
     // IMPORTANT: MAINTAIN ORDER STRICKTLY

@@ -28,6 +28,7 @@ CollaborativeIKFHandler::CollaborativeIKFHandler(MultiAgentHdl_ptr pAgentHdler, 
 }
 
 size_t ikf::CollaborativeIKFHandler::get_propagation_sensor_ID(const size_t ID) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
   if (ID == 0 || exists(ID)) {
     return m_PropSensor_ID;
   } else {
@@ -37,6 +38,7 @@ size_t ikf::CollaborativeIKFHandler::get_propagation_sensor_ID(const size_t ID) 
 
 bool CollaborativeIKFHandler::get_belief_at_t(const size_t ID, const Timestamp &t, pBelief_t &bel,
                                               const eGetBeliefStrategy type) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
   if (exists(ID)) {
     return get(ID)->get_belief_at_t(t, bel, type);
   } else {
@@ -54,6 +56,7 @@ bool CollaborativeIKFHandler::get_belief_at_t(const size_t ID, const Timestamp &
 bool CollaborativeIKFHandler::get_beliefs_at_t(const std::vector<size_t> &IDs,
                                                const std::vector<eGetBeliefStrategy> &types, const Timestamp &t,
                                                std::map<size_t, pBelief_t> &beliefs) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
   std::vector<size_t> local_IDs, remote_IDs;
   std::vector<eGetBeliefStrategy> local_types, remote_types;
   std::map<size_t, pBelief_t> local_beliefs, remote_beliefs;
@@ -183,6 +186,7 @@ void CollaborativeIKFHandler::apply_corrections_at_t(Eigen::MatrixXd &Sigma_apos
 bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H,
                                                 const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t,
                                                 const KalmanFilter::CorrectionCfg_t &cfg) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
   std::set<IMultiAgentHandler::IDAgent_t> ID_agents;
   std::vector<IMultiAgentHandler::IDEstimator_t> remote_IDs;
   std::vector<IMultiAgentHandler::IDEstimator_t> local_IDs;
@@ -219,8 +223,11 @@ bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::Ma
   KalmanFilter::CorrectionResult_t res;
   res = KalmanFilter::correction_step(H, R, r, Sigma_apri, cfg);
   if (!res.rejected) {
-    RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(res.Sigma_apos),
-                        "Joint apos covariance is not PSD at t=" + t.str());
+    bool is_psd = utils::is_positive_semidefinite(res.Sigma_apos);
+    RTV_EXPECT_TRUE_MSG(is_psd, "Joint apos covariance is not PSD at t=" + t.str());
+    if (!is_psd) {
+      res.Sigma_apos = utils::nearest_covariance(res.Sigma_apos, 1e-6);
+    }
 
     // IMPORTANT: MAINTAIN ORDER STRICKTLY
     // 1) add correction terms on all a aprior factorized cross-covariances!
@@ -251,6 +258,7 @@ bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::Ma
 bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H,
                                                 const Eigen::VectorXd &z, const Eigen::MatrixXd &R, const Timestamp &t,
                                                 const KalmanFilter::CorrectionCfg_t &cfg) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
   std::vector<IMultiAgentHandler::IDEstimator_t> ID_remote_participants;
   for (auto const &e : dict_H) {
     if (!exists(e.first)) {
@@ -279,8 +287,11 @@ bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::Ma
   KalmanFilter::CorrectionResult_t res;
   res = KalmanFilter::correction_step(H, R, r, Sigma_apri, cfg);
   if (!res.rejected) {
-    RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(res.Sigma_apos),
-                        "Joint apos covariance is not PSD at t=" + t.str());
+    bool is_psd = utils::is_positive_semidefinite(res.Sigma_apos);
+    RTV_EXPECT_TRUE_MSG(is_psd, "Joint apos covariance is not PSD at t=" + t.str());
+    if (!is_psd) {
+      res.Sigma_apos = utils::nearest_covariance(res.Sigma_apos, 1e-6);
+    }
 
     // IMPORTANT: MAINTAIN ORDER STRICKTLY
     // 1) add correction terms on all a aprior factorized cross-covariances!

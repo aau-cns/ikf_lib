@@ -233,4 +233,42 @@ Eigen::MatrixXd utils::stack_Sigma(const Eigen::MatrixXd &Sigma_II, const Eigen:
   return C;
 }
 
+Eigen::MatrixXd utils::nearest_covariance(const Eigen::MatrixXd &Sigma, const double eps) {
+  // Copyright (C) 2021 Christian Brommer, Control of Networked Systems, University of Klagenfurt, Austria.
+  //
+  // All rights reserved.
+  // https://github.com/aau-cns/mars_lib/blob/main/source/mars/source/nearest_cov.cpp
+  //
+
+  Eigen::EigenSolver<Eigen::MatrixXd> SVD(symmetrize_covariance(Sigma));
+
+  Eigen::EigenSolver<Eigen::MatrixXd>::EigenvectorsType V(SVD.eigenvectors());
+  Eigen::EigenSolver<Eigen::MatrixXd>::EigenvalueType D(SVD.eigenvalues());
+
+  Eigen::MatrixXd V_real(V.real());
+  Eigen::VectorXd D_real(D.real());
+
+  // determine if the matrix is already positive-semi-definite
+  bool negative_eigenvalues = false;
+  for (int k = 0; k < D_real.size(); k++) {
+    if (D_real[k] < 0) {
+      negative_eigenvalues = true;
+    }
+  }
+
+  if (!negative_eigenvalues) {
+    return Sigma;
+  }
+
+  Eigen::VectorXd D_corrected(D_real);
+  for (int k = 0; k < D_corrected.size(); k++) {
+    if (D_corrected[k] < 0) {
+      D_corrected[k] = eps;
+    }
+  }
+
+  Eigen::MatrixXd result(V_real * D_corrected.asDiagonal() * V_real.inverse());
+  return result;
+}
+
 }  // namespace ikf
