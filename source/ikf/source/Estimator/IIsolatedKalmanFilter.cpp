@@ -42,11 +42,11 @@ void IIsolatedKalmanFilter::reset() {
 }
 
 // Algorithm 7 in [1]
-ProcessMeasResult_t IIsolatedKalmanFilter::process_measurement(const MeasData &m) {
+ProcessMeasResult_vec_t IIsolatedKalmanFilter::process_measurement(const MeasData &m) {
   return m_pHandler->process_measurement(m);
 }
 
-bool IIsolatedKalmanFilter::redo_updates_after_t(const Timestamp &t) {
+ProcessMeasResult_vec_t IIsolatedKalmanFilter::redo_updates_after_t(const Timestamp &t) {
   remove_after_t(t);
   return IKalmanFilter::redo_updates_after_t(t);
 }
@@ -169,10 +169,11 @@ bool IIsolatedKalmanFilter::set_DICOHandler(std::shared_ptr<IDICOHandler> DICOHa
 // Algorithm 7 in [1]
 ProcessMeasResult_t IIsolatedKalmanFilter::delegate_measurement(const MeasData &m) {
   ProcessMeasResult_t res;
-  res.rejected = true;
 
   if (m.obs_type == eObservationType::JOINT_OBSERVATION) {
     res = local_joint_measurement(m);
+    res.t = m.t_m;
+    res.observation_type = m.meas_type;
   } else {
     res = IKalmanFilter::delegate_measurement(m);
   }

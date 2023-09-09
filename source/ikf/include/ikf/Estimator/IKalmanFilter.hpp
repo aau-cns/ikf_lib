@@ -53,7 +53,7 @@ public:
 
   ///////////////////////////////////////////////////////////////////////////////////
   /// Trigger the filter:
-  virtual ProcessMeasResult_t process_measurement(MeasData const& m);
+  virtual ProcessMeasResult_vec_t process_measurement(MeasData const &m);
   ///////////////////////////////////////////////////////////////////////////////////
 
   bool handle_delayed_meas() const;
@@ -91,7 +91,7 @@ protected:
 
   virtual bool insert_measurement(MeasData const &m, Timestamp const &t);
 
-  virtual bool redo_updates_after_t(Timestamp const &t);
+  virtual ProcessMeasResult_vec_t redo_updates_after_t(Timestamp const &t);
   bool correct_belief_at_t(Eigen::VectorXd const& mean_corr, Eigen::MatrixXd const& Sigma_apos, Timestamp const&t);
 
   virtual void remove_beliefs_after_t(Timestamp const& t);

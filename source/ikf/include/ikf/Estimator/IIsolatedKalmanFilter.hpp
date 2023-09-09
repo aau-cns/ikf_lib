@@ -86,7 +86,7 @@ public:
   ///////////////////////////////////////////////////////////////////////////////////
   /// Trigger the filter:
   // Algorithm 7 in [1]
-  virtual ProcessMeasResult_t process_measurement(MeasData const& m) override;
+  virtual ProcessMeasResult_vec_t process_measurement(MeasData const& m) override;
   ///////////////////////////////////////////////////////////////////////////////////
 
   virtual Eigen::MatrixXd get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J);
@@ -126,7 +126,7 @@ protected:
   // HOOK for IKalmanFilter
   virtual bool insert_measurement(MeasData const& m, Timestamp const& t) override;
 
-  virtual bool redo_updates_after_t(Timestamp const& t) override;
+  virtual ProcessMeasResult_vec_t redo_updates_after_t(Timestamp const& t) override;
 
   bool get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J, Eigen::MatrixXd& FFC);
 

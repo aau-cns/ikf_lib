@@ -31,4 +31,7 @@ std::string to_string(const eMeasStatus s) {
 
 ProcessMeasResult_t::ProcessMeasResult_t(const eMeasStatus &s) : status(s) {}
 
+ProcessMeasResult_t::ProcessMeasResult_t(const eMeasStatus &s, const std::string &type)
+  : status(s), observation_type(type) {}
+
 }  // namespace ikf

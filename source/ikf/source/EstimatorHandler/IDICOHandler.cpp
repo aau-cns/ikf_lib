@@ -125,7 +125,7 @@ void IDICOHandler::sort_measurements_from_t(const Timestamp &t) {
   }
 }
 
-ProcessMeasResult_t IDICOHandler::process_measurement(const MeasData &m) {
+ProcessMeasResult_vec_t IDICOHandler::process_measurement(const MeasData &m) {
   std::lock_guard<std::recursive_mutex> lk(m_mtx);
 
   // if there are open request, use the oldest one, before processing the new measurmeent
@@ -141,68 +141,79 @@ ProcessMeasResult_t IDICOHandler::process_measurement(const MeasData &m) {
       "IDICOHandler::process_measurement(): requested redo update after t=" + t_oldest.str() + " processed!");
   }
 
-  ProcessMeasResult_t res = delegate_measurement(m);
+  // concurrent order
   bool order_violated = is_order_violated(m);
   if (order_violated) {
     insert_measurement(m, m.t_m);
     sort_measurements_from_t(m.t_m);
-    redo_updates_from_t(m.t_m);
+    auto vec = redo_updates_from_t(m.t_m);
+    HistMeas.check_horizon();
+    return vec;
   } else {
-    if (!res.rejected && HistMeas.exist_after_t(m.t_m)) {
-      redo_updates_after_t(m.t_m);
+    ProcessMeasResult_t res = delegate_measurement(m);
+    ProcessMeasResult_vec_t vec({res});
+    if (res.status == eMeasStatus::OUTOFORDER && HistMeas.exist_after_t(m.t_m)) {
+      auto vec_after = redo_updates_after_t(m.t_m);
+      vec.insert(vec.end(), vec_after.begin(), vec_after.end());
     }
-    insert_measurement(m, m.t_m);
+    if (res.status != ikf::eMeasStatus::DISCARED) {
+      insert_measurement(m, m.t_m);
+      HistMeas.check_horizon();
+    }
+    return vec;
   }
-  HistMeas.check_horizon();
-  return res;
 }
 
 ProcessMeasResult_t IDICOHandler::delegate_measurement(const MeasData &m) {
   ProcessMeasResult_t res;
+  res.status = eMeasStatus::DISCARED;
   if (exists(m.id_sensor)) {
     if (id_dict[m.id_sensor]->enabled()) {
       res = id_dict[m.id_sensor]->delegate_measurement(m);
     }
   }
+  res.t = m.t_m;
+  res.observation_type = m.meas_type;
   return res;
 }
 
-bool IDICOHandler::redo_updates_from_t(const Timestamp &t) {
+ProcessMeasResult_vec_t IDICOHandler::redo_updates_from_t(const Timestamp &t) {
   remove_beliefs_from_t(t);
   Timestamp t_last;
+  ProcessMeasResult_vec_t vec;
   if (HistMeas.get_latest_t(t_last)) {
     Logger::ikf_logger()->info("IDICOHandler::redo_updates_from_t() t=" + t.str() + ", t_last=" + t_last.str());
-
     if (t == t_last) {
-      auto vec = HistMeas.get_all_at_t(t);
-      for (MeasData &m : vec) {
-        this->delegate_measurement(m);
+      auto meas_arr = HistMeas.get_all_at_t(t);
+      for (MeasData &m : meas_arr) {
+        vec.push_back(this->delegate_measurement(m));
       }
     } else {
-      HistMeas.foreach_between_t1_t2(t, t_last, [this](MeasData const &m) { this->delegate_measurement(m); });
+      HistMeas.foreach_between_t1_t2(t, t_last,
+                                     [this, &vec](MeasData const &m) { vec.push_back(this->delegate_measurement(m)); });
     }
-    return true;
   }
-  return false;
+  return vec;
 }
 
-bool IDICOHandler::redo_updates_after_t(const Timestamp &t) {
+ProcessMeasResult_vec_t IDICOHandler::redo_updates_after_t(const Timestamp &t) {
   remove_beliefs_after_t(t);
   Timestamp t_after, t_last;
+  ProcessMeasResult_vec_t vec;
   if (HistMeas.get_after_t(t, t_after) && HistMeas.get_latest_t(t_last)) {
     Logger::ikf_logger()->info("IDICOHandler::redo_updates_after_t() t_after=" + t_after.str()
                                + ", t_last=" + t_last.str());
     if (t_after == t_last) {
-      auto vec = HistMeas.get_all_at_t(t_after);
-      for (MeasData &m : vec) {
-        this->delegate_measurement(m);
+      auto meas_arr = HistMeas.get_all_at_t(t_after);
+      for (MeasData &m : meas_arr) {
+        vec.push_back(this->delegate_measurement(m));
       }
     } else {
-      HistMeas.foreach_between_t1_t2(t_after, t_last, [this](MeasData const &m) { this->delegate_measurement(m); });
+      HistMeas.foreach_between_t1_t2(t_after, t_last,
+                                     [this, &vec](MeasData const &m) { vec.push_back(this->delegate_measurement(m)); });
     }
-    return true;
   }
-  return false;
+  return vec;
 }
 
 void IDICOHandler::remove_beliefs_after_t(const Timestamp &t) {

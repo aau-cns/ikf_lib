@@ -50,7 +50,7 @@ public:
 
   bool get_prop_meas_at_t(size_t const ID, Timestamp const& t, MeasData& m);
 
-  virtual ProcessMeasResult_t process_measurement(MeasData const& m);
+  virtual ProcessMeasResult_vec_t process_measurement(MeasData const& m);
 
   /// Generic fusion algorithm for M-participants:
   /// - the state dim can be infered from the cols of the H matrices
@@ -66,7 +66,7 @@ public:
 
   void print_HistMeas(std::ostream& out, size_t max);
 
-  virtual bool redo_updates_after_t(const Timestamp& t);
+  virtual ProcessMeasResult_vec_t redo_updates_after_t(const Timestamp& t);
   virtual bool schedule_redo_updates_after_t(const Timestamp& t);
 
 protected:
@@ -76,7 +76,7 @@ protected:
   // TMultiHistoryBuffer<MeasData> get_measurements_from_t(Timestamp const& t);
   // TMultiHistoryBuffer<MeasData> get_measurements_after_t(Timestamp const& t);
   bool is_order_violated(MeasData const& m);
-  virtual bool redo_updates_from_t(const Timestamp& t);
+  virtual ProcessMeasResult_vec_t redo_updates_from_t(const Timestamp& t);
   virtual ProcessMeasResult_t delegate_measurement(MeasData const& m);
   virtual void remove_beliefs_after_t(Timestamp const& t);
   virtual void remove_beliefs_from_t(Timestamp const& t);

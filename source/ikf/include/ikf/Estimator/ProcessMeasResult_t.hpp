@@ -19,8 +19,10 @@
 #ifndef PROCESSMEASRESULT_T_HPP
 #define PROCESSMEASRESULT_T_HPP
 #include <Eigen/Dense>
+#include <ikf/Container/Timestamp.hpp>
 #include <ikf/ikf_api.h>
 #include <string>
+#include <vector>
 
 namespace ikf {
 enum class IKF_API eMeasStatus {
@@ -33,15 +35,15 @@ enum class IKF_API eMeasStatus {
 std::string IKF_API to_string(eMeasStatus const s);
 
 struct IKF_API ProcessMeasResult_t {
-  bool rejected = true;
-  bool skipped = false;
   eMeasStatus status{eMeasStatus::REJECTED};
   Eigen::VectorXd residual;
   std::string observation_type;
   std::vector<size_t> ID_participants;
+  Timestamp t;
 
   ProcessMeasResult_t() = default;
   ProcessMeasResult_t(eMeasStatus const& s);
+  ProcessMeasResult_t(eMeasStatus const& s, std::string const& type);
 
   friend std::ostream& operator<<(std::ostream& out, const ProcessMeasResult_t& obj) {
     out << "MeasResult: "
@@ -52,5 +54,6 @@ struct IKF_API ProcessMeasResult_t {
   }
 };
 
+typedef std::vector<ProcessMeasResult_t> ProcessMeasResult_vec_t;
 }  // namespace ikf
 #endif  // PROCESSMEASRESULT_T_HPP

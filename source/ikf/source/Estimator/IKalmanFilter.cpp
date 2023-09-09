@@ -54,43 +54,43 @@ void IKalmanFilter::initialize(pBelief_t bel_init, const Timestamp &t) {
   HistBelief.insert(bel_init, t);
 }
 
-ProcessMeasResult_t IKalmanFilter::process_measurement(const MeasData &m) {
+ProcessMeasResult_vec_t IKalmanFilter::process_measurement(const MeasData &m) {
   // propagation and private -> to filter instance
   // joint -> use ptr_CIH and two filter instances: The CIH must provide others belief and ccf
 
   auto res = IKalmanFilter::delegate_measurement(m);
-
+  ProcessMeasResult_vec_t vec({res});
   if (m_handle_delayed_meas) {
-    if (!res.rejected && HistMeas.exist_after_t(m.t_m)) {
-      redo_updates_after_t(m.t_m);
+    if (res.status == eMeasStatus::OUTOFORDER && HistMeas.exist_after_t(m.t_m)) {
+      auto vec_after = redo_updates_after_t(m.t_m);
+      vec.insert(vec.end(), vec_after.begin(), vec_after.end());
     }
-    insert_measurement(m, m.t_m);
+    if (res.status != eMeasStatus::DISCARED) {
+      insert_measurement(m, m.t_m);
+      HistMeas.check_horizon();
+    }
   }
-
-  // TODO: Already DONE in reprocess_measurement?? needed for inter-properation interpolation
-  // if (m.obs_type == eObservationType::PROPAGATION) {
-  //  HistMeasPropagation.insert(m, m.t_m);
-  //}
-
-  return res;
+  return vec;
 }
 
-bool IKalmanFilter::redo_updates_after_t(const Timestamp &t) {
+ProcessMeasResult_vec_t IKalmanFilter::redo_updates_after_t(const Timestamp &t) {
   remove_beliefs_after_t(t);
   Timestamp t_after, t_last;
+  ProcessMeasResult_vec_t vec;
   if (HistMeas.get_after_t(t, t_after) &&  HistMeas.get_latest_t(t_last)) {
     Logger::ikf_logger()->trace("IKalmanFilter::redo_updates_after_t() t_after=" + t_after.str() + ", t_last=" + t_last.str());
     if (t_after == t_last) {
       MeasData m;
       HistMeas.get_at_t(t_after, m);
-      this->delegate_measurement(m);
+      vec.push_back(this->delegate_measurement(m));
     }
     else {
-      HistMeas.foreach_between_t1_t2(t_after, t_last, [this](MeasData const &m) { this->delegate_measurement(m); });
+      HistMeas.foreach_between_t1_t2(t_after, t_last,
+                                     [this, &vec](MeasData const &m) { vec.push_back(this->delegate_measurement(m)); });
     }
-    return true;
+    return vec;
   }
-  return false;
+  return vec;
 }
 
 Timestamp IKalmanFilter::current_t() const {
@@ -224,14 +224,14 @@ bool IKalmanFilter::get_belief_at_t(const Timestamp &t, pBelief_t &bel, const ik
               return false;
             }
 
-            if (res.rejected) {
+            if (res.status == eMeasStatus::REJECTED) {
               Logger::ikf_logger()->error(
                 "IKalmanFilter::get_belief_at_t: pseudo measurement for LINEAR_INTERPOL_MEAS was REJECTED! at t="
                 + t.str());
             }
 
             // if not rejected, it will insert a new element into HistBeliefs
-            return !res.rejected && HistBelief.get_at_t(t, bel);
+            return (res.status == eMeasStatus::PROCESSED) && HistBelief.get_at_t(t, bel);
           } else {
             Logger::ikf_logger()->error(
               "IKalmanFilter::get_belief_at_t: NO BOUNDING measurements for LINEAR_INTERPOL_MEAS found! at t="
@@ -384,7 +384,7 @@ bool ikf::IKalmanFilter::get_prop_meas_at_t(const Timestamp &t, MeasData &m) {
 
 ProcessMeasResult_t IKalmanFilter::delegate_measurement(const MeasData &m) {
   ProcessMeasResult_t res;
-  res.rejected = true;
+  res.status = eMeasStatus::DISCARED;
   switch (m.obs_type) {
   case eObservationType::PROPAGATION: {
     res = progapation_measurement(m);
@@ -393,17 +393,19 @@ ProcessMeasResult_t IKalmanFilter::delegate_measurement(const MeasData &m) {
     HistMeasPropagation.insert(m, m.t_m);
     break;
   }
-    case eObservationType::PRIVATE_OBSERVATION:
-      {
-        res = local_private_measurement(m);
-        break;
-      }
+  case eObservationType::PRIVATE_OBSERVATION: {
+    res = local_private_measurement(m);
+    break;
+  }
     case eObservationType::JOINT_OBSERVATION:
     case eObservationType::UNKNOWN:
     default:
-        break;
+    break;
     }
-  return res;
+
+    res.t = m.t_m;
+    res.observation_type = m.meas_type;
+    return res;
 }
 
 bool IKalmanFilter::apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab,
