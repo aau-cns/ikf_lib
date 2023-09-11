@@ -268,14 +268,16 @@ namespace ikf
       return false;
   }
 
-  template<typename T>
-  bool THistoryBuffer<T>::exist_before_t(const Timestamp &t) const {
-      if(!buffer_.empty()){
+  template <typename T>
+  bool THistoryBuffer<T>::exist_before_t(const Timestamp& t) const {
+      if (!buffer_.empty()) {
         auto it = lower_bound(t);
         if (it != buffer_.end()) {
-            if (it->first == t.stamp_ns()) {
-                return it != buffer_.begin();
+            if (it != buffer_.begin()) {
+            return true;
             }
+        } else if (buffer_.size()) {
+            // corner case: when t is outside the timespan, return last elem.
             return true;
         }
       }
