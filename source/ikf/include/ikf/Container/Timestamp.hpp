@@ -45,11 +45,11 @@ namespace ikf
       virtual ~Timestamp();
 
       double to_sec() const;
-      void from_sec(double const t);
+      void from_sec(double const t = 0.0);
       bool is_zero() const;
 
       std::int64_t stamp_ns() const;
-      void from_stamp_ns(std::int64_t const stamp_ns);
+      void from_stamp_ns(std::int64_t const stamp_ns = 0);
 
       std::string str() const;
 

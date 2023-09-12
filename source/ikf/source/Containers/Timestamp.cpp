@@ -9,8 +9,9 @@
 *  Copyright (C) 2018
 *  All rights reserved. See the LICENSE file for details.
 ******************************************************************************/
-#include <ikf/Container/Timestamp.hpp>
 #include <cmath>
+#include <ikf/Container/Timestamp.hpp>
+#include <ikf/Logger/Logger.hpp>
 #include <limits>
 #include <stdexcept>
 
@@ -43,7 +44,8 @@ namespace ikf
     int64_t sec64 = (int64_t)std::floor(t);
     if (sec64 > INT32_MAX)
     {
-      throw std::runtime_error("Time is out of dual 32-bit range");
+      ikf::Logger::ikf_logger()->error("Time is out of dual 32-bit range" + std::to_string(t));
+      sec64 = 0;
     }
     sec = (int32_t)sec64;
     nsec = (int32_t)std::round((t-sec) * 1e9);
