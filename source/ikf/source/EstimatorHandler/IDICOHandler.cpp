@@ -128,6 +128,14 @@ void IDICOHandler::sort_measurements_from_t(const Timestamp &t) {
 ProcessMeasResult_vec_t IDICOHandler::process_measurement(const MeasData &m) {
   std::lock_guard<std::recursive_mutex> lk(m_mtx);
 
+  Timestamp t_latest;
+  if (HistMeas.get_latest_t(t_latest)) {
+    if (t_latest.to_sec() - m.t_m.to_sec() >= m_horzion_sec) {
+      ikf::Logger::ikf_logger()->warn("IDICOHandler::process_measurement(): measurement is too much delayed");
+      return ProcessMeasResult_vec_t({ProcessMeasResult_t(eMeasStatus::DISCARED)});
+    }
+  }
+
   // if there are open request, use the oldest one, before processing the new measurmeent
   if (HistRedoUpdateRequest.size()) {
     Timestamp t_oldest;
