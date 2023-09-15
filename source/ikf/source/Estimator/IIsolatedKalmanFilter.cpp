@@ -116,15 +116,20 @@ void IIsolatedKalmanFilter::remove_from_t(const Timestamp &t) {
 
 void IIsolatedKalmanFilter::set_horizon(const double t_hor) {
   IKalmanFilter::set_horizon(t_hor);
+  HistBelief.set_horizon(t_hor);
   for (auto& elem : HistCrossCovFactors){
     elem.second.set_horizon(t_hor);
   }
 }
 
 void IIsolatedKalmanFilter::check_horizon() {
-  IKalmanFilter::check_horizon();
+  size_t const keep_elems = 4;
+
+  HistBelief.check_horizon_restricted(keep_elems);
+  HistMeas.check_horizon_restricted(keep_elems);
+  HistMeasPropagation.check_horizon_restricted(keep_elems);
   for (auto& elem : HistCrossCovFactors){
-    elem.second.check_horizon();
+    elem.second.check_horizon_restricted(keep_elems);
   }
 }
 
