@@ -16,9 +16,10 @@
 *
 * You can contact the author at <roland.jung@aau.at>
 ******************************************************************************/
-#include <gmock/gmock.h>
-#include <ikf/utils/eigen_mvn.hpp>
 #include <fstream>
+#include <gmock/gmock.h>
+#include <ikf/utils/MultivariateNormal.hpp>
+#include <ikf/utils/UnivariateNormal.hpp>
 #include <iostream>
 #include <math.h>
 

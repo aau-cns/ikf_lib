@@ -23,10 +23,10 @@ set(sources
     main.cpp
     ikf_THistoryBuffer_test.cpp
     ikf_TMultiHistoryBuffer_test.cpp
-    #ikf_TTHimeHorizonBuffer.cpp
-    #ikf_IKalmanFilter_test.cpp
+    ikf_TTHimeHorizonBuffer.cpp
+    ikf_IKalmanFilter_test.cpp
     #
-    #ikf_eigen_mvn_test.cpp
+    ikf_eigen_mvn_test.cpp
     ikf_Timestamp_test.cpp
     #ikf_LinearIKFStd_test.cpp
 )
