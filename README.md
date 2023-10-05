@@ -1,7 +1,7 @@
 # ikf_lib (Isolated Kalman Filtering C++ library) 
 
 
-This repository contains an **Isolated Kalman Filtering** framework, implementing the isolated Kalman filter (IKF) paradigm with support for out-of-sequence measurements. The primary motivation of the IKF paradigm is to decouple correlated estimates of filter instances by employing approximations proposed by Luft et al. in [1]. For further details on the naming convention and algorithm, please refer to [3-4].
+This repository contains an **Isolated Kalman Filtering** framework, implementing the isolated Kalman filter (IKF) paradigm with support for out-of-sequence measurements. The primary motivation of the IKF paradigm is to decouple correlated estimates of filter instances by employing approximations proposed by Luft et al. in [1]. For preliminaries, details on the naming convention, and an overall overview of related algorithms, please refer to [5].
 Out-of-sequence measurements require a reprocessing of later and already processed measurements. Reprocessed measurements are prioritized: proprioceptive measurements over private, and private over joint measurements, to achieve best performance, which is still suboptimal due to the approximations made in the paradigm.
 Harsh conditions for the paradigm are circular joint measurements without private measurements, and concurrent measurements, as the order of measurements at a specific point in time matters -- in contrast to the Kalman filter, where updates at a specific time can be processed in either order, as all information is available.
 
@@ -116,7 +116,6 @@ Due to isolated filtering, the estimation results depends on the order measureme
 
 ## TODO:
 
-* Support delayed updates between two prediction steps.
 * Redo-update avalanche for participants and post-correlated instances after t0, by triggering all agents with interin joint measurements after t0 to redo their updates (currently all are redoing updates).
 
 ## Third party content:
@@ -133,7 +132,7 @@ Due to isolated filtering, the estimation results depends on the order measureme
 *  [2] Jung, Roland and Weiss, Stephan, "Scalable Recursive Distributed Collaborative State Estimation for Aided Inertial Navigation", Proceedings of the IEEE International Conference on Robotics and Automation (ICRA), IEEE, Xi’an, DOI: 10.1109/ICRA48506.2021.9561203, 2021.
 *  [3] Jung, Roland and Weiss, Stephan, "Modular Multi-Sensor Fusion: A Collaborative State Estimation Perspective", IEEE Robotics and Automation Letters, DOI: 10.1109/LRA.2021.3096165, 2021.
 *  [4] Jung, Roland and Luft, Lukas and Weiss, Stephan, "The Isolated Kalman Filtering Paradigm", 2023
-
+*  [5] Jung, Roland, “Recursive distributed collaborative aided inertial navigation,” Ph.D. dissertation, Faculty of Technical Sciences with the Control of Networked Systems group, University of Klagenfurt, Aug. 2023. 
 # CREDITS
 
 Cmake project based on [cginternals/cmake-init](https://github.com/cginternals/cmake-init).
