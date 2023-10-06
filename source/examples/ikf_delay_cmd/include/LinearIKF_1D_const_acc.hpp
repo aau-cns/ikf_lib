@@ -46,7 +46,7 @@ public:
     ikf::Timestamp t_b = m.t_m;
     if(!get_belief_before_t(t_b, bel_a, t_a)) {
       std::cout << "ERROR: apply_propagation belief before at t=" << t_b << std::endl;
-      return res;
+      res.status = ikf::eMeasStatus::DISCARED;
     }
     double const dt = t_b.to_sec() - t_a.to_sec(); // Time step
 
@@ -64,11 +64,11 @@ public:
     if(!apply_propagation(bel_a, mean_b, Phi_ab, Q_ab, t_a, t_b)) {
       std::cout << "ERROR: apply_propagation failed at t=" << t_b << std::endl;
     } else {
-      res.rejected = false;
+      res.status = ikf::eMeasStatus::REJECTED;
     }
 
    res.observation_type = "control_input_acc";
-
+   res.status = ikf::eMeasStatus::PROCESSED;
    return res;
   }
   ikf::ProcessMeasResult_t local_private_measurement(const ikf::MeasData &m) override {
@@ -89,12 +89,18 @@ public:
     res.residual = r;
     ikf::KalmanFilter::CorrectionCfg_t cfg;
 
+// choose an API for private observations:
 #if 0
-    res.rejected = !apply_private_observation(bel, H_private, m.R, r, t, cfg);
+    bool rejected = !apply_private_observation(bel, H_private, m.R, r, t, cfg);
 #else
     std::map<size_t, Eigen::MatrixXd> dict_H = {{m_ID, H_private}};
-    res.rejected = !m_pHandler->apply_observation(dict_H, m.R, r, t, cfg);
+    bool rejected = !m_pHandler->apply_observation(dict_H, m.R, r, t, cfg);
 #endif
+
+    res.status = ikf::eMeasStatus::PROCESSED;
+    if (rejected) {
+      res.status = ikf::eMeasStatus::REJECTED;
+    }
     return res;
 
   }
@@ -116,8 +122,9 @@ public:
     res.observation_type = m.meas_type + " between [" + std::to_string(m_ID) + "," + m.meta_info + "]";
     ikf::KalmanFilter::CorrectionCfg_t cfg;
 
+// choose an API for private observations
 #if 0
-    res.rejected = !ptr_Handler->apply_joint_observation(m_ID, ID_J, H_II, H_JJ, m.R, m.z, m.t_m, cfg);
+    bool rejected = !m_pHandler->apply_joint_observation(m_ID, ID_J, H_II, H_JJ, m.R, m.z, m.t_m, cfg);
 #else
     std::map<size_t, Eigen::MatrixXd> dict_H = {{m_ID, H_II}, {ID_J, H_JJ}};
     Eigen::VectorXd z_est = ikf::utils::horcat(H_II, H_JJ)
@@ -125,8 +132,13 @@ public:
                                                       m_pHandler->get(ID_J)->get_belief_at_t(m.t_m)->mean());
     Eigen::VectorXd r = m.z - z_est;
 
-    res.rejected = !m_pHandler->apply_observation(dict_H, m.R, r, m.t_m, cfg);
+    bool rejected = !m_pHandler->apply_observation(dict_H, m.R, r, m.t_m, cfg);
 #endif
+
+    res.status = ikf::eMeasStatus::PROCESSED;
+    if (rejected) {
+      res.status = ikf::eMeasStatus::REJECTED;
+    }
     return res;
   }
 
