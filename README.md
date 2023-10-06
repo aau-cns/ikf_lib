@@ -1,7 +1,7 @@
 # ikf_lib (Isolated Kalman Filtering C++ library) 
 
 
-This repository contains an **Isolated Kalman Filtering** framework, implementing the isolated Kalman filter (IKF) paradigm with support for out-of-sequence measurements. The primary motivation of the IKF paradigm is to decouple correlated estimates of filter instances by employing approximations proposed by Luft et al. in [1]. For preliminaries, details on the naming convention, and an overall overview of related algorithms, please refer to [6].
+This repository contains an **Isolated Kalman Filtering** framework, implementing the isolated Kalman filter (IKF) paradigm with support for out-of-sequence measurements. The primary motivation of the IKF paradigm is to decouple correlated estimates of filter instances by employing approximations proposed by Luft et al. in [1]. For preliminaries, details on the naming convention, and an overall overview of related algorithms, please refer to [5,  6].
 Out-of-sequence measurements require a reprocessing of later and already processed measurements. Reprocessed measurements are prioritized: proprioceptive measurements over private, and private over joint measurements, to achieve best performance, which might be still suboptimal due to the approximations made during isolated joint measurements.
 Note that the order of concurent measurements (measurements at orignating at the same point in time) matters -- in contrast to the Kalman filter, where updates at a specific time can be processed in either order, as all information is available.
 
@@ -19,14 +19,17 @@ Find a commandline example tool for non-delayed measurements in `source/examples
 ## Prerequisite
 
 ```
-sudo apt install libspdlog-dev
+sudo apt update
+sudo apt install build-essential cmake -y
+sudo apt install libspdlog-dev -y
 ```
 
 ## Build project
 
 ```
-mkdir build && cd build
-cmake .. -DOPTION_BUILD_EXAMPLE=ON -DOPTION_BUILD_TESTS=ON -DOPTION_BUILD_EXAMPLES=ON -DBUILD_SHARED_LIBS=ON
+git clone <url> ikf_lib             
+cd ikf_lib && mkdir build && cd build
+cmake ..  -DCMAKE_BUILD_TYPE=Release -DOPTION_BUILD_EXAMPLE=ON -DOPTION_BUILD_TESTS=ON -DOPTION_BUILD_EXAMPLES=ON -DBUILD_SHARED_LIBS=ON
 make all test -j 1
 ```
 
@@ -75,16 +78,15 @@ Options:
 
 Implementation of the IKF supporting delayed measurements.
 Measurements can be maintained either in the IKF instances or in the IKF-Handler (`--meas_centralized`). Either should perform equal to the `ikf_delay_cmd`. 
+Updates can also be processed centralized-equvivalent (` --centalized_equvivalent`).
 
 ```
 build$ ./ikf_dealy_cmd -h
 ikf_delay_cmd
-Usage: ./ikf_delay_cmd [OPTIONS]
+Usage: /home/jungr/workspace/CNS/build-ikf_lib-Desktop-Debug/ikf_delay_cmdd [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit
-  --meas_centralized BOOLEAN=0
-                              specifies if measurements are maintained in handler or individual filter instances
   --num_instances INT=4       number of filter instances
   --duration INT=5            Duration of the trajectory [sec]
   --first_private_only BOOLEAN=1
@@ -100,6 +102,8 @@ Options:
   --std_dev_p FLOAT=0.05      position measurement noise
   --std_dev_a FLOAT=0.05      acceleration input noise
   --std_dev_p_rel FLOAT=0.05  relative position measurement noise
+  --centalized_equvivalent BOOLEAN=0
+                              Choose a IKFHandler (false) or the DecoupledPropagationHandler (true), which performs centalized-equvivalent update steps, thus exact.
 ```
 
 ## How to "use" the Isolated Kalman Filtering framework
@@ -124,6 +128,11 @@ Due to isolated filtering, the estimation results depends on the order measureme
 * [MaRS](https://github.com/aau-cns/mars_lib)
 * [matplotplusplus](https://github.com/alandefreitas/matplotplusplus)
 * [CLI11](https://github.com/CLIUtils/CLI11)
+
+
+## TODOs:
+
+* EKF example using wheel robots in 2D.
 
 # REFERENCES
 

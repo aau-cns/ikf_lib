@@ -66,6 +66,11 @@ int main(int argc, char** argv) {
   double std_dev_p_rel = 0.05;
   app.add_option("--std_dev_p_rel", std_dev_p_rel, "relative position measurement noise", true);
 
+  bool centalized_equvivalent = false;
+  app.add_option("--centalized_equvivalent", centalized_equvivalent,
+                 "Choose a IKFHandler (false) or the DecoupledPropagationHandler (true), which performs "
+                 "centalized-equvivalent update steps, thus exact.",
+                 true);
 
   CLI11_PARSE(app, argc, argv);
 
@@ -87,17 +92,33 @@ int main(int argc, char** argv) {
   std::cout << "noisy relative position measurement 'p_i_j' with std_dev_p_rel for isolated joint state correction between filter i and j using the Isolated Kalman Filter." << std::endl;
   std::cout << "for system model see: https://www.kalmanfilter.net/modeling.html (Example continued: constant acceleration moving body)" << std::endl;
 
-   std::cout << "* \t first_private_only = " << first_private_only << std::endl;
-   std::cout << "* \t delay_private = " << delay_private << std::endl;
-   std::cout << "* \t delay_joint = " << delay_joint << std::endl;
+  std::cout << "* \t first_private_only = " << first_private_only << std::endl;
+  std::cout << "* \t delay_private = " << delay_private << std::endl;
+  std::cout << "* \t delay_joint = " << delay_joint << std::endl;
+
+  std::cout << "* Measurements are maintained in the ";
   if (handle_measurements_centralized) {
-    std::cout << "* Measurements are maintained in IKF handler (centralized)"  << std::endl;
+    std::cout << "handler (centralized)" << std::endl;
+  } else {
+    std::cout << "filter instances (disctributed)" << std::endl;
+  }
+
+  std::cout << "* Updated are processed: ";
+  if (centalized_equvivalent) {
+    std::cout << "centalized_equvivalent!" << std::endl;
+  } else {
+    std::cout << "isolated!" << std::endl;
   }
 
   ikf::GaussianNoiseGen& gen = ikf::GaussianNoiseGen::instance();
   gen.seed(seed);
 
-  std::shared_ptr<ikf::DecoupledPropagationHandler> ptr_Handler(new ikf::DecoupledPropagationHandler());
+  std::shared_ptr<ikf::IsolatedKalmanFilterHandler> ptr_Handler;
+  if (centalized_equvivalent) {
+    ptr_Handler.reset(new ikf::DecoupledPropagationHandler());
+  } else {
+    ptr_Handler.reset(new ikf::IsolatedKalmanFilterHandler());
+  }
 
   double const dt = 1.0 / std::max(1, freq);  // Time step
   double const D = duration * 1.0;
