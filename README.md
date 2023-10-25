@@ -1,5 +1,31 @@
 # ikf_lib (Isolated Kalman Filtering C++ library) 
 
+[![License](https://img.shields.io/badge/License-AAUCNS-336B81.svg)](https://github.com/aau-cns/flight_stack/blob/main/LICENSE)
+
+Maintainer: [Roland Jung](mailto:roland.jung@aau.at)
+
+## Credit
+This code was written by the maintainer with the [Control of Networked System (CNS)](https://www.aau.at/en/smart-systems-technologies/control-of-networked-systems/), University of Klagenfurt, Klagenfurt, Austria.
+
+## License
+This software is made available to the public to use (_source-available_), licensed under the terms of the BSD-2-Clause-License with no commercial use allowed, the full terms of which are made available in the `LICENSE` file. No license in patents is granted.
+
+### Usage for academic purposes
+If you use this software in an academic research setting, please cite the
+corresponding [academic paper] and consult the `LICENSE` file for a detailed explanation.
+
+```latex
+@inproceedings{jung_isolated_2023,
+   author   = {Jung, Roland and Luft, Lukas and Weiss, Stephan},
+   journal  = {tbd},
+   doi      = {tbd},
+   title    = {Isolated Kalman Filtering: Theory and Decoupled Estimator Design},
+   year     = {2023},
+}
+```
+
+
+## Description
 
 This repository contains an **Isolated Kalman Filtering** framework, implementing the isolated Kalman filter (IKF) paradigm with support for out-of-sequence measurements. The primary motivation of the IKF paradigm is to decouple correlated estimates of filter instances by employing approximations proposed by Luft et al. in [1]. For preliminaries, details on the naming convention, and an overall overview of related algorithms, please refer to [5,  6].
 Out-of-sequence measurements require a reprocessing of later and already processed measurements. Reprocessed measurements are prioritized: proprioceptive measurements over private, and private over joint measurements, to achieve best performance, which might be still suboptimal due to the approximations made during isolated joint measurements.
@@ -128,42 +154,21 @@ Due to isolated filtering, the estimation results depends on the order measureme
 * [MaRS](https://github.com/aau-cns/mars_lib)
 * [matplotplusplus](https://github.com/alandefreitas/matplotplusplus)
 * [CLI11](https://github.com/CLIUtils/CLI11)
-
+Cmake project based on [cginternals/cmake-init](https://github.com/cginternals/cmake-init).
 
 ## TODOs:
 
 * EKF example using wheel robots in 2D.
 
-# REFERENCES
+## REFERENCES
 
 *  [1] Luft, Lukas and Schubert, Tobias and Roumeliotis, Stergios I. and Burgard, Wolfram, "Recursive decentralized localization for multi-robot systems with asynchronous pairwise communication", 2018, IJRR
 *  [2] Jung, Roland and Weiss, Stephan, "Scalable Recursive Distributed Collaborative State Estimation for Aided Inertial Navigation", Proceedings of the IEEE International Conference on Robotics and Automation (ICRA), IEEE, Xi’an, DOI: 10.1109/ICRA48506.2021.9561203, 2021.
 *  [3] Jung, Roland and Weiss, Stephan, "Modular Multi-Sensor Fusion: A Collaborative State Estimation Perspective", IEEE Robotics and Automation Letters, DOI: 10.1109/LRA.2021.3096165, 2021.
 *  [4] Brommer, Christian and Jung, Roland and Steinbrener, Jan and Weiss, Stephan, “MaRS: A modular and robust sensor-fusion framework,” IEEE Robotics and Automation Letters, DOI: 10.1109/LRA.2020.3043195, 2020.
-*  [5] Jung, Roland and Luft, Lukas and Weiss, Stephan, "The Isolated Kalman Filtering Paradigm", 2023
+*  [5] Jung, Roland and Luft, Lukas and Weiss, Stephan, "Isolated Kalman Filtering: Theory and Decoupled Estimator Design", 2023
 *  [6] Jung, Roland, “Recursive distributed collaborative aided inertial navigation,” Ph.D. dissertation, Faculty of Technical Sciences with the Control of Networked Systems group, University of Klagenfurt, Aug. 2023. 
-# CREDITS
-
-Cmake project based on [cginternals/cmake-init](https://github.com/cginternals/cmake-init).
 
 
-# License
 
-This software is made available to the public to use (_source-available_), 
-licensed under the terms of the BSD-2-Clause-License with no commercial use 
-allowed, the full terms of which are made available in the `LICENSE` file. 
-No license in patents is granted.
 
-### Usage for academic purposes
-If you use this software in an academic research setting, please cite the
-corresponding paper and consult the `LICENSE` file for a detailed explanation.
-
-```latex
-@inproceedings{jung_isolated_2023,
-   author   = {Jung, Roland and Luft, Lukas and Weiss, Stephan},
-   journal  = {tbd},
-   doi      = {tbd},
-   title    = {The Isolated Kalman Filtering Paradigm},
-   year     = {2023},
-}
-```
