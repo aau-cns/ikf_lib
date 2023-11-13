@@ -55,5 +55,14 @@ struct IKF_API ProcessMeasResult_t {
 };
 
 typedef std::vector<ProcessMeasResult_t> ProcessMeasResult_vec_t;
+
+inline std::ostream& operator<<(std::ostream& out, const ProcessMeasResult_vec_t& obj) {
+  for (auto const& e : obj) {
+    out << e << std::endl;
+  }
+  return out;
+}
+
 }  // namespace ikf
+
 #endif  // PROCESSMEASRESULT_T_HPP

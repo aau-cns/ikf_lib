@@ -18,8 +18,9 @@
 ******************************************************************************/
 #include <ikf/Estimator/IKalmanFilter.hpp>
 #include <ikf/Estimator/KalmanFilter.hpp>
-#include <ikf/utils/eigen_utils.hpp>
+#include <ikf/Estimator/NormalizedInnovationSquared.hpp>
 #include <ikf/Logger/Logger.hpp>
+#include <ikf/utils/eigen_utils.hpp>
 
 namespace ikf {
 
@@ -503,6 +504,71 @@ bool IKalmanFilter::apply_private_observation(pBelief_t &bel_II_apri, const Eige
     bel_II_apri->correct(res.delta_mean, res.Sigma_apos);
   }
   return !res.rejected;
+}
+
+bool IKalmanFilter::apply_private_observation(const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t,
+                                              h_priv h, h_priv_dx H, const KalmanFilter::CorrectionCfg_t &cfg) {
+  pBelief_t bel_apri;
+  Eigen::MatrixXd Sigma_apri = bel_apri->Sigma();
+  if (get_belief_at_t(t, bel_apri)) {
+    pBelief_t bel_idx = bel_apri->clone();
+    Eigen::MatrixXd H_idx;
+    Eigen::MatrixXd K_idx;
+    size_t const dim = bel_apri->es_dim();
+    Eigen::VectorXd mean_idx = bel_apri->mean();
+    for (size_t iter = 0; iter < cfg.num_iter; iter++) {
+      H_idx = H(bel_idx);
+      Eigen::VectorXd r_idx = z - h(bel_idx);
+
+      if (!KalmanFilter::check_dim(H_idx, R, r_idx, Sigma_apri)) {
+          return false;
+      }
+
+      if (iter > 0) {
+          r_idx = r_idx - H_idx * bel_apri->mean() + H_idx * bel_idx->mean();
+      }
+      Eigen::MatrixXd S_idx = H_idx * Sigma_apri * H_idx.transpose() + R;
+      S_idx = utils::stabilize_covariance(S_idx, cfg.eps);
+      if (cfg.use_outlier_rejection) {
+          if (!NormalizedInnovationSquared::check_NIS(S_idx, r_idx, cfg.confidence_interval)) {
+            // outlier...
+            return false;
+          }
+      }
+
+      K_idx = Sigma_apri * H_idx * S_idx.inverse();
+
+      // apply correction from the initial apri mean
+      bel_idx->mean(bel_apri->mean());
+      bel_idx->correct(K_idx * r_idx);
+
+      // check the difference of the means over the iteration steps:
+      Eigen::VectorXd mean_idx_new = bel_idx->mean();
+      Eigen::VectorXd dx = mean_idx - mean_idx_new;
+      if (dx.norm() < cfg.tol_eps) {
+          break;
+      }
+      mean_idx = mean_idx_new;
+    }
+
+    Eigen::MatrixXd U = (Eigen::MatrixXd::Identity(dim, dim) - K_idx * H_idx);
+    Eigen::MatrixXd Sigma_apos;
+    if (cfg.use_Josephs_form) {
+      Sigma_apos = U * Sigma_apri * U.transpose() + K_idx * R * K_idx.transpose();
+    } else {
+      Sigma_apos = U * Sigma_apri;
+    }
+
+    if (cfg.nummerical_stabilization) {
+      Sigma_apos = utils::stabilize_covariance(Sigma_apos, cfg.eps);
+    }
+
+    // correct inplace:
+    bel_apri->mean(bel_idx->mean());
+    bel_apri->Sigma(Sigma_apos);
+    return true;
+  }
+  return false;
 }
 
 eGetBeliefStrategy str2eGetBeliefStrategy(const std::string &str) {

@@ -40,6 +40,10 @@ public:
                                  const Eigen::MatrixXd& R, const Timestamp& t,
                                  const KalmanFilter::CorrectionCfg_t& cfg) override;
 
+  virtual bool apply_observation(const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t,
+                                 IIsolatedKalmanFilter::H_joint_dx const& H, std::vector<size_t> const& IDs,
+                                 const KalmanFilter::CorrectionCfg_t& cfg) override;
+
 protected:
   virtual Eigen::MatrixXd get_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, Timestamp const& t);
   virtual void set_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd& Sigma_IJ,
@@ -49,6 +53,9 @@ protected:
 
   virtual std::map<size_t, pBelief_t> get_dict_bel(const std::map<size_t, Eigen::MatrixXd>& dict_H, Timestamp const& t);
 
+  virtual std::map<size_t, pBelief_t> get_dict_bel(const std::vector<size_t>& ids, Timestamp const& t);
+
+  virtual size_t get_dim(std::map<size_t, pBelief_t> const& dict_bel);
   Eigen::VectorXd stack_mean(const std::map<size_t, pBelief_t>& dict_bel);
   virtual Eigen::MatrixXd stack_Sigma(const std::map<size_t, pBelief_t>& dict_bel, Timestamp const& t);
 
@@ -60,6 +67,11 @@ protected:
 
   void correct_beliefs_implace(Eigen::MatrixXd& Sigma_apos, Eigen::VectorXd& delta_mean,
                                const std::map<size_t, pBelief_t>& dict_bel);
+
+  virtual bool process_observation(const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t,
+                                   IIsolatedKalmanFilter::H_joint_dx const& H, std::vector<size_t> const& IDs,
+                                   const KalmanFilter::CorrectionCfg_t& cfg, Eigen::MatrixXd& Sigma_apos,
+                                   Eigen::VectorXd& dx, std::map<size_t, ikf::pBelief_t>& dict_bel);
 
 };  // class IsolatedKalmanFilterHandler
 

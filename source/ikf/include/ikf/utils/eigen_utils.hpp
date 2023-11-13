@@ -209,6 +209,20 @@ Eigen::MatrixXd IKF_API symmetrize_covariance(Eigen::MatrixXd const& Sigma);
 
 //
 
+template <typename scalar, int dim>
+Eigen::Matrix<scalar, dim, dim> sample_covariance(const std::vector<Eigen::Vector<scalar, dim>>& m_buffer) {
+  if (m_buffer.size() > 0) {
+    Eigen::MatrixXd M = Eigen::MatrixXd::Zero(dim, m_buffer.size());
+    for (size_t c = 0; c < m_buffer.size(); c++) {
+      M.col(c) = m_buffer.at(c);
+    }
+    Eigen::MatrixXd C = M.colwise() - M.rowwise().mean();
+    Eigen::MatrixXd Q = (C * C.transpose()) / double(m_buffer.size() - 1);
+    return Q;
+  }
+  return Eigen::Matrix<scalar, dim, dim>();
+}
+
 ///
 /// \brief Applies a eps on negative eigenvalues. Adapted from Christian Brommer:
 /// https://github.com/aau-cns/mars_lib/blob/main/source/mars/source/nearest_cov.cpp

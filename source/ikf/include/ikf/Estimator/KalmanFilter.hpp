@@ -52,6 +52,8 @@ public:
     bool nummerical_stabilization=true;
     double confidence_interval = 0.997;  // supported levels: [0.68, 0.95, 0.997]
     double eps = 1e-16;
+    size_t num_iter = 10;   // max. number of iterations in the Iterative EKF steps
+    double tol_eps = 1e-6;  // the correction step is iterated until this convergence tolerance is met.
   };
 
   static CorrectionResult_t correction_step(Eigen::MatrixXd const& H, Eigen::MatrixXd const& R,

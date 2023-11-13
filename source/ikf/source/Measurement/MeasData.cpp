@@ -46,8 +46,7 @@ Eigen::MatrixXd MeasData::get_R() const {
 
 }
 
-std::ostream &operator<<(std::ostream &out, const MeasData &obj)
-{
+std::ostream &operator<<(std::ostream &out, const MeasData &obj) {
   out << "MeasData:";
   out << std::left;
   out << " t_m=" << std::setw(16) << obj.t_m.str();

@@ -18,13 +18,13 @@
 ******************************************************************************/
 #ifndef I_KALMAN_FILTER_HPP
 #define I_KALMAN_FILTER_HPP
-#include <ikf/ikf_api.h>
 #include "ikf/Container/TMultiHistoryBuffer.hpp"
+#include <functional>
+#include <ikf/Estimate/IBelief.hpp>
 #include <ikf/Estimator/KalmanFilter.hpp>
 #include <ikf/Estimator/ProcessMeasResult_t.hpp>
 #include <ikf/Measurement/MeasData.hpp>
-#include <ikf/Estimate/IBelief.hpp>
-
+#include <ikf/ikf_api.h>
 
 namespace ikf {
 
@@ -48,8 +48,12 @@ eGetBeliefStrategy IKF_API str2eGetBeliefStrategy(const std::string &str);
 /// stored as "MeasData" in a fixed time horizon buffer "HistMeas".
 class IKF_API IKalmanFilter {
 public:
+  typedef std::function<Eigen::VectorXd(pBelief_t &)> h_priv;
+  typedef std::function<Eigen::MatrixXd(pBelief_t &)> h_priv_dx;
+
+public:
   IKalmanFilter(double const horizon_sec_=1.0, bool const handle_delayed_meas=true);
-  IKalmanFilter(pBelief_t bel_0, double const horizon_sec_=1.0, bool const handle_delayed_meas=true);
+  IKalmanFilter(pBelief_t bel_0, double const horizon_sec_ = 1.0, bool const handle_delayed_meas = true);
 
   ///////////////////////////////////////////////////////////////////////////////////
   /// Trigger the filter:
@@ -92,9 +96,9 @@ protected:
   virtual bool insert_measurement(MeasData const &m, Timestamp const &t);
 
   virtual ProcessMeasResult_vec_t redo_updates_after_t(Timestamp const &t);
-  bool correct_belief_at_t(Eigen::VectorXd const& mean_corr, Eigen::MatrixXd const& Sigma_apos, Timestamp const&t);
+  bool correct_belief_at_t(Eigen::VectorXd const &mean_corr, Eigen::MatrixXd const &Sigma_apos, Timestamp const &t);
 
-  virtual void remove_beliefs_after_t(Timestamp const& t);
+  virtual void remove_beliefs_after_t(Timestamp const &t);
   virtual void check_horizon();
 
   ///
@@ -108,10 +112,12 @@ protected:
   // KF:
   virtual  bool apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
   // EKF: if linearizing about bel_II_apri
-  virtual  bool apply_propagation(pBelief_t& bel_II_a, const Eigen::VectorXd &mean_II_b, const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
+  virtual bool apply_propagation(pBelief_t &bel_II_a, const Eigen::VectorXd &mean_II_b,
+                                 const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a,
+                                 const Timestamp &t_b);
 
-  virtual  bool apply_propagation(pBelief_t bel_II_b, const Eigen::MatrixXd &Phi_II_ab,  const Timestamp &t_a, const Timestamp &t_b);
-
+  virtual bool apply_propagation(pBelief_t bel_II_b, const Eigen::MatrixXd &Phi_II_ab, const Timestamp &t_a,
+                                 const Timestamp &t_b);
 
   // KF:
   virtual bool apply_private_observation(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg);
@@ -119,16 +125,20 @@ protected:
   virtual bool apply_private_observation(pBelief_t &bel_II_apri, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R,
                                          const Eigen::VectorXd &r, const KalmanFilter::CorrectionCfg_t &cfg);
 
+  // TODO: z is assumed to be an Euclidean object, but could originate from Manifold as well, e.g. SO3
+  // Maybe pass z as pBelief(z, R), then h_priv must return a pBelief as well...
+  virtual bool apply_private_observation(const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t,
+                                         h_priv h, h_priv_dx H, const KalmanFilter::CorrectionCfg_t &cfg);
+
   TTimeHorizonBuffer<pBelief_t> HistBelief;
   TTimeHorizonBuffer<MeasData, TMultiHistoryBuffer<MeasData>> HistMeas;
   TTimeHorizonBuffer<MeasData> HistMeasPropagation;
   double max_time_horizon_sec;
   bool m_handle_delayed_meas = true;  // specifies, if the instance maintains a history of past measurements or not
   bool m_enabled = true;              // specifies, if the instance processed measurements or not
-  KalmanFilter::CorrectionCfg_t m_CorrCfg; // specifies the default correction config.
+  KalmanFilter::CorrectionCfg_t m_CorrCfg;  // specifies the default correction config.
 
+};  // class IKalmanFilter
 
-}; // class IKalmanFilter
-
-} // namespace ikf
+}  // namespace ikf
 #endif // I_KALMAN_FILTER_HPP

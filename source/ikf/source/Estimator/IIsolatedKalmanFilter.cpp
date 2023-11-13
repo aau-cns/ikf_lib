@@ -116,7 +116,6 @@ void IIsolatedKalmanFilter::remove_from_t(const Timestamp &t) {
 
 void IIsolatedKalmanFilter::set_horizon(const double t_hor) {
   IKalmanFilter::set_horizon(t_hor);
-  HistBelief.set_horizon(t_hor);
   for (auto& elem : HistCrossCovFactors){
     elem.second.set_horizon(t_hor);
   }
@@ -281,6 +280,12 @@ bool IIsolatedKalmanFilter::apply_observation(const std::map<size_t, Eigen::Matr
                                               const Eigen::VectorXd &r, const Timestamp &t,
                                               const KalmanFilter::CorrectionCfg_t &cfg) {
   return m_pHandler->apply_observation(dict_H, R, r, t, cfg);
+}
+
+bool IIsolatedKalmanFilter::apply_observation(const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t,
+                                              H_joint_dx const &H, const std::vector<size_t> &IDs,
+                                              const KalmanFilter::CorrectionCfg_t &cfg) {
+  return m_pHandler->apply_observation(R, z, t, H, IDs, cfg);
 }
 
 }  // namespace ikf

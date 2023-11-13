@@ -71,8 +71,14 @@ public:
   virtual std::shared_ptr<IBelief> interpolate(std::shared_ptr<IBelief> obj_a,
                                                        std::shared_ptr<IBelief> obj_b,
                                                        double const i) = 0; //  returns a new object!
+  virtual Eigen::VectorXd boxminus(std::shared_ptr<IBelief> right) {
+    return m_mean - right->mean();
+  }  //  returns an error-state element (first order approximation, e.g., a quaternion to theta)!
+  virtual void boxplus(Eigen::VectorXd const& dx) { correct(dx); }
   virtual void correct(Eigen::VectorXd const& dx) = 0; // inplace and accoring to the error definiton!
-  virtual void correct(Eigen::VectorXd const& dx, const Eigen::MatrixXd& Sigma_apos) = 0; // inplace and accoring to the error definiton!
+  virtual void correct(Eigen::VectorXd const& dx, const Eigen::MatrixXd& Sigma_apos)
+    = 0;  // inplace and accoring to the error definiton!
+
   //// PURE VIRTUAL:
   ////////////////////////////////////////////////////////
 
