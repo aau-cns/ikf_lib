@@ -323,17 +323,19 @@ bool IsolatedKalmanFilterHandler::process_observation(const Eigen::MatrixXd &R, 
   RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_apri), "Joint apri covariance is not PSD at t=" + t.str());
 
   std::map<size_t, pBelief_t> bel_idx;
-  size_t dim = 0;
-  for (auto &e : dict_bel) {
-    bel_idx.insert({e.first, e.second->clone()});
-    dim += e.second->es_dim();
+  size_t es_dim = 0;
+  for (auto &bel_I : dict_bel) {
+    bel_idx.insert({bel_I.first, bel_I.second->clone()});
+    es_dim += bel_I.second->es_dim();
   }
 
   Eigen::MatrixXd H_idx;
   Eigen::MatrixXd K_idx;
-  Eigen::VectorXd mean_idx = mean_apri;
+  Eigen::VectorXd dx_idx = Eigen::VectorXd::Zero(es_dim, 1);
+  Eigen::MatrixXd J_idx = Eigen::MatrixXd::Identity(es_dim, es_dim);
 
-  // iterated EKF update steps:
+  // NOTE: iterated Error-KF update steps: we move the nominal state in each iteration, therefore the error-state
+  // covariance at the nominal-state needs to be shifted as well...
   for (size_t iter = 0; iter < cfg.num_iter; iter++) {
     // compute individuals' Jacobian
     std::pair<std::map<size_t, Eigen::MatrixXd>, Eigen::VectorXd> Jac_z_est_idx = H(bel_idx, IDs);
@@ -348,22 +350,39 @@ bool IsolatedKalmanFilterHandler::process_observation(const Eigen::MatrixXd &R, 
     if (!KalmanFilter::check_dim(H_idx, R, r_idx, Sigma_apri)) {
       return false;
     }
-
+    Eigen::VectorXd e_x_idx = Eigen::VectorXd::Zero(es_dim, 1);
     if (iter > 0) {
       // TODO: we need the box-minus operator here per belief!
-      Eigen::VectorXd e_x_idx = Eigen::VectorXd::Zero(dim, 1);
-      size_t row_start = 0;
-      for (auto &e : dict_bel) {
-        size_t dim_I = e.second->es_dim();
 
-        Eigen::VectorXd e_x_ii = e.second->boxminus(bel_idx.at(e.first));
+      size_t row_start = 0;
+      for (auto &bel_apri_i : dict_bel) {
+        size_t dim_I = bel_apri_i.second->es_dim();
+
+        // e_idx = (x_est_idx boxminus x_apri)
+        // Eigen::VectorXd e_x_ii = bel_i.second->boxminus(bel_idx.at(bel_i.first));
+
+        // https://github.com/decargroup/navlie/blob/a19dbe32cc5337048ca2a20f67852150b2322513/navlie/filters.py#L360
+        // bel_err_idx = wedge(bel_apri^(inv) * bel_idx);  bel_err_idx = bel_idx - bel_apri;
+        Eigen::VectorXd e_x_ii = bel_idx.at(bel_apri_i.first)->boxminus(bel_apri_i.second);
         e_x_idx.block(row_start, 0, dim_I, 1) = e_x_ii;
         row_start += dim_I;
       }
 
+      // stack state Jacobian_plus
+      row_start = 0;
+      for (auto &bel_idx_i : bel_idx) {
+        size_t dim_I = bel_idx_i.second->es_dim();
+
+        // https://github.com/decargroup/navlie/blob/a19dbe32cc5337048ca2a20f67852150b2322513/navlie/filters.py#L361
+        J_idx.block(row_start, row_start, dim_I, dim_I)
+          = bel_idx_i.second->plus_jacobian(e_x_idx.block(row_start, 0, dim_I, 1));
+        row_start += dim_I;
+      }
+
       // r_idx = z_est -  H_idx*(x_est_apri - x_est_idx)
-      r_idx = r_idx - H_idx * (e_x_idx);
+      r_idx = r_idx - H_idx * (J_idx * e_x_idx);
     }
+
     Eigen::MatrixXd S_idx = H_idx * Sigma_apri * H_idx.transpose() + R;
     S_idx = utils::stabilize_covariance(S_idx, cfg.eps);
     if (cfg.use_outlier_rejection) {
@@ -381,25 +400,22 @@ bool IsolatedKalmanFilterHandler::process_observation(const Eigen::MatrixXd &R, 
     }
 
     // mean correction
-    dx = K_idx * r_idx;
+    dx_idx = J_idx * e_x_idx + K_idx * r_idx;
 
     size_t row_start = 0;
-    for (auto const &e_i : bel_idx) {
-      size_t dim_I = e_i.second->es_dim();
-      e_i.second->boxplus(dx.block(row_start, 0, dim_I, 1));
+    for (auto const &bel_i : bel_idx) {
+      size_t dim_I = bel_i.second->es_dim();
+      bel_i.second->boxplus(dx_idx.block(row_start, 0, dim_I, 1));
       row_start += dim_I;
     }
-    Eigen::VectorXd mean_idx_new = stack_mean(bel_idx);
 
     // check the difference of the means over the iteration steps:
-    Eigen::VectorXd delta_mean = mean_idx - mean_idx_new;
-    if (delta_mean.norm() < cfg.tol_eps) {
+    if (dx_idx.norm() < cfg.tol_eps) {
       break;
     }
-    mean_idx = mean_idx_new;
   }
 
-  Eigen::MatrixXd U = (Eigen::MatrixXd::Identity(dim, dim) - K_idx * H_idx);
+  Eigen::MatrixXd U = (Eigen::MatrixXd::Identity(es_dim, es_dim) - K_idx * H_idx);
   if (cfg.use_Josephs_form) {
     Sigma_apos = U * Sigma_apri * U.transpose() + K_idx * R * K_idx.transpose();
   } else {
@@ -410,12 +426,16 @@ bool IsolatedKalmanFilterHandler::process_observation(const Eigen::MatrixXd &R, 
     Sigma_apos = utils::stabilize_covariance(Sigma_apos, cfg.eps);
   }
 
-  // correct inplace:
-
   bool is_psd = utils::is_positive_semidefinite(Sigma_apos);
   RTV_EXPECT_TRUE_MSG(is_psd, "Joint apos covariance is not PSD at t=" + t.str());
   if (!is_psd) {
     Sigma_apos = utils::nearest_covariance(Sigma_apos, 1e-6);
+  }
+
+  // correct inplace:
+  dx = Eigen::VectorXd::Zero(es_dim, 1);
+  for (auto const &bel_i : bel_idx) {
+    dict_bel.at(bel_i.first)->mean(bel_i.second->mean());
   }
   return true;
 }
