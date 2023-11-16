@@ -333,6 +333,7 @@ bool IsolatedKalmanFilterHandler::process_observation(const Eigen::MatrixXd &R, 
   Eigen::MatrixXd K_idx;
   Eigen::VectorXd dx_idx = Eigen::VectorXd::Zero(es_dim, 1);
   Eigen::MatrixXd J_idx = Eigen::MatrixXd::Identity(es_dim, es_dim);
+  Eigen::MatrixXd P_idx = Sigma_apri;
 
   // NOTE: iterated Error-KF update steps: we move the nominal state in each iteration, therefore the error-state
   // covariance at the nominal-state needs to be shifted as well...
@@ -364,6 +365,8 @@ bool IsolatedKalmanFilterHandler::process_observation(const Eigen::MatrixXd &R, 
         // https://github.com/decargroup/navlie/blob/a19dbe32cc5337048ca2a20f67852150b2322513/navlie/filters.py#L360
         // bel_err_idx = wedge(bel_apri^(inv) * bel_idx);  bel_err_idx = bel_idx - bel_apri;
         Eigen::VectorXd e_x_ii = bel_idx.at(bel_apri_i.first)->boxminus(bel_apri_i.second);
+        // Eigen::VectorXd e_x_ii = bel_apri_i.second->boxminus(bel_idx.at(bel_apri_i.first));
+
         e_x_idx.block(row_start, 0, dim_I, 1) = e_x_ii;
         row_start += dim_I;
       }
@@ -374,16 +377,19 @@ bool IsolatedKalmanFilterHandler::process_observation(const Eigen::MatrixXd &R, 
         size_t dim_I = bel_idx_i.second->es_dim();
 
         // https://github.com/decargroup/navlie/blob/a19dbe32cc5337048ca2a20f67852150b2322513/navlie/filters.py#L361
+        // We need the right Jacobian
         J_idx.block(row_start, row_start, dim_I, dim_I)
-          = bel_idx_i.second->plus_jacobian(e_x_idx.block(row_start, 0, dim_I, 1));
+          = bel_idx_i.second->plus_jacobian(-e_x_idx.block(row_start, 0, dim_I, 1));
         row_start += dim_I;
       }
 
       // r_idx = z_est -  H_idx*(x_est_apri - x_est_idx)
-      r_idx = r_idx - H_idx * (J_idx * e_x_idx);
+      r_idx = r_idx + H_idx * (J_idx * e_x_idx);
     }
 
-    Eigen::MatrixXd S_idx = H_idx * Sigma_apri * H_idx.transpose() + R;
+    P_idx = J_idx * Sigma_apri * J_idx.transpose();
+
+    Eigen::MatrixXd S_idx = H_idx * P_idx * H_idx.transpose() + R;
     S_idx = utils::stabilize_covariance(S_idx, cfg.eps);
     if (cfg.use_outlier_rejection) {
       if (!NormalizedInnovationSquared::check_NIS(S_idx, r_idx, cfg.confidence_interval)) {
@@ -392,15 +398,10 @@ bool IsolatedKalmanFilterHandler::process_observation(const Eigen::MatrixXd &R, 
       }
     }
 
-    K_idx = Sigma_apri * H_idx.transpose() * S_idx.inverse();
-
-    // apply correction from the initial apri mean
-    for (auto &e : dict_bel) {
-      bel_idx.at(e.first)->mean(e.second->mean());
-    }
+    K_idx = P_idx * H_idx.transpose() * S_idx.inverse();
 
     // mean correction
-    dx_idx = J_idx * e_x_idx + K_idx * r_idx;
+    dx_idx = -J_idx * e_x_idx + K_idx * r_idx;
 
     size_t row_start = 0;
     for (auto const &bel_i : bel_idx) {
@@ -410,16 +411,17 @@ bool IsolatedKalmanFilterHandler::process_observation(const Eigen::MatrixXd &R, 
     }
 
     // check the difference of the means over the iteration steps:
-    if (dx_idx.norm() < cfg.tol_eps) {
+    if (dx_idx.norm() < cfg.tol_eps && iter > 0) {
+      // ikf::Logger::ikf_logger()->warn("Stopped after n iterations:" + std::to_string(iter));
       break;
     }
   }
 
   Eigen::MatrixXd U = (Eigen::MatrixXd::Identity(es_dim, es_dim) - K_idx * H_idx);
   if (cfg.use_Josephs_form) {
-    Sigma_apos = U * Sigma_apri * U.transpose() + K_idx * R * K_idx.transpose();
+    Sigma_apos = U * P_idx * U.transpose() + K_idx * R * K_idx.transpose();
   } else {
-    Sigma_apos = U * Sigma_apri;
+    Sigma_apos = U * P_idx;
   }
 
   if (cfg.nummerical_stabilization) {
