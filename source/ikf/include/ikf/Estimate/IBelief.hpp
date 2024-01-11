@@ -54,6 +54,7 @@ public:
   // TODO: double check if operators are needed
   IBelief& operator= (const IBelief& param) = default;
   // Error-state size; should be DoF of the system process
+  virtual size_t dof() const;
   virtual size_t es_dim() const;
   // Nominal-state size; actual representation of the system process.
   virtual size_t ns_dim() const;
@@ -102,6 +103,8 @@ public:
     return out;
   }
 protected:
+  // TODO: mean should not be limited to R(n) and support any manifold!
+  // this makes ns_dim obsulete and es_dim becomes DoF.
   Eigen::VectorXd m_mean;
   Eigen::MatrixXd m_Sigma;
   size_t m_es_dim = 0;

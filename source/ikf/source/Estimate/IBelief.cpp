@@ -107,5 +107,5 @@ void IBelief::apply_init_strategy(std::shared_ptr<IBelief> &bel_0, const eInitSt
   }
 }
 
-
+size_t ikf::IBelief::dof() const { return m_es_dim; }
 }
