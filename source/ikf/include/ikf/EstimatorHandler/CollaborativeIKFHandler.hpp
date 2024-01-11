@@ -30,6 +30,7 @@ public:
   ~CollaborativeIKFHandler() = default;
 
   virtual size_t get_propagation_sensor_ID(size_t const ID = 0) override;
+  virtual std::string get_type_by_ID(size_t const ID = 0) override;
 
   virtual bool get_belief_at_t(size_t const ID, Timestamp const& t, pBelief_t& bel,
                                eGetBeliefStrategy const type = eGetBeliefStrategy::EXACT) override;

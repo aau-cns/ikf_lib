@@ -32,7 +32,18 @@ size_t ikf::CollaborativeIKFHandler::get_propagation_sensor_ID(const size_t ID) 
   if (ID == 0 || exists(ID)) {
     return m_PropSensor_ID;
   } else {
+    // slow: performs a request
     return m_pAgentHandler->get_propagation_sensor_ID(ID);
+  }
+}
+
+std::string CollaborativeIKFHandler::get_type_by_ID(const size_t ID) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+  if (ID == 0 || exists(ID)) {
+    return IDICOHandler::get_type_by_ID(ID);
+  } else {
+    // fast: accessing locally held data
+    return m_pAgentHandler->get_type_by_ID(ID);
   }
 }
 

@@ -23,7 +23,14 @@ class IKF_API IMultiAgentHandler {
 public:
   typedef size_t IDAgent_t;
   typedef size_t IDEstimator_t;
-  typedef std::map<IDAgent_t, std::vector<IDEstimator_t>> agents_ids_t;
+  struct EstimatorInfo_t {
+    IDEstimator_t ID;
+    std::string type;
+    EstimatorInfo_t(IDEstimator_t const id_ = 0, std::string const& type_ = "") : ID(id_), type(type_) {}
+  };
+  typedef std::map<IDAgent_t, std::vector<EstimatorInfo_t>> agents_ids_t;
+  typedef std::map<IDEstimator_t, IDAgent_t> dict_ID2Agent_t;
+  typedef std::map<IDEstimator_t, std::string> dict_id_type_t;
 
   IMultiAgentHandler(IDAgent_t const id);
   virtual ~IMultiAgentHandler();
@@ -32,6 +39,8 @@ public:
 
   virtual std::vector<IDEstimator_t> get_estimator_IDs();
   virtual std::vector<IDAgent_t> get_agent_IDs();
+  virtual dict_id_type_t get_types();
+  virtual std::string get_type_by_ID(IDEstimator_t const ID = 0);
 
   IDAgent_t estimatorID2agentID(IDEstimator_t const ID_est);
   bool exists(IDEstimator_t const ID_est);
@@ -88,6 +97,7 @@ public:
 
 protected:
   agents_ids_t dict_agents_ids;
+  dict_ID2Agent_t dict_ID2Agent;
   IDAgent_t m_AgentID = 0;
   pDICOHandler_t m_pLocalHandler;
 };

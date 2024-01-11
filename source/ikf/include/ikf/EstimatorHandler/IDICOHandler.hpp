@@ -34,6 +34,7 @@ public:
   bool remove(const size_t ID);
   bool exists(const size_t ID);
   std::vector<size_t> get_instance_ids();
+  std::vector<std::string> get_instance_types();
   double horizon_sec() const;
   void set_horizon(double const t_hor);
   void reset();
@@ -41,6 +42,7 @@ public:
   // TODO: hack needed for mmsf::SensorEstimatorHandler
   virtual size_t get_propagation_sensor_ID(size_t const ID = 0);
   void set_propagation_sensor_ID(size_t const ID);
+  virtual std::string get_type_by_ID(size_t const ID = 0);
 
   virtual bool get_belief_at_t(size_t const ID, Timestamp const& t, pBelief_t& bel,
                                eGetBeliefStrategy const type = eGetBeliefStrategy::EXACT);

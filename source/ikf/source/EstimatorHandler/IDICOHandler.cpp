@@ -57,6 +57,17 @@ std::vector<size_t> IDICOHandler::get_instance_ids() {
   return IDs;
 }
 
+std::vector<std::string> IDICOHandler::get_instance_types() {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+
+  std::vector<std::string> IDs;
+  IDs.reserve(id_dict.size());
+  for (auto const &elem : id_dict) {
+    IDs.push_back(elem.second->m_type);
+  }
+  return IDs;
+}
+
 double ikf::IDICOHandler::horizon_sec() const { return m_horzion_sec; }
 
 void IDICOHandler::set_horizon(const double t_hor) {
@@ -257,6 +268,15 @@ void IDICOHandler::reset() {
 size_t IDICOHandler::get_propagation_sensor_ID(const size_t ID) { return m_PropSensor_ID; }
 
 void IDICOHandler::set_propagation_sensor_ID(const size_t ID) { m_PropSensor_ID = ID; }
+
+std::string IDICOHandler::get_type_by_ID(const size_t ID) {
+  std::shared_ptr<IIsolatedKalmanFilter> pInst = get(ID);
+  if (pInst) {
+    return pInst->m_type;
+  } else {
+    return "";
+  }
+}
 
 bool ikf::IDICOHandler::get_belief_at_t(const size_t ID, const Timestamp &t, pBelief_t &bel,
                                         const eGetBeliefStrategy type) {
