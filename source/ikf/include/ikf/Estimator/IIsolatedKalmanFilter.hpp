@@ -88,7 +88,8 @@ public:
     H_joint_dx;
 
 public:
-  IIsolatedKalmanFilter(std::shared_ptr<IDICOHandler> ptr_Handler, size_t const ID, double const horizon_sec = 1.0);
+  IIsolatedKalmanFilter(std::shared_ptr<IDICOHandler> ptr_Handler, size_t const ID, double const horizon_sec = 1.0,
+                        std::string const& type = "");
   virtual ~IIsolatedKalmanFilter() {}
 
   size_t ID() const;
@@ -187,7 +188,7 @@ protected:
   std::shared_ptr<IDICOHandler> m_pHandler;
   std::unordered_map<size_t, TTimeHorizonBuffer<Eigen::MatrixXd>> HistCrossCovFactors;
   size_t m_ID;
-
+  std::string m_type;
 
 }; // class IIsolatedKalmanFilter
 
