@@ -175,27 +175,6 @@ bool IKalmanFilter::get_belief_at_t(const Timestamp &t, pBelief_t &bel, const ik
         }
         break;
       }
-      case eGetBeliefStrategy::LINEAR_INTERPOL_BELIEF:
-      {
-        TStampedData<pBelief_t> stamped_bel_prev, stamped_bel_after;
-        if(HistBelief.get_before_t(t, stamped_bel_prev) && HistBelief.get_after_t(t, stamped_bel_after))
-        {
-
-          // bounded between two beliefs
-          double const i = (t.to_sec() - stamped_bel_prev.stamp.to_sec())/(stamped_bel_after.stamp.to_sec() - stamped_bel_prev.stamp.to_sec());
-          bel = stamped_bel_prev.data->interpolate(stamped_bel_prev.data, stamped_bel_after.data, i);
-
-          // INFO: this lead to a "state transition" and needs to trigger apply_propagation (as hook for other filter approaches to track cross-covariances)!
-          // insert new element into HistBeliefs
-          Eigen::MatrixXd Lambda = bel->Sigma() * stamped_bel_prev.data->Sigma().inverse();
-          return apply_propagation(bel, Lambda, stamped_bel_prev.stamp, t);
-        }
-        else {
-          //  no bounds
-          return false;
-        }
-        break;
-      }
       case eGetBeliefStrategy::LINEAR_INTERPOL_MEAS:
       {
         if (HistMeasPropagation.size() > 1) {
@@ -576,8 +555,6 @@ eGetBeliefStrategy str2eGetBeliefStrategy(const std::string &str) {
     return eGetBeliefStrategy::EXACT;
   } else if (str == "CLOSEST") {
     return eGetBeliefStrategy::CLOSEST;
-  } else if (str == "LINEAR_INTERPOL_BELIEF") {
-    return eGetBeliefStrategy::LINEAR_INTERPOL_BELIEF;
   } else if (str == "LINEAR_INTERPOL_MEAS") {
     return eGetBeliefStrategy::LINEAR_INTERPOL_MEAS;
   } else if (str == "PREDICT_BELIEF") {
@@ -592,8 +569,6 @@ std::string to_string(const eGetBeliefStrategy e) {
     return "EXACT";
   case eGetBeliefStrategy::CLOSEST:
     return "CLOSEST";
-  case eGetBeliefStrategy::LINEAR_INTERPOL_BELIEF:
-    return "LINEAR_INTERPOL_BELIEF";
   case eGetBeliefStrategy::LINEAR_INTERPOL_MEAS:
     return "LINEAR_INTERPOL_MEAS";
   case eGetBeliefStrategy::PREDICT_BELIEF:

@@ -34,8 +34,6 @@ std::shared_ptr<IBelief> LinearBelief::clone() {
   return p_bel;
 }
 
-std::shared_ptr<IBelief> LinearBelief::interpolate(std::shared_ptr<IBelief> obj_a, std::shared_ptr<IBelief> obj_b, const double i) { return std::shared_ptr<IBelief>(nullptr); }
-
 void LinearBelief::correct(const Eigen::VectorXd &dx) {
   m_mean += dx;
 }

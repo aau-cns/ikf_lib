@@ -33,7 +33,7 @@ public:
   ////////////////////////////////////////////////////////////
   //// PURE VIRTUAL:
   std::shared_ptr<IBelief> clone() override;
-  std::shared_ptr<IBelief> interpolate(std::shared_ptr<IBelief> obj_a, std::shared_ptr<IBelief> obj_b, const double i) override;
+
   void correct(const Eigen::VectorXd &dx) override;
   void correct(const Eigen::VectorXd &dx, const Eigen::MatrixXd &Sigma_apos) override;
 
