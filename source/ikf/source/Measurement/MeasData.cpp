@@ -31,7 +31,7 @@ std::string to_string(const eObservationType ot) {
 }
 
 bool MeasData::has_meas_noise() const {
-  if (R.size() && R.norm() > 0.01) {
+  if (R.size() && R.norm() > 0.00000000001) {
       return true;
   }
   return false;
