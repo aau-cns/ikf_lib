@@ -138,6 +138,9 @@ void IDICOHandler::sort_measurements_from_t(const Timestamp &t) {
 
 ProcessMeasResult_vec_t IDICOHandler::process_measurement(const MeasData &m) {
   std::lock_guard<std::recursive_mutex> lk(m_mtx);
+  if (!exists(m.id_sensor)) {
+    return ProcessMeasResult_vec_t({ProcessMeasResult_t(eMeasStatus::DISCARED)});
+  }
 
   Timestamp t_latest;
   if (HistMeas.get_latest_t(t_latest)) {
@@ -231,6 +234,8 @@ ProcessMeasResult_vec_t IDICOHandler::redo_updates_after_t(const Timestamp &t) {
       HistMeas.foreach_between_t1_t2(t_after, t_last,
                                      [this, &vec](MeasData const &m) { vec.push_back(this->delegate_measurement(m)); });
     }
+  } else {
+    Logger::ikf_logger()->debug("IDICOHandler::redo_updates_after_t() t_after=" + t_after.str() + ": nothing to do...");
   }
   return vec;
 }
