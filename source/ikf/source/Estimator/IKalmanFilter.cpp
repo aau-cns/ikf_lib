@@ -389,7 +389,7 @@ ProcessMeasResult_t IKalmanFilter::delegate_measurement(const MeasData &m) {
 
   res.exec_time = m_profiler.elapsedSec();
   res.t = m.t_m;
-  res.observation_type = m.meas_type;
+  res.meas_type = m.meas_type;
   res.obs_type = m.obs_type;
   return res;
 }

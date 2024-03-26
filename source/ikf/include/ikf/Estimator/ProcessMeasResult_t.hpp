@@ -39,7 +39,7 @@ struct IKF_API ProcessMeasResult_t {
   eMeasStatus status{eMeasStatus::REJECTED};
   eObservationType obs_type{eObservationType::UNKNOWN};
   Eigen::VectorXd residual;
-  std::string observation_type{"unkown"}; // TODO: rename to meas_type
+  std::string meas_type{""}; // TODO: rename to meas_type
   std::vector<size_t> ID_participants;
   Timestamp t;
   double exec_time = 0.0;
@@ -51,7 +51,8 @@ struct IKF_API ProcessMeasResult_t {
   friend std::ostream& operator<<(std::ostream& out, const ProcessMeasResult_t& obj) {
     out << "MeasResult: "
         << "status=:" << to_string(obj.status);
-    out << ", residual:" << obj.residual << ", observation_type=" << obj.observation_type;
+    out << ", residual:" << obj.residual;
+    out << ", meas_type=" << obj.meas_type;
     out << ", #part.: " << obj.ID_participants.size();
     out << ", exec time:" << obj.exec_time;
     return out;

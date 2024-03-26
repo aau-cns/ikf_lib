@@ -195,7 +195,7 @@ ProcessMeasResult_t IDICOHandler::delegate_measurement(const MeasData &m) {
     }
   }
   res.t = m.t_m;
-  res.observation_type = m.meas_type;
+  res.meas_type = m.meas_type;
   return res;
 }
 
