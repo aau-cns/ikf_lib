@@ -91,6 +91,7 @@ public:
     out << " t=" << std::setw(16) << m_timestamp.str();
     out << ", mean=" << std::setprecision(4) <<  m_mean.transpose();
     out << ", diag(Sigma)=" << std::setprecision(4) << m_Sigma.diagonal().transpose();
+    out << ", fix=" << std::to_string((int)m_options.is_fixed);
     out << std::internal;
   }
 
@@ -99,7 +100,7 @@ public:
     return out;
   }
 protected:
-  // TODO: mean should not be limited to R(n) and support any manifold!
+  // TODO (18.1.2024): mean should not be limited to R(n) and support any manifold!
   // this makes ns_dim obsulete and es_dim becomes DoF.
   Eigen::VectorXd m_mean;
   Eigen::MatrixXd m_Sigma;
