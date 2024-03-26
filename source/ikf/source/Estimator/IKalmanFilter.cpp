@@ -21,6 +21,7 @@
 #include <ikf/Estimator/NormalizedInnovationSquared.hpp>
 #include <ikf/Logger/Logger.hpp>
 #include <ikf/utils/eigen_utils.hpp>
+#include <ikf/utils/Profiler.hpp>
 
 namespace ikf {
 
@@ -364,12 +365,15 @@ bool ikf::IKalmanFilter::get_prop_meas_at_t(const Timestamp &t, MeasData &m) {
 
 ProcessMeasResult_t IKalmanFilter::delegate_measurement(const MeasData &m) {
   ProcessMeasResult_t res;
+
   res.status = eMeasStatus::DISCARED;
+  m_profiler.start();
+
   switch (m.obs_type) {
   case eObservationType::PROPAGATION: {
     res = progapation_measurement(m);
 
-    // needed for inter-properation interpolation (replace in case of re-do updates
+            // needed for inter-properation interpolation (replace in case of re-do updates
     HistMeasPropagation.insert(m, m.t_m);
     break;
   }
@@ -377,15 +381,17 @@ ProcessMeasResult_t IKalmanFilter::delegate_measurement(const MeasData &m) {
     res = local_private_measurement(m);
     break;
   }
-    case eObservationType::JOINT_OBSERVATION:
-    case eObservationType::UNKNOWN:
-    default:
+  case eObservationType::JOINT_OBSERVATION:
+  case eObservationType::UNKNOWN:
+  default:
     break;
-    }
+  }
 
-    res.t = m.t_m;
-    res.observation_type = m.meas_type;
-    return res;
+  res.exec_time = m_profiler.elapsedSec();
+  res.t = m.t_m;
+  res.observation_type = m.meas_type;
+  res.obs_type = m.obs_type;
+  return res;
 }
 
 bool IKalmanFilter::apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab,

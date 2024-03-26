@@ -18,13 +18,15 @@
 ******************************************************************************/
 #ifndef I_KALMAN_FILTER_HPP
 #define I_KALMAN_FILTER_HPP
-#include "ikf/Container/TMultiHistoryBuffer.hpp"
 #include <functional>
+#include <ikf/ikf_api.h>
 #include <ikf/Estimate/IBelief.hpp>
 #include <ikf/Estimator/KalmanFilter.hpp>
 #include <ikf/Estimator/ProcessMeasResult_t.hpp>
 #include <ikf/Measurement/MeasData.hpp>
-#include <ikf/ikf_api.h>
+#include "ikf/utils/Profiler.hpp"
+#include "ikf/Container/TMultiHistoryBuffer.hpp"
+
 
 namespace ikf {
 
@@ -135,6 +137,7 @@ protected:
   bool m_handle_delayed_meas = true;  // specifies, if the instance maintains a history of past measurements or not
   bool m_enabled = true;              // specifies, if the instance processed measurements or not
   KalmanFilter::CorrectionCfg_t m_CorrCfg;  // specifies the default correction config.
+  ikf::utils::Profiler m_profiler;
 
 };  // class IKalmanFilter
 

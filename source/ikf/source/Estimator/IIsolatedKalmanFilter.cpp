@@ -176,9 +176,13 @@ ProcessMeasResult_t IIsolatedKalmanFilter::delegate_measurement(const MeasData &
   ProcessMeasResult_t res;
 
   if (m.obs_type == eObservationType::JOINT_OBSERVATION) {
+    res.status = eMeasStatus::DISCARED;
+    m_profiler.start();
     res = local_joint_measurement(m);
+    res.exec_time = m_profiler.elapsedSec();
     res.t = m.t_m;
     res.observation_type = m.meas_type;
+    res.obs_type = m.obs_type;
   } else {
     res = IKalmanFilter::delegate_measurement(m);
   }
