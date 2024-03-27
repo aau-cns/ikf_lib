@@ -127,7 +127,6 @@ void IIsolatedKalmanFilter::check_horizon() {
 
   HistBelief.check_horizon_restricted(keep_elems);
   HistMeas.check_horizon_restricted(keep_elems);
-  HistMeasPropagation.check_horizon_restricted(keep_elems);
   for (auto& elem : HistCrossCovFactors){
     elem.second.check_horizon_restricted(keep_elems);
   }

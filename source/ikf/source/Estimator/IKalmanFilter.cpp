@@ -25,11 +25,11 @@
 
 namespace ikf {
 
-IKalmanFilter::IKalmanFilter(const double horizon_sec_, const bool handle_delayed_meas) : HistBelief(horizon_sec_), HistMeas(horizon_sec_), HistMeasPropagation(horizon_sec_), max_time_horizon_sec(horizon_sec_), m_handle_delayed_meas(handle_delayed_meas) {
+IKalmanFilter::IKalmanFilter(const double horizon_sec_, const bool handle_delayed_meas) : HistBelief(horizon_sec_), HistMeas(horizon_sec_), max_time_horizon_sec(horizon_sec_), m_handle_delayed_meas(handle_delayed_meas) {
 
 }
 
-IKalmanFilter::IKalmanFilter(pBelief_t bel_0, const double horizon_sec_, const bool handle_delayed_meas) : HistBelief(horizon_sec_), HistMeas(horizon_sec_), HistMeasPropagation(horizon_sec_), max_time_horizon_sec(horizon_sec_), m_handle_delayed_meas(handle_delayed_meas)
+IKalmanFilter::IKalmanFilter(pBelief_t bel_0, const double horizon_sec_, const bool handle_delayed_meas) : HistBelief(horizon_sec_), HistMeas(horizon_sec_), max_time_horizon_sec(horizon_sec_), m_handle_delayed_meas(handle_delayed_meas)
 {
   HistBelief.insert(bel_0, bel_0->timestamp());
 }
@@ -176,73 +176,11 @@ bool IKalmanFilter::get_belief_at_t(const Timestamp &t, pBelief_t &bel, const ik
         }
         break;
       }
-      case eGetBeliefStrategy::LINEAR_INTERPOL_MEAS:
-      {
-        if (HistMeasPropagation.size() > 1) {
-          TStampedData<MeasData> stamped_meas_prev, stamped_meas_after;
-          if(HistMeasPropagation.get_before_t(t, stamped_meas_prev) && HistMeasPropagation.get_after_t(t, stamped_meas_after)) {
-            // bounded between two measurements
-
-            if (!HistBelief.exist_at_t(stamped_meas_prev.stamp)) {
-              Logger::ikf_logger()->debug("IKalmanFilter::get_belief_at_t: No blief exist at t= "
-                                          + stamped_meas_prev.stamp.str() + " in LINEAR_INTERPOL_MEAS");
-
-              Logger::ikf_logger()->debug(
-                "IKalmanFilter::get_belief_at_t: NO BOUNDING measurements for LINEAR_INTERPOL_MEAS found! at t="
-                + t.str());
-              return false;
-            }
-            MeasData pseudo_meas_b = MeasData::lin_interpolate(stamped_meas_prev.data, stamped_meas_after.data, t);
-
-            // ACCESS TO MODEL
-            ikf::ProcessMeasResult_t res = progapation_measurement(pseudo_meas_b);
-
-            HistMeasPropagation.insert(pseudo_meas_b, t);
-
-            // HOOK for child classes (IsolatedKalmanFilter)
-            if(!RTV_EXPECT_TRUE_MSG(insert_measurement(pseudo_meas_b, t), "IKalmanFilter::get_belief_at_t(): Pseudo measurement cannot be added at t=" + t.str()))
-            {
-              return false;
-            }
-
-            if (res.status == eMeasStatus::REJECTED) {
-              Logger::ikf_logger()->debug(
-                "IKalmanFilter::get_belief_at_t: pseudo measurement for LINEAR_INTERPOL_MEAS was REJECTED! at t="
-                + t.str());
-            }
-
-            // if not rejected, it will insert a new element into HistBeliefs
-            return (res.status == eMeasStatus::PROCESSED) && HistBelief.get_at_t(t, bel);
-          } else {
-            Logger::ikf_logger()->debug(
-              "IKalmanFilter::get_belief_at_t: NO BOUNDING measurements for LINEAR_INTERPOL_MEAS found! at t="
-              + t.str());
-            return false;
-          }
-        } else {
-          // no proprioceptive measurements available!
-          Logger::ikf_logger()->debug(
-            "IKalmanFilter::get_belief_at_t: NO MEASUREMENTS for LINEAR_INTERPOL_MEAS found! at t=" + t.str());
-          return false;
-        }
-        break;
-      }
       case eGetBeliefStrategy::PREDICT_BELIEF:
       {
         // if true, it will insert a new element into HistBeliefs
         bool res =  predict_to(t);
         return res && HistBelief.get_at_t(t, bel);
-      }
-
-      case eGetBeliefStrategy::AUTO: {
-        bool res = false;
-        if (HistMeasPropagation.size() > 1) {
-          res = get_belief_at_t(t, bel, eGetBeliefStrategy::LINEAR_INTERPOL_MEAS);
-        }
-        if (!res) {
-          res = get_belief_at_t(t, bel, eGetBeliefStrategy::PREDICT_BELIEF);
-        }
-        return res;
       }
       default:
       {
@@ -293,7 +231,6 @@ void IKalmanFilter::reset() {
   HistBelief.clear();
   // IMPORTANT: DO NOT CLEAR
   // HistMeas.clear();
-  // HistMeasPropagation.clear();
 }
 
 bool IKalmanFilter::insert_measurement(const MeasData &m, const Timestamp &t) {
@@ -311,13 +248,11 @@ void IKalmanFilter::set_horizon(const double t_hor) {
   max_time_horizon_sec = t_hor;
   HistBelief.set_horizon(t_hor);
   HistMeas.set_horizon(t_hor);
-  HistMeasPropagation.set_horizon(t_hor);
 }
 
 void IKalmanFilter::check_horizon() {
   HistBelief.check_horizon();
   HistMeas.check_horizon();
-  HistMeasPropagation.check_horizon();
 }
 
 void IKalmanFilter::print_HistMeas(size_t max, bool reverse) {
@@ -355,13 +290,7 @@ void IKalmanFilter::print_HistBelief(size_t max, bool reverse) {
   }
 }
 
-bool ikf::IKalmanFilter::get_prop_meas_at_t(const Timestamp &t, MeasData &m) {
-  if(HistMeasPropagation.exist_at_t(t)) {
-    HistMeasPropagation.get_at_t(t, m);
-    return true;
-  }
-  return false;
-}
+
 
 ProcessMeasResult_t IKalmanFilter::delegate_measurement(const MeasData &m) {
   ProcessMeasResult_t res;
@@ -372,9 +301,6 @@ ProcessMeasResult_t IKalmanFilter::delegate_measurement(const MeasData &m) {
   switch (m.obs_type) {
   case eObservationType::PROPAGATION: {
     res = progapation_measurement(m);
-
-            // needed for inter-properation interpolation (replace in case of re-do updates
-    HistMeasPropagation.insert(m, m.t_m);
     break;
   }
   case eObservationType::PRIVATE_OBSERVATION: {
@@ -561,8 +487,6 @@ eGetBeliefStrategy str2eGetBeliefStrategy(const std::string &str) {
     return eGetBeliefStrategy::EXACT;
   } else if (str == "CLOSEST") {
     return eGetBeliefStrategy::CLOSEST;
-  } else if (str == "LINEAR_INTERPOL_MEAS") {
-    return eGetBeliefStrategy::LINEAR_INTERPOL_MEAS;
   } else if (str == "PREDICT_BELIEF") {
     return eGetBeliefStrategy::PREDICT_BELIEF;
   }
@@ -575,8 +499,6 @@ std::string to_string(const eGetBeliefStrategy e) {
     return "EXACT";
   case eGetBeliefStrategy::CLOSEST:
     return "CLOSEST";
-  case eGetBeliefStrategy::LINEAR_INTERPOL_MEAS:
-    return "LINEAR_INTERPOL_MEAS";
   case eGetBeliefStrategy::PREDICT_BELIEF:
     return "PREDICT_BELIEF";
   default:

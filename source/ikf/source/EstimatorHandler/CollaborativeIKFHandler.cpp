@@ -107,10 +107,10 @@ std::map<size_t, pBelief_t> CollaborativeIKFHandler::get_dict_bel(const std::map
     size_t id = e.first;
     pBelief_t bel_apri;
     if (!exists(id)) {
-      RTV_EXPECT_TRUE_THROW(m_pAgentHandler->get_belief_at_t(id, t, bel_apri, eGetBeliefStrategy::AUTO),
+      RTV_EXPECT_TRUE_THROW(m_pAgentHandler->get_belief_at_t(id, t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF),
                             "Could not obtain belief");
     } else {
-      RTV_EXPECT_TRUE_THROW(get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::AUTO), "Could not obtain belief");
+      RTV_EXPECT_TRUE_THROW(get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF), "Could not obtain belief");
     }
 
     dict_bel.insert({id, bel_apri});
@@ -416,6 +416,8 @@ bool CollaborativeIKFHandler::apply_inter_agent_observation(
     for (auto const &ID_I : remote_IDs) {
       remote_FFCs[ID_I] = FCCs[ID_I];
     }
+
+    // schedules redo updates automatically
     if (!m_pAgentHandler->set_beliefs_and_FCC_at_t(t, remote_beliefs, remote_FFCs, true, true)) {
       ikf::Logger::ikf_logger()->error(
         "CollaborativeIKFHandler::apply_inter_agent_observation: failed set belief on remote agent...");

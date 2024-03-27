@@ -312,15 +312,6 @@ bool ikf::IDICOHandler::get_beliefs_at_t(const std::vector<size_t> &IDs, const s
   return res;
 }
 
-bool ikf::IDICOHandler::get_prop_meas_at_t(const size_t ID, const Timestamp &t, MeasData &m) {
-  std::lock_guard<std::recursive_mutex> lk(m_mtx);
-
-  if (exists(ID)) {
-    return get(ID)->get_prop_meas_at_t(t, m);
-  }
-  return false;
-}
-
 bool IDICOHandler::is_order_violated(const MeasData &m) {
   if (m.obs_type != eObservationType::JOINT_OBSERVATION) {
     auto meas_arr = HistMeas.get_all_at_t(m.t_m);

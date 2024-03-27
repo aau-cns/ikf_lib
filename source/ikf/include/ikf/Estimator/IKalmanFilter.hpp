@@ -33,10 +33,8 @@ namespace ikf {
 enum class IKF_API eGetBeliefStrategy {
   EXACT = 0,    // a belief is expected at a given timestamp
   CLOSEST = 1,  // if exist, return the closes belief in HistBelief (if any)
-  LINEAR_INTERPOL_MEAS
-  = 2,  // if exist, interpolate between proprioceptive measurements linearly and perform a pseudo prediction step.
-  PREDICT_BELIEF = 3,  // if KF has a prediction model, a belief is predicted
-  AUTO = 4,            // 1.) exact, 2.) if(proagation measurements available) 3). linear interpol meas, ele predict.
+  PREDICT_BELIEF = 2,  // if KF has a prediction model, a belief is predicted
+
 };
 
 std::string IKF_API to_string(const eGetBeliefStrategy e);
@@ -81,9 +79,6 @@ public:
   Eigen::MatrixXd get_Sigma_at_t(Timestamp const &t) const;
   void print_HistMeas(size_t max = 100, bool reverse = false);
   void print_HistBelief(size_t max = 100, bool reverse = false);
-
-  bool get_prop_meas_at_t(Timestamp const &t, MeasData &m);
-
 protected:
   ///////////////////////////////////////////////////////////////////////////////////
   /// pure virtual method
@@ -132,7 +127,6 @@ protected:
 
   TTimeHorizonBuffer<pBelief_t> HistBelief;
   TTimeHorizonBuffer<MeasData, TMultiHistoryBuffer<MeasData>> HistMeas;
-  TTimeHorizonBuffer<MeasData> HistMeasPropagation;
   double max_time_horizon_sec;
   bool m_handle_delayed_meas = true;  // specifies, if the instance maintains a history of past measurements or not
   bool m_enabled = true;              // specifies, if the instance processed measurements or not

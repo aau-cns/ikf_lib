@@ -50,8 +50,6 @@ public:
   virtual bool get_beliefs_at_t(std::vector<size_t> const& IDs, std::vector<eGetBeliefStrategy> const& types,
                                 Timestamp const& t, std::map<size_t, pBelief_t>& beliefs);
 
-  bool get_prop_meas_at_t(size_t const ID, Timestamp const& t, MeasData& m);
-
   virtual ProcessMeasResult_vec_t process_measurement(MeasData const& m);
 
   /// Generic fusion algorithm for M-participants:
