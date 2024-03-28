@@ -48,6 +48,7 @@ namespace ikf
         return buffer_.empty();
       }
       bool at(size_t const idx, TData& data);
+      bool at(size_t const idx, T& data);
       void clear();
 
       void set(TContainer const& buffer){
@@ -174,6 +175,24 @@ namespace ikf
           cnt++;
         }
       }
+
+      void print_reverse(std::ostream& out, size_t const N = 0) {
+        size_t len = N;
+        if(N == 0) {
+          len = size();
+        }
+
+        size_t cnt = 0;
+        for (auto iter = buffer_.rbegin(); iter!= buffer_.rend(); ++iter)
+        {
+          if(cnt < len) {
+              out << "* t=" << iter->first << ", data=" << iter->second << "\n";
+          } else {
+            break;
+          }
+          cnt++;
+        }
+      }
     protected:
       friend std::ostream;
       TContainer buffer_;
@@ -230,15 +249,33 @@ namespace ikf
   }
 
   template<typename T>
+  bool THistoryBuffer<T>::at(const size_t idx, T &data) {
+      if (idx < buffer_.size()) {
+          auto iter = buffer_.begin();
+          std::advance(iter, idx);
+          data = iter->second;
+          return true;
+      }
+      return false;
+  }
+
+  template<typename T>
   void THistoryBuffer<T>::clear() {
       buffer_.clear();
   }
 
   template<typename T>
   bool THistoryBuffer<T>::index_at_t(const Timestamp &t, size_t &idx) const {
-      if(exist_at_t(t)) {
-          auto it = buffer_.find(t.stamp_ns());
+      if(!buffer_.empty()){
+        auto it = buffer_.find(t.stamp_ns());
+        if (it == buffer_.begin()) {
+          idx = 0;
+          return true;
+        }
+        else if (it != buffer_.end()) {
           idx = std::distance(buffer_.begin(), it);
+          return true;
+        }
       }
       return false;
   }
@@ -361,14 +398,14 @@ namespace ikf
       if (it != buffer_.end()) {
           if (it != buffer_.begin()){
               auto it_before = --it;
-              elem = it_before->first;
+              elem = Timestamp(it_before->first);
               return true;
           }
       }
       else if(buffer_.size()){
           auto it_before = --it;
         // corner case: when t is outside the timespan, return last elem.
-        elem = it_before->first;
+        elem = Timestamp(it_before->first);
         return true;
       }
       return false;
@@ -410,7 +447,7 @@ namespace ikf
   bool THistoryBuffer<T>::get_after_t(const Timestamp &t, Timestamp &elem) const {
       auto it = upper_bound(t);
       if (it != buffer_.end()) {
-          elem = it->first;
+          elem = Timestamp(it->first);
           return true;
       }
       return false;
