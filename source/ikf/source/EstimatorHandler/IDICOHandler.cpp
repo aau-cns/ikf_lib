@@ -13,7 +13,7 @@
 
 namespace ikf {
 
-IDICOHandler::IDICOHandler(const double horizon_sec) : HistMeas(horizon_sec), m_horzion_sec(horizon_sec) {
+IDICOHandler::IDICOHandler(const double horizon_sec) : HistMeas(horizon_sec), HistMeas_OOO(horizon_sec), m_horzion_sec(horizon_sec) {
   Logger::ikf_logger()->info("IDICOHandler will handle delayed measurements for all it's instances (centralized)!");
   Logger::ikf_logger()->info("IDICOHandler: m_horizon_sec=" + std::to_string(m_horzion_sec));
 }
@@ -78,6 +78,7 @@ void IDICOHandler::set_horizon(const double t_hor) {
     elem.second->set_horizon(m_horzion_sec);
   }
   HistMeas.set_horizon(m_horzion_sec);
+  HistMeas_OOO.set_horizon(m_horzion_sec);
 }
 
 bool ikf::IDICOHandler::insert_measurement(const MeasData &m, const Timestamp &t) {
@@ -166,19 +167,39 @@ ProcessMeasResult_vec_t IDICOHandler::process_measurement(const MeasData &m) {
   // concurrent order
   bool order_violated = is_order_violated(m);
   if (order_violated) {
+
+    ikf::Timestamp t_start = m.t_m;
+
+    if(m.obs_type == ikf::eObservationType::PROPAGATION) {
+      // special case for pre-integration...
+      delegate_measurement(m);
+    }
+
     insert_measurement(m, m.t_m);
-    sort_measurements_from_t(m.t_m);
-    auto vec = redo_updates_from_t(m.t_m);
+    if(HistMeas_OOO.exist_before_t(m.t_m) || HistMeas_OOO.exist_at_t(m.t_m)) {
+      HistMeas_OOO.get_oldest_t(t_start);
+      HistMeas_OOO.foreach_between_t1_t2(t_start, m.t_m, [&](auto const& m){
+        insert_measurement(m, m.t_m);
+      });
+      HistMeas_OOO.remove_before_t(m.t_m);
+      HistMeas_OOO.remove_at_t(m.t_m);
+      ikf::Logger::ikf_logger()->info(
+        "IDICOHandler::process_measurement(): insert OOO measurements starting from =" + t_start.str() + " to " + m.t_m.str());
+
+    }
+
+    sort_measurements_from_t(t_start);
+    auto vec = redo_updates_from_t(t_start);
     HistMeas.check_horizon();
     return vec;
   } else {
     ProcessMeasResult_t res = delegate_measurement(m);
     ProcessMeasResult_vec_t vec({res});
-    if (res.status == eMeasStatus::OUTOFORDER && HistMeas.exist_after_t(m.t_m)) {
-      auto vec_after = redo_updates_after_t(m.t_m);
-      vec.insert(vec.end(), vec_after.begin(), vec_after.end());
+    if (res.status == eMeasStatus::OUTOFORDER) {
+      HistMeas_OOO.insert(m, m.t_m);
+      HistMeas_OOO.check_horizon();
     }
-    if (res.status != ikf::eMeasStatus::DISCARED) {
+    if (res.status == ikf::eMeasStatus::REJECTED || res.status == ikf::eMeasStatus::PROCESSED) {
       insert_measurement(m, m.t_m);
       HistMeas.check_horizon();
     }
@@ -313,6 +334,18 @@ bool ikf::IDICOHandler::get_beliefs_at_t(const std::vector<size_t> &IDs, const s
 }
 
 bool IDICOHandler::is_order_violated(const MeasData &m) {
+  // if an measurement after the current one exists...
+  if(HistMeas.exist_after_t(m.t_m)) {
+    return true;
+  }
+
+  // if an unused measurements exist at that timestamp or before
+  if(HistMeas_OOO.exist_before_t(m.t_m) || HistMeas_OOO.exist_at_t(m.t_m)) {
+    return true;
+  }
+
+
+  // if we have concurrent measurements, propagation before private; private before joint
   if (m.obs_type != eObservationType::JOINT_OBSERVATION) {
     auto meas_arr = HistMeas.get_all_at_t(m.t_m);
 
