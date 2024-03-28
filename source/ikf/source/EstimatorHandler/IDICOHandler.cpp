@@ -13,7 +13,7 @@
 
 namespace ikf {
 
-IDICOHandler::IDICOHandler(const double horizon_sec) : HistMeas(horizon_sec), HistMeas_OOO(horizon_sec), m_horzion_sec(horizon_sec) {
+IDICOHandler::IDICOHandler(const double horizon_sec) : HistMeas(horizon_sec), HistMeas_OOO(horizon_sec*0.5), m_horzion_sec(horizon_sec) {
   Logger::ikf_logger()->info("IDICOHandler will handle delayed measurements for all it's instances (centralized)!");
   Logger::ikf_logger()->info("IDICOHandler: m_horizon_sec=" + std::to_string(m_horzion_sec));
 }
@@ -78,7 +78,7 @@ void IDICOHandler::set_horizon(const double t_hor) {
     elem.second->set_horizon(m_horzion_sec);
   }
   HistMeas.set_horizon(m_horzion_sec);
-  HistMeas_OOO.set_horizon(m_horzion_sec);
+  HistMeas_OOO.set_horizon(m_horzion_sec*0.5);
 }
 
 bool ikf::IDICOHandler::insert_measurement(const MeasData &m, const Timestamp &t) {
@@ -170,11 +170,6 @@ ProcessMeasResult_vec_t IDICOHandler::process_measurement(const MeasData &m) {
 
     ikf::Timestamp t_start = m.t_m;
 
-    if(m.obs_type == ikf::eObservationType::PROPAGATION) {
-      // special case for pre-integration...
-      delegate_measurement(m);
-    }
-
     insert_measurement(m, m.t_m);
     if(HistMeas_OOO.exist_before_t(m.t_m) || HistMeas_OOO.exist_at_t(m.t_m)) {
       HistMeas_OOO.get_oldest_t(t_start);
@@ -235,6 +230,7 @@ ProcessMeasResult_vec_t IDICOHandler::redo_updates_from_t(const Timestamp &t) {
       HistMeas.foreach_between_t1_t2(t, t_last,
                                      [this, &vec](MeasData const &m) { vec.push_back(this->delegate_measurement(m)); });
     }
+    Logger::ikf_logger()->info("IDICOHandler::redo_updates_from_t(): DONE!");
   }
   return vec;
 }
@@ -255,6 +251,7 @@ ProcessMeasResult_vec_t IDICOHandler::redo_updates_after_t(const Timestamp &t) {
       HistMeas.foreach_between_t1_t2(t_after, t_last,
                                      [this, &vec](MeasData const &m) { vec.push_back(this->delegate_measurement(m)); });
     }
+    Logger::ikf_logger()->info("IDICOHandler::redo_updates_after_t(): DONE!");
   } else {
     Logger::ikf_logger()->debug("IDICOHandler::redo_updates_after_t() t_after=" + t_after.str() + ": nothing to do...");
   }
