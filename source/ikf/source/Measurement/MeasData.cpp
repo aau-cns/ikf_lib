@@ -88,6 +88,14 @@ std::string MeasData::str() const {
   return ss.str();
 }
 
+std::string ikf::MeasData::str_short() const {
+  std::stringstream out;
+  out << "MeasData:";
+  out << std::left;
+  out << " t_m=" << std::setw(16) << t_m.str();
+  out << ", ID=" << std::setw(3) << id_sensor;
+  out << ", meas_type=" << std::left << std::setw(20) << meas_type;
+  return out.str();
+}
 
-
-} // ns ikf
+}  // namespace ikf
