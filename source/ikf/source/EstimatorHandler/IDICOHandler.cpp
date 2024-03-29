@@ -13,7 +13,11 @@
 
 namespace ikf {
 
-IDICOHandler::IDICOHandler(const double horizon_sec) : HistMeas(horizon_sec), HistMeas_OOO(horizon_sec*0.5), m_horzion_sec(horizon_sec) {
+IDICOHandler::IDICOHandler(const double horizon_sec)
+  : HistMeas(horizon_sec),
+    HistMeas_OOO(horizon_sec * 0.5),
+    HistRedoUpdateRequest(horizon_sec * 0.5),
+    m_horzion_sec(horizon_sec) {
   Logger::ikf_logger()->info("IDICOHandler will handle delayed measurements for all it's instances (centralized)!");
   Logger::ikf_logger()->info("IDICOHandler: m_horizon_sec=" + std::to_string(m_horzion_sec));
 }
@@ -79,6 +83,7 @@ void IDICOHandler::set_horizon(const double t_hor) {
   }
   HistMeas.set_horizon(m_horzion_sec);
   HistMeas_OOO.set_horizon(m_horzion_sec*0.5);
+  HistRedoUpdateRequest.set_horizon(m_horzion_sec * 0.5);
 }
 
 bool ikf::IDICOHandler::insert_measurement(const MeasData &m, const Timestamp &t) {
@@ -152,16 +157,31 @@ ProcessMeasResult_vec_t IDICOHandler::process_measurement(const MeasData &m) {
   }
 
   // if there are open request, use the oldest one, before processing the new measurmeent
+  HistRedoUpdateRequest.check_horizon_from_t(m.t_m);
   if (HistRedoUpdateRequest.size()) {
     Timestamp t_oldest;
+    bool after = true;
     {
       std::scoped_lock lk(m_mtx_histRUR);
       HistRedoUpdateRequest.get_oldest_t(t_oldest);
+      HistRedoUpdateRequest.get_oldest(after);
       HistRedoUpdateRequest.clear();
     }
-    redo_updates_after_t(t_oldest);
-    ikf::Logger::ikf_logger()->info(
-      "IDICOHandler::process_measurement(): requested redo update after t=" + t_oldest.str() + " processed!");
+    if (after) {
+      redo_updates_after_t(t_oldest);
+      ikf::Logger::ikf_logger()->info(
+        "IDICOHandler::process_measurement(): requested redo update AFTER t=" + t_oldest.str() + " processed!");
+    } else {
+      redo_updates_from_t(t_oldest);
+      ikf::Logger::ikf_logger()->info(
+        "IDICOHandler::process_measurement(): requested redo update FROM t=" + t_oldest.str() + " processed!");
+    }
+  }
+
+  if(discard_measurement(m)) {
+    ikf::Logger::ikf_logger()->warn("IDICOHandler::process_measurement(): measurement " + m.str_short()
+                                    + " needs to be discarded");
+    return ProcessMeasResult_vec_t({ProcessMeasResult_t(eMeasStatus::DISCARED)});
   }
 
   // concurrent order
@@ -364,9 +384,13 @@ bool IDICOHandler::is_order_violated(const MeasData &m) {
   return false;
 }
 
-bool ikf::IDICOHandler::schedule_redo_updates_after_t(const Timestamp &t) {
+bool IDICOHandler::discard_measurement(const MeasData &m) {
+  return false;
+}
+
+bool IDICOHandler::schedule_redo_update(const Timestamp &t, const bool after) {
   std::scoped_lock lk(m_mtx_histRUR);
-  HistRedoUpdateRequest.insert(true, t);
+  HistRedoUpdateRequest.insert(after, t);
   return true;
 }
 

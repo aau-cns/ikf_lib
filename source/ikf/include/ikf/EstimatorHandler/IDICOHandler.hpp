@@ -71,7 +71,7 @@ public:
   void print_HistMeas(std::ostream& out, size_t max);
 
   virtual ProcessMeasResult_vec_t redo_updates_after_t(const Timestamp& t);
-  virtual bool schedule_redo_updates_after_t(const Timestamp& t);
+  virtual bool schedule_redo_update(const Timestamp& t, bool const after = true);
 
 protected:
   void sort_measurements_from_t(Timestamp const& t);
@@ -79,7 +79,8 @@ protected:
   /// Interface for IKF handles to reprocess measurements
   // TMultiHistoryBuffer<MeasData> get_measurements_from_t(Timestamp const& t);
   // TMultiHistoryBuffer<MeasData> get_measurements_after_t(Timestamp const& t);
-  bool is_order_violated(MeasData const& m);
+  virtual bool is_order_violated(MeasData const& m);
+  virtual bool discard_measurement(MeasData const& m);
   virtual ProcessMeasResult_vec_t redo_updates_from_t(const Timestamp& t);
   virtual ProcessMeasResult_t delegate_measurement(MeasData const& m);
   virtual void remove_beliefs_after_t(Timestamp const& t);
@@ -92,7 +93,7 @@ protected:
   double m_horzion_sec;
 
   size_t m_PropSensor_ID{0};
-  THistoryBuffer<bool> HistRedoUpdateRequest;
+  TTimeHorizonBuffer<bool> HistRedoUpdateRequest;
   std::recursive_mutex m_mtx;
   std::mutex m_mtx_histRUR;
 };
