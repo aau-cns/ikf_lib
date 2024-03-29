@@ -88,6 +88,7 @@ public:
     = 0;
 
   virtual bool redo_updates_after_t(IDAgent_t const ID_agent, const Timestamp& t) = 0;
+  virtual bool redo_updates_from_t(IDAgent_t const ID_agent, const Timestamp& t) = 0;
 
   void set_local_handler(pDICOHandler_t pHdler) { m_pLocalHandler = pHdler; }
 
