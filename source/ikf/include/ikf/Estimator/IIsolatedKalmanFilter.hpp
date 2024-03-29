@@ -102,6 +102,10 @@ public:
   virtual ProcessMeasResult_vec_t process_measurement(MeasData const& m) override;
   ///////////////////////////////////////////////////////////////////////////////////
 
+  virtual std::vector<size_t> get_correlated_IDs() const;
+  virtual std::vector<size_t> get_correlated_IDs_at_t(Timestamp const& t) const;
+  virtual std::vector<size_t> get_correlated_IDs_after_t(Timestamp const& t) const;
+
   virtual Eigen::MatrixXd get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J);
   void set_CrossCovFact_at_t(Timestamp const& t, size_t const unique_ID, Eigen::MatrixXd const& ccf);
   // Eq. 20 in [1]

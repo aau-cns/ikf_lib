@@ -47,6 +47,37 @@ ProcessMeasResult_vec_t IIsolatedKalmanFilter::process_measurement(const MeasDat
   return m_pHandler->process_measurement(m);
 }
 
+std::vector<size_t> IIsolatedKalmanFilter::get_correlated_IDs() const {
+  std::vector<size_t> IDs;
+  IDs.reserve(HistCrossCovFactors.size());
+  for(auto const & e : HistCrossCovFactors) {
+    IDs.push_back(e.first);
+  }
+  return IDs;
+}
+
+std::vector<size_t> IIsolatedKalmanFilter::get_correlated_IDs_at_t(const Timestamp &t) const {
+  std::vector<size_t> IDs;
+  IDs.reserve(HistCrossCovFactors.size());
+  for(auto const & e : HistCrossCovFactors) {
+    if(e.second.exist_at_t(t)) {
+      IDs.push_back(e.first);
+    }
+  }
+  return IDs;
+}
+
+std::vector<size_t> ikf::IIsolatedKalmanFilter::get_correlated_IDs_after_t(const Timestamp &t) const {
+  std::vector<size_t> IDs;
+  IDs.reserve(HistCrossCovFactors.size());
+  for(auto const & e : HistCrossCovFactors) {
+    if(e.second.exist_after_t(t)) {
+      IDs.push_back(e.first);
+    }
+  }
+  return IDs;
+}
+
 ProcessMeasResult_vec_t IIsolatedKalmanFilter::redo_updates_after_t(const Timestamp &t) {
   remove_after_t(t);
   return IKalmanFilter::redo_updates_after_t(t);
