@@ -25,6 +25,7 @@ namespace ikf {
 CollaborativeIKFHandler::CollaborativeIKFHandler(MultiAgentHdl_ptr pAgentHdler, const double horizon_sec)
   : IsolatedKalmanFilterHandler(horizon_sec), m_pAgentHandler(pAgentHdler) {
   Logger::ikf_logger()->info("CollaborativeIKFHandler will inter-agent updates through the agent handler!");
+  Logger::ikf_logger()->info("* RedoStrategy=" + to_string(mRedoStrategy));
 }
 
 size_t ikf::CollaborativeIKFHandler::get_propagation_sensor_ID(const size_t ID) {
@@ -194,6 +195,35 @@ void CollaborativeIKFHandler::apply_corrections_at_t(Eigen::MatrixXd &Sigma_apos
   }
 }
 
+std::set<size_t> CollaborativeIKFHandler::get_correlated_IDs_after_t(const Timestamp &t) {
+  std::set<size_t> IDs_post_corr;
+  for (auto ID : this->get_instance_ids()) {
+    auto IDs = this->get(ID)->get_correlated_IDs_after_t(t);
+    IDs_post_corr.insert(IDs.begin(), IDs.end());
+  }
+  return IDs_post_corr;
+}
+
+std::set<size_t> CollaborativeIKFHandler::get_remote_correlated_IDs_after_t(const Timestamp &t) {
+  std::set<size_t> IDs_post_corr_remote;
+  for (auto ID : get_correlated_IDs_after_t(t)) {
+    if (!exists(ID)) {
+      IDs_post_corr_remote.insert(ID);
+    }
+  }
+  return IDs_post_corr_remote;
+}
+
+std::set<IMultiAgentHandler::IDAgent_t> CollaborativeIKFHandler::IDs_to_Agent_IDs(const std::set<size_t> &IDs) {
+  std::set<IMultiAgentHandler::IDAgent_t> ID_agents;
+  for (auto const &ID : IDs) {
+    if (!exists(ID)) {
+      ID_agents.insert(m_pAgentHandler->estimatorID2agentID(ID));
+    }
+  }
+  return ID_agents;
+}
+
 bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H,
                                                 const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t,
                                                 const KalmanFilter::CorrectionCfg_t &cfg) {
@@ -334,6 +364,59 @@ bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::Ma
     }
   }
   return !res.rejected;
+}
+
+ProcessMeasResult_vec_t CollaborativeIKFHandler::redo_updates_after_t(const Timestamp &t) {
+  // trigger remote agent asynchonrously to redo updates as well...
+  // -> hopefully, we are done before remote ones need our beliefs again...
+  if (mRedoStrategy == eRedoUpdateStrategy::POSTCORRELATED) {
+    auto ID_agents = IDs_to_Agent_IDs(get_remote_correlated_IDs_after_t(t));
+    for (auto const &id : IDs_to_Agent_IDs(get_remote_correlated_IDs_after_t(t))) {
+      if (!m_pAgentHandler->redo_updates_after_t(id, t)) {
+        ikf::Logger::ikf_logger()->warn(
+          "CollaborativeIKFHandler::redo_updates_after_t(): redo_update(agent={:d}) failed", id);
+      }
+    }
+  }
+  if (mRedoStrategy == eRedoUpdateStrategy::EXACT) {
+    ikf::Logger::ikf_logger()->error("CollaborativeIKFHandler::redo_updates_after_t(): EXACT NOT IMPLEMENTED!");
+  }
+  return IDICOHandler::redo_updates_after_t(t);
+}
+
+bool CollaborativeIKFHandler::discard_measurement(const MeasData &m) {
+  if (mRedoStrategy == eRedoUpdateStrategy::DISCARD) {
+    // check if there are remote post-correlated instances after m.t_m, if so, order is NOT violated, and measurement
+    // has no effect. Reason: we are not triggering the other agent to redo it's updates after our delayed measurments,
+    // we just ignore our delayed measurement in that case.
+    std::set<size_t> IDs = get_remote_correlated_IDs_after_t(m.t_m);
+    if (!IDs.empty()) {
+      ikf::Logger::ikf_logger()->debug(
+        "CollaborativeIKFHandler::discard_measurement(): found post-correlated estimators num="
+        + std::to_string(IDs.size()));
+      // remote ID is post-correlated
+      return true;
+    }
+  }
+  return false;
+}
+
+ProcessMeasResult_vec_t CollaborativeIKFHandler::redo_updates_from_t(const Timestamp &t) {
+  // trigger remote agent asynchonrously to redo updates as well...
+  // -> hopefully, we are done before remote ones need our beliefs again...
+  if (mRedoStrategy == eRedoUpdateStrategy::POSTCORRELATED) {
+    auto ID_agents = IDs_to_Agent_IDs(get_remote_correlated_IDs_after_t(t));
+    for (auto const &id : IDs_to_Agent_IDs(get_remote_correlated_IDs_after_t(t))) {
+      if (!m_pAgentHandler->redo_updates_after_t(id, t)) {
+        ikf::Logger::ikf_logger()->warn(
+          "CollaborativeIKFHandler::redo_updates_from_t(): redo_update(agent={:d}) failed", id);
+      }
+    }
+  }
+  if (mRedoStrategy == eRedoUpdateStrategy::EXACT) {
+    ikf::Logger::ikf_logger()->error("CollaborativeIKFHandler::redo_updates_after_t(): EXACT NOT IMPLEMENTED!");
+  }
+  return IDICOHandler::redo_updates_from_t(t);
 }
 
 bool CollaborativeIKFHandler::apply_inter_agent_observation(
@@ -564,6 +647,18 @@ void CollaborativeIKFHandler::split_Sigma_locally(Eigen::MatrixXd &Sigma, const 
       col_start += dim_j;
     }
     row_start += dim_i;
+  }
+}
+
+std::string to_string(const eRedoUpdateStrategy t) {
+  switch (t) {
+  case eRedoUpdateStrategy::EXACT:
+    return "EXACT";
+  case eRedoUpdateStrategy::POSTCORRELATED:
+    return "POSTCORRELATED";
+  case eRedoUpdateStrategy::DISCARD:
+    return "DISCARD";
+    break;
   }
 }
 

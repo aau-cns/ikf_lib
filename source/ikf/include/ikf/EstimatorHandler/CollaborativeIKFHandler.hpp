@@ -24,6 +24,14 @@
 #include <memory>
 namespace ikf {
 
+enum class IKF_API eRedoUpdateStrategy {
+  EXACT = 0,           // trigger all direclty or indirectly post correlated agents: not implemented
+  POSTCORRELATED = 1,  // trigger all directly post-correlated agents
+  DISCARD = 2,         // measurement needs to be discared, since post-correlation exists
+};
+
+std::string IKF_API to_string(eRedoUpdateStrategy const t);
+
 class IKF_API CollaborativeIKFHandler : public IsolatedKalmanFilterHandler {
 public:
   CollaborativeIKFHandler(MultiAgentHdl_ptr pAgentHdler, double const horizon_sec = 1.0);
@@ -45,7 +53,13 @@ public:
                                  const Eigen::MatrixXd& R, const Timestamp& t,
                                  const KalmanFilter::CorrectionCfg_t& cfg) override;
 
+  virtual ProcessMeasResult_vec_t redo_updates_after_t(const Timestamp& t) override;
+
 protected:
+  // IDICOHandler_
+  virtual bool discard_measurement(MeasData const& m) override;
+  virtual ProcessMeasResult_vec_t redo_updates_from_t(const Timestamp& t) override;
+
   bool apply_inter_agent_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::MatrixXd& R,
                                      const Eigen::VectorXd& r, const Timestamp& t,
                                      const KalmanFilter::CorrectionCfg_t& cfg,
@@ -74,7 +88,13 @@ protected:
   void apply_corrections_at_t(Eigen::MatrixXd& Sigma_apos, const std::map<size_t, pBelief_t>& dict_bel,
                               Timestamp const& t, const bool only_local_beliefs);
 
+  std::set<size_t> get_correlated_IDs_after_t(Timestamp const& t);
+
+  std::set<size_t> get_remote_correlated_IDs_after_t(Timestamp const& t);
+
+  std::set<IMultiAgentHandler::IDAgent_t> IDs_to_Agent_IDs(std::set<size_t> const& IDs);
   MultiAgentHdl_ptr m_pAgentHandler;
+  eRedoUpdateStrategy mRedoStrategy{eRedoUpdateStrategy::POSTCORRELATED};
 };  // class CollaborativeIKFHandler
 
 }  // namespace ikf
