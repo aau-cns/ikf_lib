@@ -64,6 +64,13 @@ namespace ikf
         }
       }
 
+      void check_horizon_from_t(Timestamp const& t) {
+        if (this->size() > 0) {
+          Timestamp oldest_t(t.to_sec() - max_horizon_);
+          this->remove_before_t(oldest_t);
+        }
+      }
+
       void check_horizon_restricted(size_t const n = 2) {
         if (this->size() > n && (horizon() > max_horizon_)) {
           Timestamp latest_t;
