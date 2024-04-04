@@ -46,8 +46,11 @@ eGetBeliefStrategy IKF_API str2eGetBeliefStrategy(const std::string &str);
 /// stored as "MeasData" in a fixed time horizon buffer "HistMeas".
 class IKF_API IKalmanFilter {
 public:
-  typedef std::function<Eigen::VectorXd(pBelief_t &)> h_priv;
-  typedef std::function<Eigen::MatrixXd(pBelief_t &)> h_priv_dx;
+  // typedef std::function<Eigen::VectorXd(pBelief_t &)> h_priv;
+  // typedef std::function<Eigen::MatrixXd(pBelief_t &)> h_priv_dx;
+
+  // h_priv(Belief bel, measurement z) : measurement matrix H, residual r
+  typedef std::function<std::pair<Eigen::MatrixXd, Eigen::VectorXd>(pBelief_t &, Eigen::VectorXd const &)> h_priv;
 
 public:
   IKalmanFilter(double const horizon_sec_=1.0, bool const handle_delayed_meas=true);
@@ -123,7 +126,7 @@ protected:
   // TODO: z is assumed to be an Euclidean object, but could originate from Manifold as well, e.g. SO3
   // Maybe pass z as pBelief(z, R), then h_priv must return a pBelief as well...
   virtual bool apply_private_observation(const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t,
-                                         h_priv h, h_priv_dx H, const KalmanFilter::CorrectionCfg_t &cfg);
+                                         h_priv h, const KalmanFilter::CorrectionCfg_t &cfg);
 
   TTimeHorizonBuffer<pBelief_t> HistBelief;
   TTimeHorizonBuffer<MeasData, TMultiHistoryBuffer<MeasData>> HistMeas;

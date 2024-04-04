@@ -31,6 +31,7 @@
 
 namespace ikf {
 
+struct ApplyObsResult_t;
 class IDICOHandler;
 
 ///
@@ -80,12 +81,11 @@ class IDICOHandler;
 class IKF_API IIsolatedKalmanFilter: public IKalmanFilter {
 public:
   // input: dictionary of beliefs and a vector if IDs; output: estimated measurmement
-  typedef std::function<Eigen::VectorXd(std::map<size_t, pBelief_t> const&, std::vector<size_t> const&)> h_joint;
-  // input: dictionary of beliefs and a vector if IDs; output: dictionary of measurement Jacobians and estimated
-  // measurement
+  // typedef std::function<Eigen::VectorXd(std::map<size_t, pBelief_t> const&, std::vector<size_t> const&)> h_joint;
+  // input: dictionary of beliefs and a vector if IDs; output: dictionary of measurement Jacobians and residual
   typedef std::function<std::pair<std::map<size_t, Eigen::MatrixXd>, Eigen::VectorXd>(
-    std::map<size_t, pBelief_t> const&, std::vector<size_t> const&)>
-    H_joint_dx;
+    std::map<size_t, pBelief_t> const&, std::vector<size_t> const&, Eigen::VectorXd const&)>
+    h_joint;
 
 public:
   IIsolatedKalmanFilter(std::shared_ptr<IDICOHandler> ptr_Handler, size_t const ID, double const horizon_sec = 1.0,
@@ -181,8 +181,9 @@ protected:
                          const Eigen::VectorXd& r, const ikf::Timestamp& t,
                          const ikf::KalmanFilter::CorrectionCfg_t& cfg);
 
-  bool apply_observation(const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t, H_joint_dx const& H,
-                         std::vector<size_t> const& IDs, const KalmanFilter::CorrectionCfg_t& cfg);
+  ApplyObsResult_t apply_observation(const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t,
+                                     h_joint const& h, std::vector<size_t> const& IDs,
+                                     const KalmanFilter::CorrectionCfg_t& cfg);
 
   // call m_pHandler->apply_observation(...)
   //  bool apply_private_observation(pBelief_t& bel_II_apri, const size_t ID_I, const Eigen::MatrixXd& H_II,

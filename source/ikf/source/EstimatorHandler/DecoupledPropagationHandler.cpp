@@ -136,24 +136,25 @@ bool DecoupledPropagationHandler::apply_observation(const std::map<size_t, Eigen
   return !res.rejected;
 }
 
-bool DecoupledPropagationHandler::apply_observation(const Eigen::MatrixXd &R, const Eigen::VectorXd &z,
-                                                    const Timestamp &t, const ikf::IIsolatedKalmanFilter::H_joint_dx &H,
-                                                    const std::vector<size_t> &IDs,
-                                                    const KalmanFilter::CorrectionCfg_t &cfg) {
+ApplyObsResult_t DecoupledPropagationHandler::apply_observation(const Eigen::MatrixXd &R, const Eigen::VectorXd &z,
+                                                                const Timestamp &t,
+                                                                const IIsolatedKalmanFilter::h_joint &h,
+                                                                const std::vector<size_t> &IDs,
+                                                                const KalmanFilter::CorrectionCfg_t &cfg) {
   std::lock_guard<std::recursive_mutex> lk(m_mtx);
   std::map<size_t, pBelief_t> dict_bel;
   Eigen::MatrixXd Sigma_apos;
   Eigen::VectorXd delta_mean;
 
-  if (process_observation(R, z, t, H, IDs, cfg, Sigma_apos, delta_mean, dict_bel)) {
+  ApplyObsResult_t res = process_observation(R, z, t, h, IDs, cfg, Sigma_apos, delta_mean, dict_bel);
+  if (res.status == eMeasStatus::PROCESSED) {
     // 2) set a corrected factorized a posterioiry cross-covariance
     split_right_upper_covariance(Sigma_apos, dict_bel, t);
 
     // 3) correct beliefs implace!
     correct_beliefs_implace(Sigma_apos, delta_mean, dict_bel);
-    return true;
   }
-  return false;
+  return res;
 }
 
 }  // namespace ikf

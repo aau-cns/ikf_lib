@@ -286,15 +286,17 @@ bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen
   return !res.rejected;
 }
 
-bool IsolatedKalmanFilterHandler::apply_observation(const Eigen::MatrixXd &R, const Eigen::VectorXd &z,
-                                                    const Timestamp &t, IIsolatedKalmanFilter::H_joint_dx const &H,
-                                                    const std::vector<size_t> &IDs,
-                                                    const KalmanFilter::CorrectionCfg_t &cfg) {
+ApplyObsResult_t IsolatedKalmanFilterHandler::apply_observation(const Eigen::MatrixXd &R, const Eigen::VectorXd &z,
+                                                                const Timestamp &t,
+                                                                IIsolatedKalmanFilter::h_joint const &h,
+                                                                const std::vector<size_t> &IDs,
+                                                                const KalmanFilter::CorrectionCfg_t &cfg) {
   std::map<size_t, pBelief_t> dict_bel;
   Eigen::MatrixXd Sigma_apos;
   Eigen::VectorXd delta_mean;
 
-  if (process_observation(R, z, t, H, IDs, cfg, Sigma_apos, delta_mean, dict_bel)) {
+  ApplyObsResult_t res = process_observation(R, z, t, h, IDs, cfg, Sigma_apos, delta_mean, dict_bel);
+  if (res.status != eMeasStatus::REJECTED) {
     // IMPORTANT: MAINTAIN ORDER STRICKTLY
     // 1) add correction terms in the appropriate correction buffers!
     apply_corrections_at_t(Sigma_apos, dict_bel, t);
@@ -304,17 +306,15 @@ bool IsolatedKalmanFilterHandler::apply_observation(const Eigen::MatrixXd &R, co
 
     // 3) correct beliefs implace!
     correct_beliefs_implace(Sigma_apos, delta_mean, dict_bel);
-    return true;
   }
-  return false;
+  return res;
 }
 
-bool IsolatedKalmanFilterHandler::process_observation(const Eigen::MatrixXd &R, const Eigen::VectorXd &z,
-                                                      const Timestamp &t, IIsolatedKalmanFilter::H_joint_dx const &H,
-                                                      std::vector<size_t> const &IDs,
-                                                      const KalmanFilter::CorrectionCfg_t &cfg,
-                                                      Eigen::MatrixXd &Sigma_apos, Eigen::VectorXd &dx,
-                                                      std::map<size_t, pBelief_t> &dict_bel) {
+ApplyObsResult_t IsolatedKalmanFilterHandler::process_observation(
+  const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t, IIsolatedKalmanFilter::h_joint const &h,
+  std::vector<size_t> const &IDs, const KalmanFilter::CorrectionCfg_t &cfg, Eigen::MatrixXd &Sigma_apos,
+  Eigen::VectorXd &dx, std::map<size_t, pBelief_t> &dict_bel) {
+  ApplyObsResult_t res(eMeasStatus::PROCESSED);
   dict_bel = get_dict_bel(IDs, t);
   Eigen::VectorXd mean_apri = stack_mean(dict_bel);
   Eigen::MatrixXd Sigma_apri = stack_Sigma(dict_bel, t);
@@ -339,17 +339,16 @@ bool IsolatedKalmanFilterHandler::process_observation(const Eigen::MatrixXd &R, 
   // covariance at the nominal-state needs to be shifted as well...
   for (size_t iter = 0; iter < cfg.num_iter; iter++) {
     // compute individuals' Jacobian
-    std::pair<std::map<size_t, Eigen::MatrixXd>, Eigen::VectorXd> Jac_z_est_idx = H(bel_idx, IDs);
+    std::pair<std::map<size_t, Eigen::MatrixXd>, Eigen::VectorXd> H_r_idx = h(bel_idx, IDs, z);
 
     // stack Jacobian
-    H_idx = stack_H(Jac_z_est_idx.first);
+    H_idx = stack_H(H_r_idx.first);
 
     // compute residual
-    Eigen::VectorXd z_est_idx = Jac_z_est_idx.second;
-    Eigen::VectorXd r_idx = z - z_est_idx;
+    Eigen::VectorXd r_idx = H_r_idx.second;
 
     if (!KalmanFilter::check_dim(H_idx, R, r_idx, Sigma_apri)) {
-      return false;
+      return ApplyObsResult_t(eMeasStatus::DISCARED);
     }
     Eigen::VectorXd e_x_idx = Eigen::VectorXd::Zero(es_dim, 1);
     if (iter > 0) {
@@ -394,9 +393,10 @@ bool IsolatedKalmanFilterHandler::process_observation(const Eigen::MatrixXd &R, 
     if (cfg.use_outlier_rejection) {
       if (!NormalizedInnovationSquared::check_NIS(S_idx, r_idx, cfg.confidence_interval)) {
         // outlier...
-        return false;
+        return ApplyObsResult_t(eMeasStatus::REJECTED, r_idx);
       }
     }
+    res.residual = r_idx;
 
     K_idx = P_idx * H_idx.transpose() * S_idx.inverse();
 
@@ -439,7 +439,7 @@ bool IsolatedKalmanFilterHandler::process_observation(const Eigen::MatrixXd &R, 
   for (auto const &bel_i : bel_idx) {
     dict_bel.at(bel_i.first)->mean(bel_i.second->mean());
   }
-  return true;
+  return res;
 }
 
 }  // namespace ikf

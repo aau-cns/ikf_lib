@@ -18,6 +18,15 @@
 
 namespace ikf {
 
+struct IKF_API ApplyObsResult_t {
+  eMeasStatus status{eMeasStatus::REJECTED};
+  Eigen::VectorXd residual;
+
+  ApplyObsResult_t() = default;
+  ApplyObsResult_t(eMeasStatus const& s) : status(s) {}
+  ApplyObsResult_t(eMeasStatus const& s, Eigen::VectorXd const& r) : status(s), residual(r) {}
+};
+
 ///
 /// \brief The IDICOHandler class
 /// Abstract base class to hold N-IKF instances defines methods which are issued by the IKF instances.
@@ -61,9 +70,9 @@ public:
   virtual bool apply_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::VectorXd& z,
                                  const Eigen::MatrixXd& R, const Timestamp& t, const KalmanFilter::CorrectionCfg_t& cfg)
     = 0;
-  virtual bool apply_observation(const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t,
-                                 IIsolatedKalmanFilter::H_joint_dx const& H, std::vector<size_t> const& IDs,
-                                 const KalmanFilter::CorrectionCfg_t& cfg)
+  virtual ApplyObsResult_t apply_observation(const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t,
+                                             IIsolatedKalmanFilter::h_joint const& h, std::vector<size_t> const& IDs,
+                                             const KalmanFilter::CorrectionCfg_t& cfg)
     = 0;
 
   virtual bool insert_measurement(MeasData const& m, Timestamp const& t);

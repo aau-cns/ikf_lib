@@ -40,9 +40,9 @@ public:
                                  const Eigen::MatrixXd& R, const Timestamp& t,
                                  const KalmanFilter::CorrectionCfg_t& cfg) override;
 
-  virtual bool apply_observation(const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t,
-                                 IIsolatedKalmanFilter::H_joint_dx const& H, std::vector<size_t> const& IDs,
-                                 const KalmanFilter::CorrectionCfg_t& cfg) override;
+  virtual ApplyObsResult_t apply_observation(const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t,
+                                             IIsolatedKalmanFilter::h_joint const& h, std::vector<size_t> const& IDs,
+                                             const KalmanFilter::CorrectionCfg_t& cfg) override;
 
 protected:
   virtual Eigen::MatrixXd get_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, Timestamp const& t);
@@ -68,10 +68,10 @@ protected:
   void correct_beliefs_implace(Eigen::MatrixXd& Sigma_apos, Eigen::VectorXd& delta_mean,
                                const std::map<size_t, pBelief_t>& dict_bel);
 
-  virtual bool process_observation(const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t,
-                                   IIsolatedKalmanFilter::H_joint_dx const& H, std::vector<size_t> const& IDs,
-                                   const KalmanFilter::CorrectionCfg_t& cfg, Eigen::MatrixXd& Sigma_apos,
-                                   Eigen::VectorXd& dx, std::map<size_t, ikf::pBelief_t>& dict_bel);
+  virtual ApplyObsResult_t process_observation(const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t,
+                                               IIsolatedKalmanFilter::h_joint const& h, std::vector<size_t> const& IDs,
+                                               const KalmanFilter::CorrectionCfg_t& cfg, Eigen::MatrixXd& Sigma_apos,
+                                               Eigen::VectorXd& dx, std::map<size_t, ikf::pBelief_t>& dict_bel);
 
 };  // class IsolatedKalmanFilterHandler
 

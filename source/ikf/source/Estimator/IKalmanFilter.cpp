@@ -418,7 +418,7 @@ bool IKalmanFilter::apply_private_observation(pBelief_t &bel_II_apri, const Eige
 }
 
 bool IKalmanFilter::apply_private_observation(const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t,
-                                              h_priv h, h_priv_dx H, const KalmanFilter::CorrectionCfg_t &cfg) {
+                                              h_priv h, const KalmanFilter::CorrectionCfg_t &cfg) {
   pBelief_t bel_apri;
   Eigen::MatrixXd Sigma_apri = bel_apri->Sigma();
   if (get_belief_at_t(t, bel_apri)) {
@@ -428,8 +428,9 @@ bool IKalmanFilter::apply_private_observation(const Eigen::MatrixXd &R, const Ei
     size_t const dim = bel_apri->es_dim();
     Eigen::VectorXd mean_idx = bel_apri->mean();
     for (size_t iter = 0; iter < cfg.num_iter; iter++) {
-      H_idx = H(bel_idx);
-      Eigen::VectorXd r_idx = z - h(bel_idx);
+      auto H_r = h(bel_idx, z);
+      auto H_idx = H_r.first;
+      Eigen::VectorXd r_idx = H_r.second;
 
       if (!KalmanFilter::check_dim(H_idx, R, r_idx, Sigma_apri)) {
           return false;

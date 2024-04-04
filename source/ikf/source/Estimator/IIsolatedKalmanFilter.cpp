@@ -317,10 +317,11 @@ bool IIsolatedKalmanFilter::apply_observation(const std::map<size_t, Eigen::Matr
   return m_pHandler->apply_observation(dict_H, R, r, t, cfg);
 }
 
-bool IIsolatedKalmanFilter::apply_observation(const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t,
-                                              H_joint_dx const &H, const std::vector<size_t> &IDs,
-                                              const KalmanFilter::CorrectionCfg_t &cfg) {
-  return m_pHandler->apply_observation(R, z, t, H, IDs, cfg);
+ApplyObsResult_t IIsolatedKalmanFilter::apply_observation(const Eigen::MatrixXd &R, const Eigen::VectorXd &z,
+                                                          const Timestamp &t, h_joint const &h,
+                                                          const std::vector<size_t> &IDs,
+                                                          const KalmanFilter::CorrectionCfg_t &cfg) {
+  return m_pHandler->apply_observation(R, z, t, h, IDs, cfg);
 }
 
 }  // namespace ikf

@@ -35,9 +35,9 @@ public:
                                  const Eigen::MatrixXd& R, const Timestamp& t,
                                  const KalmanFilter::CorrectionCfg_t& cfg) override;
 
-  virtual bool apply_observation(const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t,
-                                 IIsolatedKalmanFilter::H_joint_dx const& H, std::vector<size_t> const& IDs,
-                                 const KalmanFilter::CorrectionCfg_t& cfg) override;
+  virtual ApplyObsResult_t apply_observation(const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t,
+                                             IIsolatedKalmanFilter::h_joint const& h, std::vector<size_t> const& IDs,
+                                             const KalmanFilter::CorrectionCfg_t& cfg) override;
 
 protected:
   virtual Eigen::MatrixXd stack_H(const std::map<size_t, Eigen::MatrixXd>& dict_H) override;

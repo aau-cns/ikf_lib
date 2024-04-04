@@ -53,6 +53,10 @@ public:
                                  const Eigen::MatrixXd& R, const Timestamp& t,
                                  const KalmanFilter::CorrectionCfg_t& cfg) override;
 
+  virtual ApplyObsResult_t apply_observation(const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t,
+                                             IIsolatedKalmanFilter::h_joint const& h, std::vector<size_t> const& IDs,
+                                             const KalmanFilter::CorrectionCfg_t& cfg) override;
+
   virtual ProcessMeasResult_vec_t redo_updates_after_t(const Timestamp& t) override;
 
 protected:
@@ -65,6 +69,13 @@ protected:
                                      const KalmanFilter::CorrectionCfg_t& cfg,
                                      std::vector<IMultiAgentHandler::IDEstimator_t> const& remote_IDs,
                                      std::vector<IMultiAgentHandler::IDEstimator_t> const& local_IDs);
+
+  ApplyObsResult_t apply_inter_agent_observation(const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t,
+                                                 IIsolatedKalmanFilter::h_joint const& h,
+                                                 std::vector<size_t> const& IDs,
+                                                 const KalmanFilter::CorrectionCfg_t& cfg,
+                                                 std::vector<IMultiAgentHandler::IDEstimator_t> const& remote_IDs,
+                                                 std::vector<IMultiAgentHandler::IDEstimator_t> const& local_IDs);
 
   bool get_local_beliefs_and_FCC_at_t(std::vector<IMultiAgentHandler::IDEstimator_t> const& IDs,
                                       std::vector<IMultiAgentHandler::IDEstimator_t> const& ID_participants,
@@ -80,6 +91,8 @@ protected:
 
   virtual std::map<size_t, pBelief_t> get_dict_bel(const std::map<size_t, Eigen::MatrixXd>& dict_H,
                                                    Timestamp const& t) override;
+
+  virtual std::map<size_t, pBelief_t> get_dict_bel(const std::vector<size_t>& IDs, Timestamp const& t);
 
   virtual Eigen::MatrixXd get_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, Timestamp const& t) override;
   virtual void set_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd& Sigma_IJ,
