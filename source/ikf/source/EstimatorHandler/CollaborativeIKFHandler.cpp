@@ -592,6 +592,17 @@ ApplyObsResult_t CollaborativeIKFHandler::apply_inter_agent_observation(
   FCCs.insert(local_FFCs.begin(), local_FFCs.end());
   FCCs.insert(remote_FFCs.begin(), remote_FFCs.end());
 
+
+  for(auto ID : IDs) {
+    if(dict_bel.find(ID) == dict_bel.end()) {
+      ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(): belief for ID=" + std::to_string(ID)+ " is missing!");
+    }
+    if(FCCs.find(ID) == FCCs.end()) {
+      ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(): FCC for ID=" + std::to_string(ID)+ " is missing!");
+    }
+  }
+
+
   // linearize the measurement function with the beliefs:
   std::pair<std::map<size_t, Eigen::MatrixXd>, Eigen::VectorXd> H_r = h(dict_bel, IDs, z);
   Eigen::MatrixXd H = stack_H(H_r.first);
@@ -671,9 +682,14 @@ bool CollaborativeIKFHandler::get_local_beliefs_and_FCC_at_t(
     auto ID_I = IDs.at(idx);
     if (exists(ID_I)) {
       ikf::pBelief_t pBel;
-      ikf::eGetBeliefStrategy type = ikf::eGetBeliefStrategy::EXACT;
+      ikf::eGetBeliefStrategy type = ikf::eGetBeliefStrategy::PREDICT_BELIEF;
       if (get(ID_I)->get_belief_at_t(t, pBel, type)) {
         beliefs.insert({ID_I, pBel});
+      }
+      else {
+        ikf::Logger::ikf_logger()->error(
+          "CollaborativeIKFHandler::get_local_beliefs_and_FCC_at_t: could not get_belief_at_t for ID=[{:}]", ID_I);
+        return false;
       }
     } else {
       ikf::Logger::ikf_logger()->error(
