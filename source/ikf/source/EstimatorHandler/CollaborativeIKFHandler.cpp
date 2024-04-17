@@ -277,7 +277,11 @@ bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::Ma
 
   // stack individual's covariances:
   Sigma_apri = utils::stabilize_covariance(Sigma_apri);
-  RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_apri), "Joint apri covariance is not PSD at t=" + t.str());
+  bool is_psd = utils::is_positive_semidefinite(Sigma_apri);
+  RTV_EXPECT_TRUE_MSG(is_psd, "Joint apri covariance is not PSD at t=" + t.str());
+  if (!is_psd) {
+    Sigma_apri = utils::nearest_covariance(Sigma_apri, 1e-6);
+  }
 
   KalmanFilter::CorrectionResult_t res;
   res = KalmanFilter::correction_step(H, R, r, Sigma_apri, cfg);
@@ -347,7 +351,11 @@ bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::Ma
 
   // stack individual's covariances:
   Sigma_apri = utils::stabilize_covariance(Sigma_apri);
-  RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_apri), "Joint apri covariance is not PSD at t=" + t.str());
+  bool is_psd = utils::is_positive_semidefinite(Sigma_apri);
+  RTV_EXPECT_TRUE_MSG(is_psd, "Joint apri covariance is not PSD at t=" + t.str());
+  if (!is_psd) {
+    Sigma_apri = utils::nearest_covariance(Sigma_apri, 1e-6);
+  }
 
   KalmanFilter::CorrectionResult_t res;
   res = KalmanFilter::correction_step(H, R, r, Sigma_apri, cfg);
@@ -502,14 +510,21 @@ bool CollaborativeIKFHandler::apply_inter_agent_observation(
 
   // stack individual's covariances:
   Sigma_apri = utils::stabilize_covariance(Sigma_apri);
-  RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_apri), "Joint apri covariance is not PSD at t=" + t.str());
+  bool is_psd = utils::is_positive_semidefinite(Sigma_apri);
+  RTV_EXPECT_TRUE_MSG(is_psd, "Joint apri covariance is not PSD at t=" + t.str());
+  if (!is_psd) {
+    Sigma_apri = utils::nearest_covariance(Sigma_apri, 1e-6);
+  }
 
   KalmanFilter::CorrectionResult_t res;
   ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(): correction step");
   res = KalmanFilter::correction_step(H, R, r, Sigma_apri, cfg);
   if (!res.rejected) {
-    RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(res.Sigma_apos),
-                        "Joint apos covariance is not PSD at t=" + t.str());
+    bool is_psd = utils::is_positive_semidefinite(res.Sigma_apos);
+    RTV_EXPECT_TRUE_MSG(is_psd, "Joint apos covariance is not PSD at t=" + t.str());
+    if (!is_psd) {
+      res.Sigma_apos = utils::nearest_covariance(res.Sigma_apos, 1e-6);
+    }
 
     // IMPORTANT: MAINTAIN ORDER STRICKTLY
     // 1) LOCAL: add correction terms on all a aprior factorized cross-covariances!
@@ -592,16 +607,16 @@ ApplyObsResult_t CollaborativeIKFHandler::apply_inter_agent_observation(
   FCCs.insert(local_FFCs.begin(), local_FFCs.end());
   FCCs.insert(remote_FFCs.begin(), remote_FFCs.end());
 
-
-  for(auto ID : IDs) {
-    if(dict_bel.find(ID) == dict_bel.end()) {
-      ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(): belief for ID=" + std::to_string(ID)+ " is missing!");
+  for (auto ID : IDs) {
+    if (dict_bel.find(ID) == dict_bel.end()) {
+      ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(): belief for ID="
+                                       + std::to_string(ID) + " is missing!");
     }
-    if(FCCs.find(ID) == FCCs.end()) {
-      ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(): FCC for ID=" + std::to_string(ID)+ " is missing!");
+    if (FCCs.find(ID) == FCCs.end()) {
+      ikf::Logger::ikf_logger()->debug(
+        "CollaborativeIKFHandler::apply_inter_agent_observation(): FCC for ID=" + std::to_string(ID) + " is missing!");
     }
   }
-
 
   // linearize the measurement function with the beliefs:
   std::pair<std::map<size_t, Eigen::MatrixXd>, Eigen::VectorXd> H_r = h(dict_bel, IDs, z);
@@ -611,14 +626,21 @@ ApplyObsResult_t CollaborativeIKFHandler::apply_inter_agent_observation(
 
   // stack individual's covariances:
   Sigma_apri = utils::stabilize_covariance(Sigma_apri);
-  RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_apri), "Joint apri covariance is not PSD at t=" + t.str());
+  bool is_psd = utils::is_positive_semidefinite(Sigma_apri);
+  RTV_EXPECT_TRUE_MSG(is_psd, "Joint apri covariance is not PSD at t=" + t.str());
+  if (!is_psd) {
+    Sigma_apri = utils::nearest_covariance(Sigma_apri, 1e-6);
+  }
 
   KalmanFilter::CorrectionResult_t res;
   ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(): correction step");
   res = KalmanFilter::correction_step(H, R, H_r.second, Sigma_apri, cfg);
   if (!res.rejected) {
-    RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(res.Sigma_apos),
-                        "Joint apos covariance is not PSD at t=" + t.str());
+    bool is_psd = utils::is_positive_semidefinite(res.Sigma_apos);
+    RTV_EXPECT_TRUE_MSG(is_psd, "Joint apos covariance is not PSD at t=" + t.str());
+    if (!is_psd) {
+      res.Sigma_apos = utils::nearest_covariance(res.Sigma_apos, 1e-6);
+    }
 
     // IMPORTANT: MAINTAIN ORDER STRICKTLY
     // 1) LOCAL: add correction terms on all a aprior factorized cross-covariances!
@@ -685,8 +707,7 @@ bool CollaborativeIKFHandler::get_local_beliefs_and_FCC_at_t(
       ikf::eGetBeliefStrategy type = ikf::eGetBeliefStrategy::PREDICT_BELIEF;
       if (get(ID_I)->get_belief_at_t(t, pBel, type)) {
         beliefs.insert({ID_I, pBel});
-      }
-      else {
+      } else {
         ikf::Logger::ikf_logger()->error(
           "CollaborativeIKFHandler::get_local_beliefs_and_FCC_at_t: could not get_belief_at_t for ID=[{:}]", ID_I);
         return false;
