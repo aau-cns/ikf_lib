@@ -321,8 +321,17 @@ std::string IDICOHandler::get_type_by_ID(const size_t ID) {
   }
 }
 
-bool ikf::IDICOHandler::get_belief_at_t(const size_t ID, const Timestamp &t, pBelief_t &bel,
-                                        const eGetBeliefStrategy type) {
+bool IDICOHandler::set_belief_at_t(const size_t ID, pBelief_t &bel, const Timestamp &t) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+
+  if (exists(ID)) {
+    get(ID)->set_belief_at_t(bel, t);
+    return true;
+  }
+  return false;
+}
+
+bool IDICOHandler::get_belief_at_t(const size_t ID, const Timestamp &t, pBelief_t &bel, const eGetBeliefStrategy type) {
   std::lock_guard<std::recursive_mutex> lk(m_mtx);
 
   if (exists(ID)) {
@@ -331,8 +340,8 @@ bool ikf::IDICOHandler::get_belief_at_t(const size_t ID, const Timestamp &t, pBe
   return false;
 }
 
-bool ikf::IDICOHandler::get_beliefs_at_t(const std::vector<size_t> &IDs, const std::vector<eGetBeliefStrategy> &types,
-                                         const Timestamp &t, std::map<size_t, pBelief_t> &beliefs) {
+bool IDICOHandler::get_beliefs_at_t(const std::vector<size_t> &IDs, const std::vector<eGetBeliefStrategy> &types,
+                                    const Timestamp &t, std::map<size_t, pBelief_t> &beliefs) {
   std::lock_guard<std::recursive_mutex> lk(m_mtx);
 
   bool res = true;
@@ -348,6 +357,35 @@ bool ikf::IDICOHandler::get_beliefs_at_t(const std::vector<size_t> &IDs, const s
     res &= success;
   }  // for-loop
   return res;
+}
+
+Eigen::MatrixXd IDICOHandler::get_CrossCovFact_at_t(const size_t ID_I, const Timestamp &t, const size_t ID_J) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+
+  if (exists(ID_I)) {
+    return get(ID_I)->get_CrossCovFact_at_t(t, ID_J);
+  } else {
+    return Eigen::MatrixXd();
+  }
+}
+
+bool IDICOHandler::set_CrossCovFact_at_t(const size_t ID_I, const Timestamp &t, const size_t ID_J,
+                                         const Eigen::MatrixXd &FFC_IJ) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+  if (exists(ID_I)) {
+    get(ID_I)->set_CrossCovFact_at_t(t, ID_J, FFC_IJ);
+    return true;
+  }
+  return false;
+}
+
+bool IDICOHandler::apply_correction_at_t(const size_t ID, const Timestamp &t, const Eigen::MatrixXd &Factor) {
+  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+
+  if (exists(ID)) {
+    return get(ID)->apply_correction_at_t(t, Factor);
+  }
+  return false;
 }
 
 bool IDICOHandler::is_order_violated(const MeasData &m) {
