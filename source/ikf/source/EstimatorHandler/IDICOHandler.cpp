@@ -273,7 +273,7 @@ ProcessMeasResult_vec_t IDICOHandler::redo_updates_after_t(const Timestamp &t) {
     }
     Logger::ikf_logger()->info("IDICOHandler::redo_updates_after_t(): DONE!");
   } else {
-    Logger::ikf_logger()->debug("IDICOHandler::redo_updates_after_t() t_after=" + t_after.str() + ": nothing to do...");
+    Logger::ikf_logger()->debug("IDICOHandler::redo_updates_after_t() t_after=" + t.str() + ": nothing to do...");
   }
   return vec;
 }
