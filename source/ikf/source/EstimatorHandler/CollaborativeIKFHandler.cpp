@@ -23,7 +23,9 @@
 namespace ikf {
 
 CollaborativeIKFHandler::CollaborativeIKFHandler(MultiAgentHdl_ptr pAgentHdler, const double horizon_sec)
-  : IsolatedKalmanFilterHandler(horizon_sec), m_pAgentHandler(pAgentHdler) {
+  : IsolatedKalmanFilterHandler(horizon_sec),
+    m_pAgentHandler(pAgentHdler),
+    mRedoStrategy(eRedoUpdateStrategy::DISCARD) {
   Logger::ikf_logger()->info("CollaborativeIKFHandler will inter-agent updates through the agent handler!");
   Logger::ikf_logger()->info("* RedoStrategy=" + to_string(mRedoStrategy));
 }
@@ -117,11 +119,13 @@ std::map<size_t, pBelief_t> CollaborativeIKFHandler::get_dict_bel(const std::vec
     size_t id = e;
     pBelief_t bel_apri;
     if (!exists(id)) {
-      RTV_EXPECT_TRUE_THROW(m_pAgentHandler->get_belief_at_t(id, t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF),
-                            "Could not obtain belief");
+      RTV_EXPECT_TRUE_THROW(
+        m_pAgentHandler->get_belief_at_t(id, t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF),
+        "CIKF_Hdl::get_dict_bel(): Could not obtain belief from [" + std::to_string(id) + "] at t=" + t.str());
     } else {
-      RTV_EXPECT_TRUE_THROW(get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF),
-                            "Could not obtain belief");
+      RTV_EXPECT_TRUE_THROW(
+        get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF),
+        "CIKF_Hdl::get_dict_bel(): Could not obtain belief from [" + std::to_string(id) + "] at t=" + t.str());
     }
 
     dict_bel.insert({id, bel_apri});
