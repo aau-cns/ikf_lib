@@ -75,7 +75,9 @@ std::map<size_t, pBelief_t> ikf::IsolatedKalmanFilterHandler::get_dict_bel(const
   std::map<size_t, pBelief_t> dict_bel;
   for (size_t id : ids) {
     pBelief_t bel_apri;
-    RTV_EXPECT_TRUE_THROW(get(id)->get_belief_at_t(t, bel_apri), "Could not obtain belief");
+    RTV_EXPECT_TRUE_THROW(
+      get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF),
+      "IKF_Hdl::get_dict_bel(): Could not obtain belief from [" + std::to_string(id) + "] at t=" + t.str());
     dict_bel.insert({id, bel_apri});
   }
   return dict_bel;
