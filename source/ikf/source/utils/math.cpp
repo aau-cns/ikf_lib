@@ -62,5 +62,20 @@ Eigen::Matrix4d MatExp(const Eigen::Matrix4d& A, const int order)
   return matexp;
 }
 
+double wrapMax(const double x, const double max) {
+  /* integer math: `(max + x % max) % max` */
+  return fmod(max + fmod(x, max), max);
+}
+
+double wrapMinMax(const double x, const double min, const double max) { return min + wrapMax(x - min, max - min); }
+
+double wrapToPi(const double x_rad) { return wrapMinMax(x_rad, -M_PI, +M_PI); }
+
+double wrapTo2Pi(const double x_rad) { return wrapMinMax(x_rad, -M_2_PI, +M_2_PI); }
+
+double wrapTo180deg(const double x_deg) { return wrapMinMax(x_deg, -180, +180); }
+
+double wrapTo360deg(const double x_deg) { return wrapMinMax(x_deg, -360, +360); }
+
 } // ns utils
 } // ns ikf

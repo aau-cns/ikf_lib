@@ -27,8 +27,19 @@ namespace utils {
   Eigen::Matrix3d IKF_API skew(const Eigen::Vector3d& v);
   Eigen::Vector3d IKF_API skew_inv(const Eigen::Matrix3d& M);
   Eigen::Matrix4d IKF_API OmegaMat(const Eigen::Vector3d& v);
-  Eigen::Matrix4d IKF_API MatExp(const Eigen::Matrix4d& A, const int order=4);
+  Eigen::Matrix4d IKF_API MatExp(const Eigen::Matrix4d& A, const int order = 4);
 
-} // ns utils
+  // https://stackoverflow.com/a/29871193
+  /* wrap x -> [0,max) */
+  double IKF_API wrapMax(double const x, double const max);
+  /* wrap x -> [min,max) */
+  double IKF_API wrapMinMax(double const x, double const min, double const max);
+
+  double IKF_API wrapToPi(double const x_rad);
+  double IKF_API wrapTo2Pi(double const x_rad);
+  double IKF_API wrapTo180deg(double const x_deg);
+  double IKF_API wrapTo360deg(double const x_deg);
+
+  }  // namespace utils
 } // ns ikf
 #endif // IKF_UTILS_MATH_HPP
