@@ -40,6 +40,9 @@ namespace utils {
   double IKF_API wrapTo180deg(double const x_deg);
   double IKF_API wrapTo360deg(double const x_deg);
 
+  //  R = axang2rot([0,0,1], yaw) * axang2rot([0,1,0], pitch) * axang2rot([1,0,0], roll)
+  void IKF_API quat2rpy(Eigen::Quaterniond const& q, double& roll, double& pitch, double& yaw);
+
   }  // namespace utils
 } // ns ikf
 #endif // IKF_UTILS_MATH_HPP

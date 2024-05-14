@@ -77,5 +77,11 @@ double wrapTo180deg(const double x_deg) { return wrapMinMax(x_deg, -180, +180); 
 
 double wrapTo360deg(const double x_deg) { return wrapMinMax(x_deg, -360, +360); }
 
+void quat2rpy(const Eigen::Quaterniond &q, double &roll, double &pitch, double &yaw) {
+  roll = std::atan2(2.0 * (q.w() * q.x() + q.y() * q.z()), 1.0 - 2.0 * (q.x() * q.x() + q.y() * q.y()));
+  pitch = std::asin(q.w() * q.y() - q.z() * q.x());
+  yaw = std::atan2(2.0 * (q.w() * q.z() + q.x() * q.y()), 1.0 - 2.0 * (q.y() * q.y() + q.z() * q.z()));
+}
+
 } // ns utils
 } // ns ikf
