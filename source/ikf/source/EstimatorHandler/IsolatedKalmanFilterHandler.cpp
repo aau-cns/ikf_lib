@@ -75,9 +75,12 @@ std::map<size_t, pBelief_t> ikf::IsolatedKalmanFilterHandler::get_dict_bel(const
   std::map<size_t, pBelief_t> dict_bel;
   for (size_t id : ids) {
     pBelief_t bel_apri;
-    RTV_EXPECT_TRUE_THROW(
-      get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF),
-      "IKF_Hdl::get_dict_bel(): Could not obtain belief from [" + std::to_string(id) + "] at t=" + t.str());
+    if (!get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF)) {
+      ikf::Logger::ikf_logger()->warn("IKF_Hdl::get_dict_bel(): OOO - Could not obtain belief from ["
+                                      + std::to_string(id) + "] at t=" + t.str());
+      // OUT OF ORDER MEASUREMENT
+      return std::map<size_t, pBelief_t>();
+    }
     dict_bel.insert({id, bel_apri});
   }
   return dict_bel;
@@ -220,6 +223,9 @@ bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen
   Eigen::MatrixXd H = stack_H(dict_H);
 
   std::map<size_t, pBelief_t> dict_bel = get_dict_bel(dict_H, t);
+  if (dict_bel.empty()) {
+    return false;
+  }
 
   Eigen::MatrixXd Sigma_apri = stack_Sigma(dict_bel, t);
 
@@ -256,7 +262,9 @@ bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen
   Eigen::MatrixXd H = stack_H(dict_H);
 
   std::map<size_t, pBelief_t> dict_bel = get_dict_bel(dict_H, t);
-
+  if (dict_bel.empty()) {
+    return false;
+  }
   Eigen::VectorXd mean_apri = stack_mean(dict_bel);
   Eigen::MatrixXd Sigma_apri = stack_Sigma(dict_bel, t);
 
@@ -298,7 +306,7 @@ ApplyObsResult_t IsolatedKalmanFilterHandler::apply_observation(const Eigen::Mat
   Eigen::VectorXd delta_mean;
 
   ApplyObsResult_t res = process_observation(R, z, t, h, IDs, cfg, Sigma_apos, delta_mean, dict_bel);
-  if (res.status != eMeasStatus::REJECTED) {
+  if (res.status == eMeasStatus::PROCESSED) {
     // IMPORTANT: MAINTAIN ORDER STRICKTLY
     // 1) add correction terms in the appropriate correction buffers!
     apply_corrections_at_t(Sigma_apos, dict_bel, t);
@@ -316,8 +324,12 @@ ApplyObsResult_t IsolatedKalmanFilterHandler::process_observation(
   const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t, IIsolatedKalmanFilter::h_joint const &h,
   std::vector<size_t> const &IDs, const KalmanFilter::CorrectionCfg_t &cfg, Eigen::MatrixXd &Sigma_apos,
   Eigen::VectorXd &dx, std::map<size_t, pBelief_t> &dict_bel) {
-  ApplyObsResult_t res(eMeasStatus::PROCESSED);
   dict_bel = get_dict_bel(IDs, t);
+  if (dict_bel.empty()) {
+    return ApplyObsResult_t(eMeasStatus::OUTOFORDER);
+  }
+
+  ApplyObsResult_t res(eMeasStatus::PROCESSED);
   Eigen::VectorXd mean_apri = stack_mean(dict_bel);
   Eigen::MatrixXd Sigma_apri = stack_Sigma(dict_bel, t);
   // stack individual's covariances:

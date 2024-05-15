@@ -276,6 +276,9 @@ bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::Ma
   Eigen::MatrixXd H = stack_H(dict_H);
 
   std::map<size_t, pBelief_t> dict_bel = get_dict_bel(dict_H, t);
+  if (dict_bel.empty()) {
+    return false;
+  }
 
   Eigen::MatrixXd Sigma_apri = stack_Sigma(dict_bel, t);
 
@@ -347,6 +350,9 @@ bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::Ma
   Eigen::MatrixXd H = stack_H(dict_H);
 
   std::map<size_t, pBelief_t> dict_bel = get_dict_bel(dict_H, t);
+  if (dict_bel.empty()) {
+    return false;
+  }
 
   Eigen::VectorXd mean_apri = stack_mean(dict_bel);
   Eigen::MatrixXd Sigma_apri = stack_Sigma(dict_bel, t);
