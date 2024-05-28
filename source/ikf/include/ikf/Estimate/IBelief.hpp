@@ -102,6 +102,9 @@ public:
 protected:
   // TODO (18.1.2024): mean should not be limited to R(n) and support any manifold!
   // this makes ns_dim obsulete and es_dim becomes DoF.
+  // TODO (23.5.2024): if .mean() would not return a const ref, a mean vector could be assambled in child classes if
+  // they overwrite that method. consequently the m_mean member could be part of a dedicated class, m_Sigma might be the
+  // same for all. Note that mean() is needed for instance for generic plotting.
   Eigen::VectorXd m_mean;
   Eigen::MatrixXd m_Sigma;
   size_t m_es_dim = 0;
