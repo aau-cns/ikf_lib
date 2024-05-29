@@ -73,6 +73,12 @@ protected:
                                                const KalmanFilter::CorrectionCfg_t& cfg, Eigen::MatrixXd& Sigma_apos,
                                                Eigen::VectorXd& dx, std::map<size_t, ikf::pBelief_t>& dict_bel);
 
+  Eigen::VectorXd compute_state_error(std::map<size_t, pBelief_t>& dict_bel_apri,
+                                      std::map<size_t, pBelief_t>& dict_bel_apos, size_t es_dim = 0);
+
+  Eigen::MatrixXd compute_state_error_Jacobian(std::map<size_t, pBelief_t>& dict_bel_apos,
+                                               Eigen::VectorXd const& e_x_idx, size_t es_dim = 0);
+
 };  // class IsolatedKalmanFilterHandler
 
 }  // namespace ikf

@@ -370,7 +370,8 @@ ApplyObsResult_t IsolatedKalmanFilterHandler::process_observation(
 
   // NOTE: iterated Error-KF update steps: we move the nominal state in each iteration, therefore the error-state
   // covariance at the nominal-state needs to be shifted as well...
-  for (size_t iter = 0; iter < cfg.num_iter; iter++) {
+  size_t iter = 0;
+  for (; iter < cfg.num_iter; iter++) {
     // compute individuals' Jacobian
 
     // create full belief with fixed states:
@@ -404,37 +405,8 @@ ApplyObsResult_t IsolatedKalmanFilterHandler::process_observation(
     }
     Eigen::VectorXd e_x_idx = Eigen::VectorXd::Zero(es_dim, 1);
     if (iter > 0) {
-      // TODO: we need the box-minus operator here per belief!
-
-      size_t row_start = 0;
-      for (auto &bel_apri_i : dict_bel) {
-        if (!bel_apri_i.second->options().is_fixed) {
-          size_t dim_I = bel_apri_i.second->es_dim();
-
-          // e_idx = (x_est_idx boxminus x_apri)
-          // Eigen::VectorXd e_x_ii = bel_i.second->boxminus(bel_idx.at(bel_i.first));
-
-          // https://github.com/decargroup/navlie/blob/a19dbe32cc5337048ca2a20f67852150b2322513/navlie/filters.py#L360
-          // bel_err_idx = wedge(bel_apri^(inv) * bel_idx);  bel_err_idx = bel_idx - bel_apri;
-          Eigen::VectorXd e_x_ii = bel_idx.at(bel_apri_i.first)->boxminus(bel_apri_i.second);
-          // Eigen::VectorXd e_x_ii = bel_apri_i.second->boxminus(bel_idx.at(bel_apri_i.first));
-
-          e_x_idx.block(row_start, 0, dim_I, 1) = e_x_ii;
-          row_start += dim_I;
-        }
-      }
-
-      // stack state Jacobian_plus
-      row_start = 0;
-      for (auto &bel_idx_i : bel_idx) {
-        size_t dim_I = bel_idx_i.second->es_dim();
-
-        // https://github.com/decargroup/navlie/blob/a19dbe32cc5337048ca2a20f67852150b2322513/navlie/filters.py#L361
-        // We need the right Jacobian
-        J_idx.block(row_start, row_start, dim_I, dim_I)
-          = bel_idx_i.second->plus_jacobian(-e_x_idx.block(row_start, 0, dim_I, 1));
-        row_start += dim_I;
-      }
+      e_x_idx = compute_state_error(dict_bel, bel_idx, es_dim);
+      J_idx = compute_state_error_Jacobian(bel_idx, e_x_idx, es_dim);
 
       // r_idx = z_est -  H_idx*(x_est_apri - x_est_idx)
       r_idx = r_idx + H_idx * (J_idx * e_x_idx);
@@ -488,6 +460,14 @@ ApplyObsResult_t IsolatedKalmanFilterHandler::process_observation(
     Sigma_apos = U * P_idx;
   }
 
+  if (iter > 1) {
+    // Project the a posteriori covariance to the tangent space of the a posteriori mean.
+    // https://github.com/decargroup/navlie/blob/a19dbe32cc5337048ca2a20f67852150b2322513/navlie/filters.py#L431
+    Eigen::VectorXd e = compute_state_error(dict_bel, bel_idx, es_dim);
+    Eigen::MatrixXd L = compute_state_error_Jacobian(bel_idx, e, es_dim);
+    Sigma_apos = L * Sigma_apos * L.transpose();
+  }
+
   if (cfg.nummerical_stabilization) {
     Sigma_apos = utils::stabilize_covariance(Sigma_apos, cfg.eps);
   }
@@ -498,12 +478,68 @@ ApplyObsResult_t IsolatedKalmanFilterHandler::process_observation(
     Sigma_apos = utils::nearest_covariance(Sigma_apos, 1e-6);
   }
 
-  // correct inplace:
+  // correct a priori mean inplace, thus set dx to zero:
   dx = Eigen::VectorXd::Zero(es_dim, 1);
   for (auto const &bel_i : bel_idx) {
     dict_bel.at(bel_i.first)->mean(bel_i.second->mean());
   }
   return res;
+}
+
+Eigen::VectorXd ikf::IsolatedKalmanFilterHandler::compute_state_error(std::map<size_t, pBelief_t> &dict_bel_apri,
+                                                                      std::map<size_t, pBelief_t> &dict_bel_apos,
+                                                                      size_t es_dim) {
+  if (es_dim == 0) {
+    for (auto &bel_I : dict_bel_apri) {
+      if (!bel_I.second->options().is_fixed) {
+        es_dim += bel_I.second->es_dim();
+      }
+    }
+  }
+
+  Eigen::VectorXd e_x = Eigen::VectorXd::Zero(es_dim, 1);
+  size_t row_start = 0;
+  for (auto &bel_apri_i : dict_bel_apri) {
+    if (!bel_apri_i.second->options().is_fixed) {
+      size_t dim_I = bel_apri_i.second->es_dim();
+
+      // e_idx = (x_est_idx boxminus x_apri)
+      // Eigen::VectorXd e_x_ii = bel_i.second->boxminus(bel_idx.at(bel_i.first));
+
+      // https://github.com/decargroup/navlie/blob/a19dbe32cc5337048ca2a20f67852150b2322513/navlie/filters.py#L360
+      // bel_err_idx = wedge(bel_apri^(inv) * bel_idx);  bel_err_idx = bel_idx - bel_apri;
+      Eigen::VectorXd e_x_ii = dict_bel_apos.at(bel_apri_i.first)->boxminus(bel_apri_i.second);
+
+      e_x.block(row_start, 0, dim_I, 1) = e_x_ii;
+      row_start += dim_I;
+    }
+  }
+  return e_x;
+}
+
+Eigen::MatrixXd ikf::IsolatedKalmanFilterHandler::compute_state_error_Jacobian(
+  std::map<size_t, pBelief_t> &dict_bel_apos, const Eigen::VectorXd &e_x_idx, size_t es_dim) {
+  if (es_dim == 0) {
+    for (auto &bel_I : dict_bel_apos) {
+      if (!bel_I.second->options().is_fixed) {
+        es_dim += bel_I.second->es_dim();
+      }
+    }
+  }
+  Eigen::MatrixXd J_idx = Eigen::MatrixXd::Identity(es_dim, es_dim);
+  size_t row_start = 0;
+  for (auto &bel_idx_i : dict_bel_apos) {
+    if (!bel_idx_i.second->options().is_fixed) {
+      size_t dim_I = bel_idx_i.second->es_dim();
+
+      // https://github.com/decargroup/navlie/blob/a19dbe32cc5337048ca2a20f67852150b2322513/navlie/filters.py#L361
+      // We need the right Jacobian
+      J_idx.block(row_start, row_start, dim_I, dim_I)
+        = bel_idx_i.second->plus_jacobian(-e_x_idx.block(row_start, 0, dim_I, 1));
+      row_start += dim_I;
+    }
+  }
+  return J_idx;
 }
 
 }  // namespace ikf
