@@ -468,14 +468,14 @@ ApplyObsResult_t IsolatedKalmanFilterHandler::process_observation(
     if (iter > 0) {
       //    https://github.com/gaoxiang12/faster-lio/blob/main/include/IKFoM_toolkit/esekfom/esekfom.hpp#L491
       bool converged = true;
-      for (int i = 0; i < dx_idx.cols(); i++) {
+      for (int i = 0; i < dx_idx.rows(); i++) {
         if (std::abs(dx_idx(i)) > cfg.tol_eps) {
           converged = false;
           break;
         }
       }
       if (converged) {
-        ikf::Logger::ikf_logger()->warn("Stopped after n iterations:" + std::to_string(iter));
+        ikf::Logger::ikf_logger()->debug("Stopped after n iterations:" + std::to_string(iter));
         break;
       }
     }
