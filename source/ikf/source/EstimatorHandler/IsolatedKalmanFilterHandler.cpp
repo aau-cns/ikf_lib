@@ -89,7 +89,9 @@ std::map<size_t, pBelief_t> ikf::IsolatedKalmanFilterHandler::get_dict_bel(const
 size_t IsolatedKalmanFilterHandler::get_dim(const std::map<size_t, pBelief_t> &dict_bel) {
   size_t dim = 0;
   for (auto const &e_i : dict_bel) {
-    dim += e_i.second->es_dim();
+    if (!e_i.second->options().is_fixed) {
+      dim += e_i.second->es_dim();
+    }
   }
   return dim;
 }
@@ -97,15 +99,19 @@ size_t IsolatedKalmanFilterHandler::get_dim(const std::map<size_t, pBelief_t> &d
 Eigen::VectorXd IsolatedKalmanFilterHandler::stack_mean(const std::map<size_t, pBelief_t> &dict_bel) {
   size_t dim = 0;
   for (auto const &e_i : dict_bel) {
-    dim += e_i.second->ns_dim();
+    if (!e_i.second->options().is_fixed) {
+      dim += e_i.second->ns_dim();
+    }
   }
   Eigen::VectorXd mean = Eigen::VectorXd::Zero(dim, 1);
 
   size_t row_start = 0;
   for (auto const &e_i : dict_bel) {
-    size_t state_dim_row = e_i.second->ns_dim();
-    mean.block(row_start, 0, state_dim_row, 1) = e_i.second->mean();
-    row_start += state_dim_row;
+    if (!e_i.second->options().is_fixed) {
+      size_t state_dim_row = e_i.second->ns_dim();
+      mean.block(row_start, 0, state_dim_row, 1) = e_i.second->mean();
+      row_start += state_dim_row;
+    }
   }
   return mean;
 }
@@ -113,10 +119,8 @@ Eigen::VectorXd IsolatedKalmanFilterHandler::stack_mean(const std::map<size_t, p
 // Algorithm 6 in [1]
 Eigen::MatrixXd IsolatedKalmanFilterHandler::stack_Sigma(const std::map<size_t, pBelief_t> &dict_bel,
                                                          const Timestamp &t) {
-  size_t state_dim = 0;
-  for (auto const &e : dict_bel) {
-    state_dim += e.second->es_dim();
-  }
+  size_t state_dim = get_dim(dict_bel);
+
   Eigen::MatrixXd Sigma = Eigen::MatrixXd::Zero(state_dim, state_dim);
 
   size_t row_start = 0;
@@ -124,24 +128,29 @@ Eigen::MatrixXd IsolatedKalmanFilterHandler::stack_Sigma(const std::map<size_t, 
     size_t id_row = e_i.first;
     size_t state_dim_row = e_i.second->es_dim();
     size_t col_start = 0;
-    for (auto const &e_j : dict_bel) {
-      size_t id_col = e_j.first;
-      size_t state_dim_col = e_j.second->es_dim();
-      if (id_row == id_col) {
-        Sigma.block(row_start, col_start, state_dim_row, state_dim_col) = e_i.second->Sigma();
-      } else {
-        // obtain only the upper triangular part (if dict_bel was sorted ascending)
-        if (id_row < id_col) {
-          Eigen::MatrixXd Sigma_IJ = get_Sigma_IJ_at_t(id_row, id_col, t);
-          if (Sigma_IJ.size()) {
-            Sigma.block(row_start, col_start, state_dim_row, state_dim_col) = Sigma_IJ;
-            Sigma.block(col_start, row_start, state_dim_col, state_dim_row) = Sigma_IJ.transpose();
+    if (!e_i.second->options().is_fixed) {
+      for (auto const &e_j : dict_bel) {
+        size_t id_col = e_j.first;
+        size_t state_dim_col = e_j.second->es_dim();
+
+        if (!e_j.second->options().is_fixed) {
+          if (id_row == id_col) {
+            Sigma.block(row_start, col_start, state_dim_row, state_dim_col) = e_i.second->Sigma();
+          } else {
+            // obtain only the upper triangular part (if dict_bel was sorted ascending)
+            if (id_row < id_col) {
+              Eigen::MatrixXd Sigma_IJ = get_Sigma_IJ_at_t(id_row, id_col, t);
+              if (Sigma_IJ.size()) {
+                Sigma.block(row_start, col_start, state_dim_row, state_dim_col) = Sigma_IJ;
+                Sigma.block(col_start, row_start, state_dim_col, state_dim_row) = Sigma_IJ.transpose();
+              }
+            }
           }
-        }
+          col_start += state_dim_col;
+        }  // e_j not fixed
       }
-      col_start += state_dim_col;
-    }
-    row_start += state_dim_row;
+      row_start += state_dim_row;
+    }  // e_i not fixed
   }
 
   return Sigma;
@@ -152,11 +161,13 @@ void IsolatedKalmanFilterHandler::apply_corrections_at_t(Eigen::MatrixXd &Sigma_
                                                          const Timestamp &t) {
   size_t row_start = 0;
   for (auto const &e_i : dict_bel) {
-    size_t dim_I = e_i.second->es_dim();
+    if (!e_i.second->options().is_fixed) {
+      size_t dim_I = e_i.second->es_dim();
 
-    Eigen::MatrixXd Sigma_II_apos = Sigma_apos.block(row_start, row_start, dim_I, dim_I);
-    get(e_i.first)->apply_correction_at_t(t, e_i.second->Sigma(), Sigma_II_apos);
-    row_start += dim_I;
+      Eigen::MatrixXd Sigma_II_apos = Sigma_apos.block(row_start, row_start, dim_I, dim_I);
+      get(e_i.first)->apply_correction_at_t(t, e_i.second->Sigma(), Sigma_II_apos);
+      row_start += dim_I;
+    }
   }
 }
 
@@ -165,7 +176,9 @@ void IsolatedKalmanFilterHandler::split_right_upper_covariance(Eigen::MatrixXd &
                                                                const Timestamp &t) {
   std::vector<size_t> IDs;
   for (auto const &e : dict_bel) {
-    IDs.push_back(e.first);
+    if (!e.second->options().is_fixed) {
+      IDs.push_back(e.first);
+    }
   }
 
   size_t row_start = 0, col_start_offset = 0;
@@ -189,11 +202,13 @@ void IsolatedKalmanFilterHandler::correct_beliefs_implace(Eigen::MatrixXd &Sigma
                                                           std::map<size_t, pBelief_t> const &dict_bel) {
   size_t row_start = 0;
   for (auto const &e_i : dict_bel) {
-    size_t dim_I = e_i.second->es_dim();
+    if (!e_i.second->options().is_fixed) {
+      size_t dim_I = e_i.second->es_dim();
 
-    Eigen::MatrixXd Sigma_II_apos = Sigma_apos.block(row_start, row_start, dim_I, dim_I);
-    e_i.second->correct(delta_mean.block(row_start, 0, dim_I, 1), Sigma_II_apos);
-    row_start += dim_I;
+      Eigen::MatrixXd Sigma_II_apos = Sigma_apos.block(row_start, row_start, dim_I, dim_I);
+      e_i.second->correct(delta_mean.block(row_start, 0, dim_I, 1), Sigma_II_apos);
+      row_start += dim_I;
+    }
   }
 }
 
@@ -330,17 +345,21 @@ ApplyObsResult_t IsolatedKalmanFilterHandler::process_observation(
   }
 
   ApplyObsResult_t res(eMeasStatus::PROCESSED);
+  // only unfixed means and Sigmas are stacked
   Eigen::VectorXd mean_apri = stack_mean(dict_bel);
   Eigen::MatrixXd Sigma_apri = stack_Sigma(dict_bel, t);
   // stack individual's covariances:
   Sigma_apri = utils::stabilize_covariance(Sigma_apri);
   RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_apri), "Joint apri covariance is not PSD at t=" + t.str());
 
+  // unfixed stacked apri belief
   std::map<size_t, pBelief_t> bel_idx;
   size_t es_dim = 0;
   for (auto &bel_I : dict_bel) {
-    bel_idx.insert({bel_I.first, bel_I.second->clone()});
-    es_dim += bel_I.second->es_dim();
+    if (!bel_I.second->options().is_fixed) {
+      bel_idx.insert({bel_I.first, bel_I.second->clone()});
+      es_dim += bel_I.second->es_dim();
+    }
   }
 
   Eigen::MatrixXd H_idx;
@@ -353,7 +372,25 @@ ApplyObsResult_t IsolatedKalmanFilterHandler::process_observation(
   // covariance at the nominal-state needs to be shifted as well...
   for (size_t iter = 0; iter < cfg.num_iter; iter++) {
     // compute individuals' Jacobian
-    std::pair<std::map<size_t, Eigen::MatrixXd>, Eigen::VectorXd> H_r_idx = h(bel_idx, IDs, z);
+
+    // create full belief with fixed states:
+    std::map<size_t, pBelief_t> bel_idx_full;
+    for (auto &bel_I : bel_idx) {
+      bel_idx_full.insert({bel_I.first, bel_I.second});
+    }
+    for (auto &bel_I : dict_bel) {
+      if (bel_I.second->options().is_fixed) {
+        bel_idx_full.insert({bel_I.first, bel_I.second});
+      }
+    }
+    std::pair<std::map<size_t, Eigen::MatrixXd>, Eigen::VectorXd> H_r_idx = h(bel_idx_full, IDs, z);
+
+    // remove fixed measurement Jacobians again:
+    for (auto &bel_I : dict_bel) {
+      if (bel_I.second->options().is_fixed) {
+        H_r_idx.first.erase(bel_I.first);
+      }
+    }
 
     // stack Jacobian
     H_idx = stack_H(H_r_idx.first);
@@ -362,6 +399,7 @@ ApplyObsResult_t IsolatedKalmanFilterHandler::process_observation(
     Eigen::VectorXd r_idx = H_r_idx.second;
 
     if (!KalmanFilter::check_dim(H_idx, R, r_idx, Sigma_apri)) {
+      Logger::ikf_logger()->warn("IsolatedKalmanFilterHandler::process_observation(): check_dim() failed!");
       return ApplyObsResult_t(eMeasStatus::DISCARED);
     }
     Eigen::VectorXd e_x_idx = Eigen::VectorXd::Zero(es_dim, 1);
@@ -370,18 +408,20 @@ ApplyObsResult_t IsolatedKalmanFilterHandler::process_observation(
 
       size_t row_start = 0;
       for (auto &bel_apri_i : dict_bel) {
-        size_t dim_I = bel_apri_i.second->es_dim();
+        if (!bel_apri_i.second->options().is_fixed) {
+          size_t dim_I = bel_apri_i.second->es_dim();
 
-        // e_idx = (x_est_idx boxminus x_apri)
-        // Eigen::VectorXd e_x_ii = bel_i.second->boxminus(bel_idx.at(bel_i.first));
+          // e_idx = (x_est_idx boxminus x_apri)
+          // Eigen::VectorXd e_x_ii = bel_i.second->boxminus(bel_idx.at(bel_i.first));
 
-        // https://github.com/decargroup/navlie/blob/a19dbe32cc5337048ca2a20f67852150b2322513/navlie/filters.py#L360
-        // bel_err_idx = wedge(bel_apri^(inv) * bel_idx);  bel_err_idx = bel_idx - bel_apri;
-        Eigen::VectorXd e_x_ii = bel_idx.at(bel_apri_i.first)->boxminus(bel_apri_i.second);
-        // Eigen::VectorXd e_x_ii = bel_apri_i.second->boxminus(bel_idx.at(bel_apri_i.first));
+          // https://github.com/decargroup/navlie/blob/a19dbe32cc5337048ca2a20f67852150b2322513/navlie/filters.py#L360
+          // bel_err_idx = wedge(bel_apri^(inv) * bel_idx);  bel_err_idx = bel_idx - bel_apri;
+          Eigen::VectorXd e_x_ii = bel_idx.at(bel_apri_i.first)->boxminus(bel_apri_i.second);
+          // Eigen::VectorXd e_x_ii = bel_apri_i.second->boxminus(bel_idx.at(bel_apri_i.first));
 
-        e_x_idx.block(row_start, 0, dim_I, 1) = e_x_ii;
-        row_start += dim_I;
+          e_x_idx.block(row_start, 0, dim_I, 1) = e_x_ii;
+          row_start += dim_I;
+        }
       }
 
       // stack state Jacobian_plus
@@ -415,7 +455,7 @@ ApplyObsResult_t IsolatedKalmanFilterHandler::process_observation(
     K_idx = P_idx * H_idx.transpose() * S_idx.inverse();
 
     // mean correction
-    dx_idx = -J_idx * e_x_idx + K_idx * r_idx;
+    dx_idx = K_idx * r_idx - J_idx * e_x_idx;
 
     size_t row_start = 0;
     for (auto const &bel_i : bel_idx) {
@@ -425,9 +465,19 @@ ApplyObsResult_t IsolatedKalmanFilterHandler::process_observation(
     }
 
     // check the difference of the means over the iteration steps:
-    if (dx_idx.norm() < cfg.tol_eps && iter > 0) {
-      // ikf::Logger::ikf_logger()->warn("Stopped after n iterations:" + std::to_string(iter));
-      break;
+    if (iter > 0) {
+      //    https://github.com/gaoxiang12/faster-lio/blob/main/include/IKFoM_toolkit/esekfom/esekfom.hpp#L491
+      bool converged = true;
+      for (int i = 0; i < dx_idx.cols(); i++) {
+        if (std::abs(dx_idx(i)) > cfg.tol_eps) {
+          converged = false;
+          break;
+        }
+      }
+      if (converged) {
+        ikf::Logger::ikf_logger()->warn("Stopped after n iterations:" + std::to_string(iter));
+        break;
+      }
     }
   }
 
