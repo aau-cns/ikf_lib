@@ -25,7 +25,7 @@ namespace ikf {
 CollaborativeIKFHandler::CollaborativeIKFHandler(MultiAgentHdl_ptr pAgentHdler, const double horizon_sec)
   : IsolatedKalmanFilterHandler(horizon_sec),
     m_pAgentHandler(pAgentHdler),
-    mRedoStrategy(eRedoUpdateStrategy::DISCARD) {
+    mRedoStrategy(eRedoUpdateStrategy::POSTCORRELATED) {
   Logger::ikf_logger()->info("CollaborativeIKFHandler will inter-agent updates through the agent handler!");
   Logger::ikf_logger()->info("* RedoStrategy=" + to_string(mRedoStrategy));
 }
@@ -119,13 +119,21 @@ std::map<size_t, pBelief_t> CollaborativeIKFHandler::get_dict_bel(const std::vec
     size_t id = e;
     pBelief_t bel_apri;
     if (!exists(id)) {
-      RTV_EXPECT_TRUE_THROW(
-        m_pAgentHandler->get_belief_at_t(id, t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF),
-        "CIKF_Hdl::get_dict_bel(): Could not obtain belief from [" + std::to_string(id) + "] at t=" + t.str());
+      // RTV_EXPECT_TRUE_THROW(
+      //   m_pAgentHandler->get_belief_at_t(id, t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF),
+      //   "CIKF_Hdl::get_dict_bel(): Could not obtain belief from [" + std::to_string(id) + "] at t=" + t.str());
+      if (!m_pAgentHandler->get_belief_at_t(id, t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF)) {
+        //  OUT OF ORDER MEASUREMENT
+        return std::map<size_t, pBelief_t>();
+      }
     } else {
-      RTV_EXPECT_TRUE_THROW(
-        get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF),
-        "CIKF_Hdl::get_dict_bel(): Could not obtain belief from [" + std::to_string(id) + "] at t=" + t.str());
+      // RTV_EXPECT_TRUE_THROW(
+      //   get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF),
+      //   "CIKF_Hdl::get_dict_bel(): Could not obtain belief from [" + std::to_string(id) + "] at t=" + t.str());
+      if (!get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF)) {
+        //  OUT OF ORDER MEASUREMENT
+        return std::map<size_t, pBelief_t>();
+      }
     }
 
     dict_bel.insert({id, bel_apri});
@@ -412,9 +420,9 @@ ApplyObsResult_t CollaborativeIKFHandler::apply_observation(const Eigen::MatrixX
     }
   }
 
-  ikf::Logger::ikf_logger()->info("CollaborativeIKFHandler::apply_observation(): num remote IDs="
-                                  + std::to_string(remote_IDs.size())
-                                  + ", num ID_agents=" + std::to_string(ID_agents.size()));
+  ikf::Logger::ikf_logger()->info(
+    "CollaborativeIKFHandler::apply_observation():  num local IDs=" + std::to_string(local_IDs.size())
+    + "num remote IDs=" + std::to_string(remote_IDs.size()) + ", num ID_agents=" + std::to_string(ID_agents.size()));
 
   // only local instances involved... we are done here!
   if (remote_IDs.size() == 0) {
@@ -436,7 +444,7 @@ ProcessMeasResult_vec_t CollaborativeIKFHandler::redo_updates_after_t(const Time
   // -> hopefully, we are done before remote ones need our beliefs again...
   if (mRedoStrategy == eRedoUpdateStrategy::POSTCORRELATED) {
     auto ID_agents = IDs_to_Agent_IDs(get_remote_correlated_IDs_after_t(t));
-    for (auto const &id : IDs_to_Agent_IDs(get_remote_correlated_IDs_after_t(t))) {
+    for (auto const &id : ID_agents) {
       if (!m_pAgentHandler->redo_updates_after_t(id, t)) {
         ikf::Logger::ikf_logger()->warn(
           "CollaborativeIKFHandler::redo_updates_after_t(): redo_update(agent={:d}) failed", id);
@@ -471,8 +479,8 @@ ProcessMeasResult_vec_t CollaborativeIKFHandler::redo_updates_from_t(const Times
   // -> hopefully, we are done before remote ones need our beliefs again...
   if (mRedoStrategy == eRedoUpdateStrategy::POSTCORRELATED) {
     auto ID_agents = IDs_to_Agent_IDs(get_remote_correlated_IDs_after_t(t));
-    for (auto const &id : IDs_to_Agent_IDs(get_remote_correlated_IDs_after_t(t))) {
-      if (!m_pAgentHandler->redo_updates_after_t(id, t)) {
+    for (auto const &id : ID_agents) {
+      if (!m_pAgentHandler->redo_updates_from_t(id, t)) {
         ikf::Logger::ikf_logger()->warn(
           "CollaborativeIKFHandler::redo_updates_from_t(): redo_update(agent={:d}) failed", id);
       }
@@ -500,9 +508,15 @@ bool CollaborativeIKFHandler::apply_inter_agent_observation(
       "CollaborativeIKFHandler::apply_inter_agent_observation: failed to obtain local data...");
     return false;
   }
+  if (local_beliefs.empty()) {
+    return false;
+  }
   if (!m_pAgentHandler->get_beliefs_and_FCC_at_t(remote_IDs, ID_participants, t, remote_beliefs, remote_FFCs)) {
     ikf::Logger::ikf_logger()->error(
       "CollaborativeIKFHandler::apply_inter_agent_observation: failed to obtain remote data...");
+    return false;
+  }
+  if (remote_beliefs.empty()) {
     return false;
   }
 
@@ -601,9 +615,17 @@ ApplyObsResult_t CollaborativeIKFHandler::apply_inter_agent_observation(
       "CollaborativeIKFHandler::apply_inter_agent_observation: failed to obtain local data...");
     return ApplyObsResult_t(eMeasStatus::OUTOFORDER);
   }
+
+  if (local_beliefs.empty()) {
+    return ApplyObsResult_t(eMeasStatus::OUTOFORDER);
+  }
+
   if (!m_pAgentHandler->get_beliefs_and_FCC_at_t(remote_IDs, ID_participants, t, remote_beliefs, remote_FFCs)) {
     ikf::Logger::ikf_logger()->error(
       "CollaborativeIKFHandler::apply_inter_agent_observation: failed to obtain remote data...");
+    return ApplyObsResult_t(eMeasStatus::OUTOFORDER);
+  }
+  if (remote_beliefs.empty()) {
     return ApplyObsResult_t(eMeasStatus::OUTOFORDER);
   }
 
