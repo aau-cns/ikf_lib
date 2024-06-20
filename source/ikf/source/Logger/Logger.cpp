@@ -10,10 +10,11 @@
 *  All rights reserved. See the LICENSE file for details.
 ******************************************************************************/
 #include <ikf/Logger/Logger.hpp>
-#include <sstream>      // std::stringstream, std::stringbuf
+#include <ikf/utils/IO.hpp>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/daily_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include <sstream>  // std::stringstream, std::stringbuf
 
 namespace ikf {
 
@@ -33,7 +34,15 @@ std::shared_ptr<spdlog::logger> Logger::ikf_logger() {
     std::time_t now_c = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     std::tm now_tm = *std::localtime(&now_c);
     std::stringstream ss;
-    ss << "/tmp/logs/ikf_log_" << now_tm.tm_year << "-" << now_tm.tm_mon << "-" <<  now_tm.tm_mday << "-" <<  now_tm.tm_hour << "-" <<  now_tm.tm_min << "-" <<  now_tm.tm_sec << ".txt";
+    size_t i = 0;
+    do {
+      ss.str(std::string());
+      ss.clear();
+      ss << "/tmp/logs/ikf_log_"
+         << "num" << i++ << "_" << now_tm.tm_year << "-" << now_tm.tm_mon << "-" << now_tm.tm_mday << "-"
+         << now_tm.tm_hour << "-" << now_tm.tm_min << "-" << now_tm.tm_sec << ".txt";
+    } while (utils::IO::fileExists(ss.str()));
+
     auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(ss.str(), false);
     file_sink->set_level(spdlog::level::trace);
 
