@@ -157,7 +157,7 @@ ProcessMeasResult_vec_t IDICOHandler::process_measurement(const MeasData &m) {
   }
 
   // if there are open request, use the oldest one, before processing the new measurmeent
-  HistRedoUpdateRequest.check_horizon_from_t(m.t_m);
+  HistRedoUpdateRequest.check_horizon_from_t(t_latest);
   if (HistRedoUpdateRequest.size()) {
     Timestamp t_oldest;
     bool after = true;
@@ -168,11 +168,11 @@ ProcessMeasResult_vec_t IDICOHandler::process_measurement(const MeasData &m) {
       HistRedoUpdateRequest.clear();
     }
     if (after) {
-      redo_updates_after_t(t_oldest);
+      IDICOHandler::redo_updates_after_t(t_oldest);  // restrict overloading
       ikf::Logger::ikf_logger()->info(
         "IDICOHandler::process_measurement(): requested redo update AFTER t=" + t_oldest.str() + " processed!");
     } else {
-      redo_updates_from_t(t_oldest);
+      IDICOHandler::redo_updates_from_t(t_oldest);  // restrict overloading
       ikf::Logger::ikf_logger()->info(
         "IDICOHandler::process_measurement(): requested redo update FROM t=" + t_oldest.str() + " processed!");
     }
@@ -204,7 +204,7 @@ ProcessMeasResult_vec_t IDICOHandler::process_measurement(const MeasData &m) {
     }
 
     sort_measurements_from_t(t_start);
-    auto vec = redo_updates_from_t(t_start);
+    auto vec = redo_updates_from_t(t_start);  // permit overloading
     HistMeas.check_horizon();
     return vec;
   } else {
@@ -214,10 +214,10 @@ ProcessMeasResult_vec_t IDICOHandler::process_measurement(const MeasData &m) {
       HistMeas_OOO.insert(m, m.t_m);
       HistMeas_OOO.check_horizon();
     }
-    if (res.status == ikf::eMeasStatus::REJECTED || res.status == ikf::eMeasStatus::PROCESSED) {
+    else if (res.status == ikf::eMeasStatus::REJECTED || res.status == ikf::eMeasStatus::PROCESSED) {
       insert_measurement(m, m.t_m);
       HistMeas.check_horizon();
-    }
+    }  // else: DISCARD
     return vec;
   }
 }
@@ -271,7 +271,7 @@ ProcessMeasResult_vec_t IDICOHandler::redo_updates_after_t(const Timestamp &t) {
       HistMeas.foreach_between_t1_t2(t_after, t_last,
                                      [this, &vec](MeasData const &m) { vec.push_back(this->delegate_measurement(m)); });
     }
-    Logger::ikf_logger()->info("IDICOHandler::redo_updates_after_t(): DONE!");
+    Logger::ikf_logger()->info("IDICOHandler::redo_updates_after_t(): (num={:d}) DONE!", vec.size());
   } else {
     Logger::ikf_logger()->debug("IDICOHandler::redo_updates_after_t() t_after=" + t.str() + ": nothing to do...");
   }
@@ -429,6 +429,7 @@ bool IDICOHandler::discard_measurement(const MeasData &m) {
 bool IDICOHandler::schedule_redo_update(const Timestamp &t, const bool after) {
   std::scoped_lock lk(m_mtx_histRUR);
   HistRedoUpdateRequest.insert(after, t);
+  HistRedoUpdateRequest.check_horizon();
   return true;
 }
 
