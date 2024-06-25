@@ -31,16 +31,39 @@ std::shared_ptr<spdlog::logger> Logger::ikf_logger() {
     console_sink->set_pattern("[ikf_log] [%^%l%$] %v");
 
     // TODO: maybe use dedicated thirdparty lib: https://github.com/HowardHinnant/date
-    std::time_t now_c = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    // https://stackoverflow.com/a/27678121
+    const auto now = std::chrono::system_clock::now();
+    auto duration = now.time_since_epoch();
+
+    typedef std::chrono::duration<int, std::ratio_multiply<std::chrono::hours::period, std::ratio<8> >::type>
+      Days; /* UTC: +8:00 */
+
+    Days days = std::chrono::duration_cast<Days>(duration);
+    duration -= days;
+    auto hours = std::chrono::duration_cast<std::chrono::hours>(duration);
+    duration -= hours;
+    auto minutes = std::chrono::duration_cast<std::chrono::minutes>(duration);
+    duration -= minutes;
+    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
+    duration -= seconds;
+    auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+    duration -= milliseconds;
+    auto microseconds = std::chrono::duration_cast<std::chrono::microseconds>(duration);
+    duration -= microseconds;
+
+    std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+
     std::tm now_tm = *std::localtime(&now_c);
     std::stringstream ss;
     size_t i = 0;
     do {
       ss.str(std::string());
       ss.clear();
-      ss << "/tmp/logs/ikf_log_"
-         << "num" << i++ << "_" << now_tm.tm_year << "-" << now_tm.tm_mon << "-" << now_tm.tm_mday << "-"
-         << now_tm.tm_hour << "-" << now_tm.tm_min << "-" << now_tm.tm_sec << ".txt";
+
+      ss << "/tmp/logs/ikf_log"
+         << "" << i++ << "_" << now_tm.tm_year << "-" << now_tm.tm_mon << "-" << now_tm.tm_mday << "_" << now_tm.tm_hour
+         << "h:" << now_tm.tm_min << "m:" << now_tm.tm_sec << "s:" << milliseconds.count()
+         << "ms:" << microseconds.count() << "us.txt";
     } while (utils::IO::fileExists(ss.str()));
 
     auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(ss.str(), false);
