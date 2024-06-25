@@ -142,6 +142,9 @@ namespace ikf
       bool get_after_t(Timestamp const& t, T& elem) const;
       bool get_after_t(Timestamp const& t, Timestamp& elem) const;
       bool get_after_t(Timestamp const& t, TData& elem) const;
+      bool get_closest_t(Timestamp const& t, T& elem) const;
+      bool get_closest_t(Timestamp const& t, Timestamp& elem) const;
+      bool get_closest_t(Timestamp const& t, TData& elem) const;
       void remove_at_t(Timestamp const& t);
       void remove_at_t(double const t);
       void remove_before_t(Timestamp const& t);
@@ -461,6 +464,57 @@ namespace ikf
           elem.stamp = Timestamp(it->first);
           return true;
       }
+      return false;
+  }
+
+  template <typename T>
+  bool THistoryBuffer<T>::get_closest_t(const Timestamp& t, T& elem) const {
+      TData elem_;
+      bool res = get_closest_t(t, elem_);
+      if (res) {
+          elem = elem_.data;
+      }
+      return res;
+  }
+
+  template <typename T>
+  bool THistoryBuffer<T>::get_closest_t(const Timestamp& t, Timestamp& elem) const {
+      TData elem_;
+      bool res = get_closest_t(t, elem_);
+      if (res) {
+          elem = elem_.stamp;
+      }
+      return res;
+  }
+
+  template <typename T>
+  bool THistoryBuffer<T>::get_closest_t(const Timestamp& t, TData& elem) const {
+      if (empty()) {
+          return false;
+      }
+      if (exist_at_t(t)) {
+          return get_at_t(t, elem);
+      }
+      // bounded
+      else if (exist_after_t(t) && exist_before_t(t)) {
+          Timestamp t_after, t_before;
+          if (get_before_t(t, t_before) && get_after_t(t, t_after)) {
+              if (t - t_before < t_after - t) {
+            return get_before_t(t, elem);
+              } else {
+            return get_after_t(t, elem);
+              }
+          }
+      }
+      // upper bounded
+      else if (exist_after_t(t) && !exist_before_t(t)) {
+          return get_after_t(t, elem);
+      }
+      // lower bounded
+      else if (!exist_after_t(t) && exist_before_t(t)) {
+          return get_before_t(t, elem);
+      }
+      // no belief exist
       return false;
   }
 
