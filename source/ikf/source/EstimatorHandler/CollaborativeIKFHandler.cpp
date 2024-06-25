@@ -446,8 +446,7 @@ ProcessMeasResult_vec_t CollaborativeIKFHandler::redo_updates_after_t(const Time
     auto ID_agents = IDs_to_Agent_IDs(get_remote_correlated_IDs_after_t(t));
     for (auto const &id : ID_agents) {
       if (!m_pAgentHandler->redo_updates_after_t(id, t)) {
-        ikf::Logger::ikf_logger()->warn(
-          "CollaborativeIKFHandler::redo_updates_after_t(): redo_update(agent={:d}) failed", id);
+        ikf::Logger::ikf_logger()->warn("CollaborativeIKFHandler::redo_updates_after_t(agent={:d}): FAILED", id);
       }
     }
   }
@@ -481,13 +480,12 @@ ProcessMeasResult_vec_t CollaborativeIKFHandler::redo_updates_from_t(const Times
     auto ID_agents = IDs_to_Agent_IDs(get_remote_correlated_IDs_after_t(t));
     for (auto const &id : ID_agents) {
       if (!m_pAgentHandler->redo_updates_from_t(id, t)) {
-        ikf::Logger::ikf_logger()->warn(
-          "CollaborativeIKFHandler::redo_updates_from_t(): redo_update(agent={:d}) failed", id);
+        ikf::Logger::ikf_logger()->warn("CollaborativeIKFHandler::redo_updates_from_t(agent={:d}): FAILED", id);
       }
     }
   }
   if (mRedoStrategy == eRedoUpdateStrategy::EXACT) {
-    ikf::Logger::ikf_logger()->error("CollaborativeIKFHandler::redo_updates_after_t(): EXACT NOT IMPLEMENTED!");
+    ikf::Logger::ikf_logger()->error("CollaborativeIKFHandler::redo_updates_from_t(): EXACT NOT IMPLEMENTED!");
   }
   return IDICOHandler::redo_updates_from_t(t);
 }
@@ -652,6 +650,18 @@ ApplyObsResult_t CollaborativeIKFHandler::apply_inter_agent_observation(
 
   // linearize the measurement function with the beliefs:
   std::pair<std::map<size_t, Eigen::MatrixXd>, Eigen::VectorXd> H_r = h(dict_bel, IDs, z);
+
+  // remove fixed measurement Jacobians, beliefs, and FCCs again:
+  for (auto iter_bel_I = dict_bel.cbegin(); iter_bel_I != dict_bel.cend() /* not hoisted */; /* no increment */) {
+    if (iter_bel_I->second->options().is_fixed) {
+      H_r.first.erase(iter_bel_I->first);  // remove a column of H
+      FCCs.erase(iter_bel_I->first);       // remove a row of the FCCs (note: the column persits, but does no harm)
+      iter_bel_I = dict_bel.erase(iter_bel_I);
+    } else {
+      ++iter_bel_I;
+    }
+  }
+
   Eigen::MatrixXd H = stack_H(H_r.first);
 
   Eigen::MatrixXd Sigma_apri = stack_Sigma_locally(dict_bel, t, FCCs);
@@ -689,9 +699,13 @@ ApplyObsResult_t CollaborativeIKFHandler::apply_inter_agent_observation(
     split_Sigma_locally(res.Sigma_apos, dict_bel, FCCs);
 
     for (auto const &ID_I : local_IDs) {
-      for (auto const &e : FCCs.at(ID_I)) {
-        size_t const ID_J = e.first;
-        get(ID_I)->set_CrossCovFact_at_t(t, ID_J, e.second);
+      if (dict_bel.find(ID_I) != dict_bel.end() && !dict_bel[ID_I]->options().is_fixed) {
+        for (auto const &e : FCCs.at(ID_I)) {
+          size_t const ID_J = e.first;
+          if (dict_bel.find(ID_J) != dict_bel.end() && !dict_bel[ID_J]->options().is_fixed) {
+            get(ID_I)->set_CrossCovFact_at_t(t, ID_J, e.second);
+          }
+        }
       }
     }
 
@@ -707,7 +721,9 @@ ApplyObsResult_t CollaborativeIKFHandler::apply_inter_agent_observation(
     // 4) send info to other agent:
     remote_FFCs.clear();
     for (auto const &ID_I : remote_IDs) {
-      remote_FFCs[ID_I] = FCCs[ID_I];
+      if (dict_bel.find(ID_I) != dict_bel.end() && !dict_bel[ID_I]->options().is_fixed) {
+        remote_FFCs[ID_I] = FCCs[ID_I];
+      }
     }
 
     // schedules redo updates automatically
@@ -788,7 +804,7 @@ Eigen::MatrixXd CollaborativeIKFHandler::stack_Sigma_locally(
     size_t id_row = e_i.first;
     size_t state_dim_row = e_i.second->es_dim();
     size_t col_start = 0;
-    RTV_EXPECT_TRUE_THROW(dict_FFC[id_row].size() == dict_bel.size() - 1,
+    RTV_EXPECT_TRUE_THROW(dict_FFC[id_row].size() >= dict_bel.size() - 1,
                           "CollaborativeIKFHandler::stack_Sigma_locally: not enough cols in FFCs");
     for (auto const &e_j : dict_bel) {
       size_t id_col = e_j.first;
