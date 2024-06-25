@@ -135,6 +135,7 @@ namespace ikf
       }
 
       bool get_at_t(Timestamp const& t, T& elem) const;
+      bool get_at_t(Timestamp const& t, TData& elem) const;
       bool get_at_t(double const t_sec, T& elem) const;
       bool get_before_t(Timestamp const& t, T& elem) const;
       bool get_before_t( Timestamp const& t, Timestamp& elem) const;
@@ -366,6 +367,17 @@ namespace ikf
       auto it = buffer_.find(t.stamp_ns());
       if (it != buffer_.end()) {
           elem = it->second;
+          return true;
+      }
+      return false;
+  }
+
+  template <typename T>
+  bool THistoryBuffer<T>::get_at_t(const Timestamp& t, TData& elem) const {
+      auto it = buffer_.find(t.stamp_ns());
+      if (it != buffer_.end()) {
+          elem.data = it->second;
+          elem.stamp = Timestamp(it->first);
           return true;
       }
       return false;
