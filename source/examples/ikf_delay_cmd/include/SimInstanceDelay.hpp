@@ -106,7 +106,7 @@ public:
     m.t_m = t_curr;
     m.t_p = t_curr;
 
-    ikf::ProcessMeasResult_t res;
+    ikf::ProcessMeasResult_vec_t res;
     res = m_ptr_Handler->process_measurement(m);
 
     return true;
@@ -129,10 +129,10 @@ public:
       m.t_m = t_meas;
       m.t_p = t_curr;
 
-      ikf::ProcessMeasResult_t res;
+      ikf::ProcessMeasResult_vec_t res;
       res = m_ptr_Handler->process_measurement(m);
 
-      if (res.rejected) {
+      if (res.at(0).status == ikf::eMeasStatus::REJECTED) {
         std::cout << "* Meas rejected[" << m.id_sensor << "] idx=" << idx_meas << ": " << m << std::endl;
         // std::cout << traj.t_arr.transpose() << std::endl;
       }
@@ -157,9 +157,9 @@ public:
         m.t_m = t_meas;
         m.t_p = t_curr;
 
-        ikf::ProcessMeasResult_t res;
+        ikf::ProcessMeasResult_vec_t res;
         res = m_ptr_Handler->process_measurement(m);
-        if (res.rejected) {
+        if (res.at(0).status == ikf::eMeasStatus::REJECTED) {
           std::cout << "* Meas rejected[" << m.id_sensor << "] idx=" << idx_meas << ": " << m << std::endl;
         }
       }

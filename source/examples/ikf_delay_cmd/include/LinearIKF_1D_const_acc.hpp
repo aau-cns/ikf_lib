@@ -64,7 +64,7 @@ public:
     if(!apply_propagation(bel_a, mean_b, Phi_ab, Q_ab, t_a, t_b)) {
       std::cout << "ERROR: apply_propagation failed at t=" << t_b << std::endl;
     } else {
-      res.rejected = false;
+      res.status = ikf::eMeasStatus::REJECTED;
     }
 
    res.meas_type = "control_input_acc";
@@ -93,7 +93,9 @@ public:
     res.rejected = !apply_private_observation(bel, H_private, m.R, r, t, cfg);
 #else
     std::map<size_t, Eigen::MatrixXd> dict_H = {{m_ID, H_private}};
-    res.rejected = !m_pHandler->apply_observation(dict_H, m.R, r, t, cfg);
+    if (!m_pHandler->apply_observation(dict_H, m.R, r, t, cfg)) {
+      res.status = ikf::eMeasStatus::REJECTED;
+    }
 #endif
     return res;
 
@@ -125,7 +127,9 @@ public:
                                                       m_pHandler->get(ID_J)->get_belief_at_t(m.t_m)->mean());
     Eigen::VectorXd r = m.z - z_est;
 
-    res.rejected = !m_pHandler->apply_observation(dict_H, m.R, r, m.t_m, cfg);
+    if (!m_pHandler->apply_observation(dict_H, m.R, r, m.t_m, cfg)) {
+      res.status = ikf::eMeasStatus::REJECTED;
+    }
 #endif
     return res;
   }
