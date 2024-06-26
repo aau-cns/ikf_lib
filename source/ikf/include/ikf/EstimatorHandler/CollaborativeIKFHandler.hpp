@@ -92,7 +92,7 @@ protected:
   virtual std::map<size_t, pBelief_t> get_dict_bel(const std::map<size_t, Eigen::MatrixXd>& dict_H,
                                                    Timestamp const& t) override;
 
-  virtual std::map<size_t, pBelief_t> get_dict_bel(const std::vector<size_t>& IDs, Timestamp const& t);
+  virtual std::map<size_t, pBelief_t> get_dict_bel(const std::vector<size_t>& IDs, Timestamp const& t) override;
 
   virtual Eigen::MatrixXd get_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, Timestamp const& t) override;
   virtual void set_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd& Sigma_IJ,
