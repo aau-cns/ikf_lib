@@ -271,4 +271,15 @@ Eigen::MatrixXd utils::nearest_covariance(const Eigen::MatrixXd &Sigma, const do
   return result;
 }
 
+bool utils::correct_covariance(Eigen::MatrixXd &Sigma) {
+  Sigma = utils::stabilize_covariance(Sigma);
+  bool is_psd = utils::is_positive_semidefinite(Sigma);
+  RTV_EXPECT_TRUE_MSG(is_psd, "utils::correct_covariance(): covariance is not PSD");
+  if (!is_psd) {
+    Sigma = utils::nearest_covariance(Sigma, 1e-6);
+    return utils::is_positive_semidefinite(Sigma);
+  }
+  return true;
+}
+
 }  // namespace ikf

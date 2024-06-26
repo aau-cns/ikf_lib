@@ -207,6 +207,7 @@ Eigen::MatrixXd IKF_API stabilize_covariance(Eigen::MatrixXd const& Sigma, doubl
 
 Eigen::MatrixXd IKF_API symmetrize_covariance(Eigen::MatrixXd const& Sigma);
 
+bool IKF_API correct_covariance(Eigen::MatrixXd& Sigma);
 //
 
 template <typename scalar, int dim>
