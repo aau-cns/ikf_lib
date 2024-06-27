@@ -59,11 +59,11 @@ protected:
   Eigen::VectorXd stack_mean(const std::map<size_t, pBelief_t>& dict_bel);
   virtual Eigen::MatrixXd stack_Sigma(const std::map<size_t, pBelief_t>& dict_bel, Timestamp const& t);
 
-  virtual void apply_corrections_at_t(Eigen::MatrixXd& Sigma_apos, const std::map<size_t, pBelief_t>& dict_bel,
-                                      Timestamp const& t);
+  void apply_corrections_at_t(Eigen::MatrixXd& Sigma_apos, const std::map<size_t, pBelief_t>& dict_bel,
+                              Timestamp const& t);
 
-  virtual void split_right_upper_covariance(Eigen::MatrixXd& Sigma, const std::map<size_t, pBelief_t>& dict_bel,
-                                            Timestamp const& t);
+  void split_right_upper_covariance(Eigen::MatrixXd& Sigma, const std::map<size_t, pBelief_t>& dict_bel,
+                                    Timestamp const& t);
 
   void correct_beliefs_implace(Eigen::MatrixXd& Sigma_apos, Eigen::VectorXd& delta_mean,
                                const std::map<size_t, pBelief_t>& dict_bel);

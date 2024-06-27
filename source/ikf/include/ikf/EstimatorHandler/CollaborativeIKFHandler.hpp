@@ -18,8 +18,8 @@
  ******************************************************************************/
 #ifndef COLLABORATIVE_IKF_HANDLER_HPP
 #define COLLABORATIVE_IKF_HANDLER_HPP
+#include <ikf/EstimatorHandler/ICSE_IKF_Handler.hpp>
 #include <ikf/EstimatorHandler/IMultiAgentHandler.hpp>
-#include <ikf/EstimatorHandler/IsolatedKalmanFilterHandler.hpp>
 #include <ikf/ikf_api.h>
 #include <memory>
 namespace ikf {
@@ -32,37 +32,24 @@ enum class IKF_API eRedoUpdateStrategy {
 
 std::string IKF_API to_string(eRedoUpdateStrategy const t);
 
-class IKF_API CollaborativeIKFHandler : public IsolatedKalmanFilterHandler {
+class IKF_API CollaborativeIKFHandler : public ICSE_IKF_Handler {
 public:
   CollaborativeIKFHandler(MultiAgentHdl_ptr pAgentHdler, double const horizon_sec = 1.0);
   ~CollaborativeIKFHandler() = default;
 
-  virtual size_t get_propagation_sensor_ID(size_t const ID = 0) override;
-  virtual std::string get_type_by_ID(size_t const ID = 0) override;
-
-  virtual bool get_belief_at_t(size_t const ID, Timestamp const& t, pBelief_t& bel,
-                               eGetBeliefStrategy const type = eGetBeliefStrategy::EXACT) override;
-
-  virtual bool get_beliefs_at_t(std::vector<size_t> const& IDs, std::vector<eGetBeliefStrategy> const& types,
-                                Timestamp const& t, std::map<size_t, pBelief_t>& beliefs) override;
-
   virtual bool apply_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::MatrixXd& R,
                                  const Eigen::VectorXd& r, const Timestamp& t,
-                                 const KalmanFilter::CorrectionCfg_t& cfg) override;
+                                 const KalmanFilter::CorrectionCfg_t& cfg) override final;
   virtual bool apply_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::VectorXd& z,
                                  const Eigen::MatrixXd& R, const Timestamp& t,
-                                 const KalmanFilter::CorrectionCfg_t& cfg) override;
-
-  virtual ApplyObsResult_t apply_observation(const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t,
-                                             IIsolatedKalmanFilter::h_joint const& h, std::vector<size_t> const& IDs,
-                                             const KalmanFilter::CorrectionCfg_t& cfg) override;
-
-  virtual ProcessMeasResult_vec_t redo_updates_after_t(const Timestamp& t) override;
+                                 const KalmanFilter::CorrectionCfg_t& cfg) override final;
+  using ICSE_IKF_Handler::apply_observation;  // w. function pointer h()
+  virtual ProcessMeasResult_vec_t redo_updates_after_t(const Timestamp& t) override final;
 
 protected:
   // IDICOHandler_
-  virtual bool discard_measurement(MeasData const& m) override;
-  virtual ProcessMeasResult_vec_t redo_updates_from_t(const Timestamp& t) override;
+  virtual bool discard_measurement(MeasData const& m) override final;
+  virtual ProcessMeasResult_vec_t redo_updates_from_t(const Timestamp& t) override final;
 
   bool apply_inter_agent_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::MatrixXd& R,
                                      const Eigen::VectorXd& r, const Timestamp& t,
@@ -70,33 +57,19 @@ protected:
                                      std::vector<IMultiAgentHandler::IDEstimator_t> const& remote_IDs,
                                      std::vector<IMultiAgentHandler::IDEstimator_t> const& local_IDs);
 
-  ApplyObsResult_t apply_inter_agent_observation(const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t,
-                                                 IIsolatedKalmanFilter::h_joint const& h,
-                                                 std::vector<size_t> const& IDs,
-                                                 const KalmanFilter::CorrectionCfg_t& cfg,
-                                                 std::vector<IMultiAgentHandler::IDEstimator_t> const& remote_IDs,
-                                                 std::vector<IMultiAgentHandler::IDEstimator_t> const& local_IDs);
-
-  bool get_local_beliefs_and_FCC_at_t(std::vector<IMultiAgentHandler::IDEstimator_t> const& IDs,
-                                      std::vector<IMultiAgentHandler::IDEstimator_t> const& ID_participants,
-                                      Timestamp const& t,
-                                      std::map<IMultiAgentHandler::IDEstimator_t, pBelief_t>& beliefs,
-                                      std::map<size_t, std::map<size_t, Eigen::MatrixXd>>& dict_FFC);
-
-  Eigen::MatrixXd stack_Sigma_locally(const std::map<size_t, pBelief_t>& dict_bel, const Timestamp& t,
-                                      std::map<size_t, std::map<size_t, Eigen::MatrixXd>>& dict_FFC);
-
-  void split_Sigma_locally(Eigen::MatrixXd& Sigma, const std::map<size_t, pBelief_t>& dict_bel,
-                           std::map<size_t, std::map<size_t, Eigen::MatrixXd>>& dict_FCC);
+  virtual ApplyObsResult_t apply_inter_agent_observation(
+    const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t, IIsolatedKalmanFilter::h_joint const& h,
+    std::vector<size_t> const& IDs, const KalmanFilter::CorrectionCfg_t& cfg,
+    std::vector<IMultiAgentHandler::IDEstimator_t> const& remote_IDs,
+    std::vector<IMultiAgentHandler::IDEstimator_t> const& local_IDs) override final;
 
   virtual std::map<size_t, pBelief_t> get_dict_bel(const std::map<size_t, Eigen::MatrixXd>& dict_H,
-                                                   Timestamp const& t) override;
+                                                   Timestamp const& t) override final;
+  using ICSE_IKF_Handler::get_dict_bel;  // (const std::vector<size_t>& ids, Timestamp const& t)
 
-  virtual std::map<size_t, pBelief_t> get_dict_bel(const std::vector<size_t>& IDs, Timestamp const& t) override;
-
-  virtual Eigen::MatrixXd get_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, Timestamp const& t) override;
+  virtual Eigen::MatrixXd get_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, Timestamp const& t) override final;
   virtual void set_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd& Sigma_IJ,
-                                 const Timestamp& t) override;
+                                 const Timestamp& t) override final;
 
   void apply_corrections_at_t(Eigen::MatrixXd& Sigma_apos, const std::map<size_t, pBelief_t>& dict_bel,
                               Timestamp const& t, const bool only_local_beliefs);
@@ -105,9 +78,9 @@ protected:
 
   std::set<size_t> get_remote_correlated_IDs_after_t(Timestamp const& t);
 
-  std::set<IMultiAgentHandler::IDAgent_t> IDs_to_Agent_IDs(std::set<size_t> const& IDs);
   MultiAgentHdl_ptr m_pAgentHandler;
   eRedoUpdateStrategy mRedoStrategy{eRedoUpdateStrategy::POSTCORRELATED};
+
 };  // class CollaborativeIKFHandler
 
 }  // namespace ikf
