@@ -69,7 +69,7 @@ include/ikf/EstimatorHandler/eFusionStrategy.hpp
  include/ikf/utils/rand_op.hpp
  include/ikf/utils/MultivariateNormal.hpp
  include/ikf/utils/UnivariateNormal.hpp
-
+ include/ikf/utils/lock_guard_timed.hpp
 
  ${include_local_path}/helper.hpp
 )

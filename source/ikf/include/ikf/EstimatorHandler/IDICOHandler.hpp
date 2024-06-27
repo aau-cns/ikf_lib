@@ -18,6 +18,8 @@
 
 namespace ikf {
 
+using namespace std::chrono_literals;
+
 struct IKF_API ApplyObsResult_t {
   eMeasStatus status{eMeasStatus::REJECTED};
   Eigen::VectorXd residual;
@@ -108,7 +110,9 @@ protected:
 
   size_t m_PropSensor_ID{0};
   TTimeHorizonBuffer<bool> HistRedoUpdateRequest;
-  std::recursive_mutex m_mtx;
+
+  std::chrono::milliseconds mtx_timeout_ms{50ms};
+  std::recursive_timed_mutex m_mtx;
   std::mutex m_mtx_histRUR;
 };
 

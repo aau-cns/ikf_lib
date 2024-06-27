@@ -21,6 +21,7 @@
 #include <ikf/EstimatorHandler/IsolatedKalmanFilterHandler.hpp>
 #include <ikf/Logger/Logger.hpp>
 #include <ikf/utils/eigen_utils.hpp>
+#include <ikf/utils/lock_guard_timed.hpp>
 
 namespace ikf {
 
@@ -234,81 +235,94 @@ Eigen::MatrixXd IsolatedKalmanFilterHandler::get_Sigma_IJ_at_t(const size_t ID_I
 bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H,
                                                     const Eigen::MatrixXd &R, const Eigen::VectorXd &r,
                                                     const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
-  std::lock_guard<std::recursive_mutex> lk(m_mtx);
-  Eigen::MatrixXd H = stack_H(dict_H);
+  ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
+  if (lock.try_lock()) {
+    Eigen::MatrixXd H = stack_H(dict_H);
 
-  std::map<size_t, pBelief_t> dict_bel = get_dict_bel(dict_H, t);
-  if (dict_bel.empty()) {
-    return false;
-  }
-
-  Eigen::MatrixXd Sigma_apri = stack_Sigma(dict_bel, t);
-
-  // stack individual's covariances:
-  Sigma_apri = utils::stabilize_covariance(Sigma_apri);
-  RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_apri), "Joint apri covariance is not PSD at t=" + t.str());
-
-  KalmanFilter::CorrectionResult_t res;
-  res = KalmanFilter::correction_step(H, R, r, Sigma_apri, cfg);
-  if (!res.rejected) {
-    bool is_psd = utils::is_positive_semidefinite(res.Sigma_apos);
-    RTV_EXPECT_TRUE_MSG(is_psd, "Joint apos covariance is not PSD at t=" + t.str());
-    if (!is_psd) {
-      res.Sigma_apos = utils::nearest_covariance(res.Sigma_apos, 1e-6);
+    std::map<size_t, pBelief_t> dict_bel = get_dict_bel(dict_H, t);
+    if (dict_bel.empty()) {
+      return false;
     }
 
-    // IMPORTANT: MAINTAIN ORDER STRICKTLY
-    // 1) add correction terms on all a aprior factorized cross-covariances!
-    apply_corrections_at_t(res.Sigma_apos, dict_bel, t);
+    Eigen::MatrixXd Sigma_apri = stack_Sigma(dict_bel, t);
 
-    // 2) afterwards, overwrite/set factorized a posterioiry cross-covariance (apply no corrections afterwards on them)
-    split_right_upper_covariance(res.Sigma_apos, dict_bel, t);
+    // stack individual's covariances:
+    Sigma_apri = utils::stabilize_covariance(Sigma_apri);
+    RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_apri),
+                        "Joint apri covariance is not PSD at t=" + t.str());
 
-    // 3) correct beliefs implace!
-    correct_beliefs_implace(res.Sigma_apos, res.delta_mean, dict_bel);
+    KalmanFilter::CorrectionResult_t res;
+    res = KalmanFilter::correction_step(H, R, r, Sigma_apri, cfg);
+    if (!res.rejected) {
+      bool is_psd = utils::is_positive_semidefinite(res.Sigma_apos);
+      RTV_EXPECT_TRUE_MSG(is_psd, "Joint apos covariance is not PSD at t=" + t.str());
+      if (!is_psd) {
+        res.Sigma_apos = utils::nearest_covariance(res.Sigma_apos, 1e-6);
+      }
+
+      // IMPORTANT: MAINTAIN ORDER STRICKTLY
+      // 1) add correction terms on all a aprior factorized cross-covariances!
+      apply_corrections_at_t(res.Sigma_apos, dict_bel, t);
+
+      // 2) afterwards, overwrite/set factorized a posterioiry cross-covariance (apply no corrections afterwards on
+      // them)
+      split_right_upper_covariance(res.Sigma_apos, dict_bel, t);
+
+      // 3) correct beliefs implace!
+      correct_beliefs_implace(res.Sigma_apos, res.delta_mean, dict_bel);
+    }
+    return !res.rejected;
+  } else {
+    ikf::Logger::ikf_logger()->error("IsolatedKalmanFilterHandler::apply_observation(): mutex FAILED");
+    return false;
   }
-  return !res.rejected;
 }
 
 bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H,
                                                     const Eigen::VectorXd &z, const Eigen::MatrixXd &R,
                                                     const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
-  std::lock_guard<std::recursive_mutex> lk(m_mtx);
-  Eigen::MatrixXd H = stack_H(dict_H);
+  ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
+  if (lock.try_lock()) {
+    Eigen::MatrixXd H = stack_H(dict_H);
 
-  std::map<size_t, pBelief_t> dict_bel = get_dict_bel(dict_H, t);
-  if (dict_bel.empty()) {
+    std::map<size_t, pBelief_t> dict_bel = get_dict_bel(dict_H, t);
+    if (dict_bel.empty()) {
+      return false;
+    }
+    Eigen::VectorXd mean_apri = stack_mean(dict_bel);
+    Eigen::MatrixXd Sigma_apri = stack_Sigma(dict_bel, t);
+
+    Eigen::VectorXd r = z - H * mean_apri;
+
+    // stack individual's covariances:<
+    Sigma_apri = utils::stabilize_covariance(Sigma_apri);
+    RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_apri),
+                        "Joint apri covariance is not PSD at t=" + t.str());
+
+    KalmanFilter::CorrectionResult_t res;
+    res = KalmanFilter::correction_step(H, R, r, Sigma_apri, cfg);
+    if (!res.rejected) {
+      bool is_psd = utils::is_positive_semidefinite(res.Sigma_apos);
+      RTV_EXPECT_TRUE_MSG(is_psd, "Joint apos covariance is not PSD at t=" + t.str());
+      if (!is_psd) {
+        res.Sigma_apos = utils::nearest_covariance(res.Sigma_apos, 1e-6);
+      }
+
+      // IMPORTANT: MAINTAIN ORDER STRICKTLY
+      // 1) add correction terms in the appropriate correction buffers!
+      apply_corrections_at_t(res.Sigma_apos, dict_bel, t);
+
+      // 2) set a corrected factorized a posterioiry cross-covariance
+      split_right_upper_covariance(res.Sigma_apos, dict_bel, t);
+
+      // 3) correct beliefs implace!
+      correct_beliefs_implace(res.Sigma_apos, res.delta_mean, dict_bel);
+    }
+    return !res.rejected;
+  } else {
+    ikf::Logger::ikf_logger()->error("IsolatedKalmanFilterHandler::apply_observation(): mutex FAILED");
     return false;
   }
-  Eigen::VectorXd mean_apri = stack_mean(dict_bel);
-  Eigen::MatrixXd Sigma_apri = stack_Sigma(dict_bel, t);
-
-  Eigen::VectorXd r = z - H * mean_apri;
-
-  // stack individual's covariances:<
-  Sigma_apri = utils::stabilize_covariance(Sigma_apri);
-  RTV_EXPECT_TRUE_MSG(utils::is_positive_semidefinite(Sigma_apri), "Joint apri covariance is not PSD at t=" + t.str());
-
-  KalmanFilter::CorrectionResult_t res;
-  res = KalmanFilter::correction_step(H, R, r, Sigma_apri, cfg);
-  if (!res.rejected) {
-    bool is_psd = utils::is_positive_semidefinite(res.Sigma_apos);
-    RTV_EXPECT_TRUE_MSG(is_psd, "Joint apos covariance is not PSD at t=" + t.str());
-    if (!is_psd) {
-      res.Sigma_apos = utils::nearest_covariance(res.Sigma_apos, 1e-6);
-    }
-
-    // IMPORTANT: MAINTAIN ORDER STRICKTLY
-    // 1) add correction terms in the appropriate correction buffers!
-    apply_corrections_at_t(res.Sigma_apos, dict_bel, t);
-
-    // 2) set a corrected factorized a posterioiry cross-covariance
-    split_right_upper_covariance(res.Sigma_apos, dict_bel, t);
-
-    // 3) correct beliefs implace!
-    correct_beliefs_implace(res.Sigma_apos, res.delta_mean, dict_bel);
-  }
-  return !res.rejected;
 }
 
 ApplyObsResult_t IsolatedKalmanFilterHandler::apply_observation(const Eigen::MatrixXd &R, const Eigen::VectorXd &z,
@@ -320,19 +334,25 @@ ApplyObsResult_t IsolatedKalmanFilterHandler::apply_observation(const Eigen::Mat
   Eigen::MatrixXd Sigma_apos;
   Eigen::VectorXd delta_mean;
 
-  ApplyObsResult_t res = process_observation(R, z, t, h, IDs, cfg, Sigma_apos, delta_mean, dict_bel);
-  if (res.status == eMeasStatus::PROCESSED) {
-    // IMPORTANT: MAINTAIN ORDER STRICKTLY
-    // 1) add correction terms in the appropriate correction buffers!
-    apply_corrections_at_t(Sigma_apos, dict_bel, t);
+  ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
+  if (lock.try_lock()) {
+    ApplyObsResult_t res = process_observation(R, z, t, h, IDs, cfg, Sigma_apos, delta_mean, dict_bel);
+    if (res.status == eMeasStatus::PROCESSED) {
+      // IMPORTANT: MAINTAIN ORDER STRICKTLY
+      // 1) add correction terms in the appropriate correction buffers!
+      apply_corrections_at_t(Sigma_apos, dict_bel, t);
 
-    // 2) set a corrected factorized a posterioiry cross-covariance
-    split_right_upper_covariance(Sigma_apos, dict_bel, t);
+      // 2) set a corrected factorized a posterioiry cross-covariance
+      split_right_upper_covariance(Sigma_apos, dict_bel, t);
 
-    // 3) correct beliefs implace!
-    correct_beliefs_implace(Sigma_apos, delta_mean, dict_bel);
+      // 3) correct beliefs implace!
+      correct_beliefs_implace(Sigma_apos, delta_mean, dict_bel);
+    }
+    return res;
+  } else {
+    ikf::Logger::ikf_logger()->error("IsolatedKalmanFilterHandler::apply_observation(): mutex FAILED");
+    return ApplyObsResult_t(eMeasStatus::OUTOFORDER);
   }
-  return res;
 }
 
 ApplyObsResult_t IsolatedKalmanFilterHandler::process_observation(

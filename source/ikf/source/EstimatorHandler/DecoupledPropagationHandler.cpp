@@ -72,7 +72,7 @@ std::map<size_t, pBelief_t> DecoupledPropagationHandler::get_dict_bel(const std:
 bool DecoupledPropagationHandler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H,
                                                     const Eigen::MatrixXd &R, const Eigen::VectorXd &r,
                                                     const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
-  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+  std::lock_guard<std::recursive_timed_mutex> lk(m_mtx);
   Eigen::MatrixXd H = stack_H(dict_H);
 
   std::map<size_t, pBelief_t> dict_bel = get_dict_bel(dict_H, t);
@@ -104,7 +104,7 @@ bool DecoupledPropagationHandler::apply_observation(const std::map<size_t, Eigen
 bool DecoupledPropagationHandler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H,
                                                     const Eigen::VectorXd &z, const Eigen::MatrixXd &R,
                                                     const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
-  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+  std::lock_guard<std::recursive_timed_mutex> lk(m_mtx);
   Eigen::MatrixXd H = stack_H(dict_H);
 
   std::map<size_t, pBelief_t> dict_bel = get_dict_bel(dict_H, t);
@@ -141,7 +141,7 @@ ApplyObsResult_t DecoupledPropagationHandler::apply_observation(const Eigen::Mat
                                                                 const IIsolatedKalmanFilter::h_joint &h,
                                                                 const std::vector<size_t> &IDs,
                                                                 const KalmanFilter::CorrectionCfg_t &cfg) {
-  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+  std::lock_guard<std::recursive_timed_mutex> lk(m_mtx);
   std::map<size_t, pBelief_t> dict_bel;
   Eigen::MatrixXd Sigma_apos;
   Eigen::VectorXd delta_mean;
