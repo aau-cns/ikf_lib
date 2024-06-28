@@ -87,6 +87,10 @@ protected:
 
   std::set<size_t> get_remote_correlated_IDs_after_t(Timestamp const& t);
 
+  /////////////////////////////////////////////////////
+  /// Interface for IKF handles to reprocess measurements
+  virtual bool is_order_violated(MeasData const& m) override;
+
   eRedoUpdateStrategy mRedoStrategy{eRedoUpdateStrategy::POSTCORRELATED};
   eOrderStrategy mOrderStrategy{eOrderStrategy::STRICT};
 };  // class CollaborativeIKFHandler

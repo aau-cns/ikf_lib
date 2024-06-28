@@ -163,6 +163,40 @@ std::set<size_t> C_IKF_Handler::get_remote_correlated_IDs_after_t(const Timestam
   return IDs_post_corr_remote;
 }
 
+bool C_IKF_Handler::is_order_violated(const MeasData &m) {
+  switch (mOrderStrategy) {
+  case eOrderStrategy::STRICT: {
+    return IDICOHandler::is_order_violated(m);
+  }
+  case eOrderStrategy::RELAXED: {
+    // if an measurement after the current one exists...
+    if (HistMeas.exist_after_t(m.t_m)) {
+      return true;
+    }
+    // if an unused measurements exist at that timestamp or before
+    if (HistMeas_OOO.exist_before_t(m.t_m) || HistMeas_OOO.exist_at_t(m.t_m)) {
+      return true;
+    }
+
+    // if we have concurrent measurements, propagation before private or joint
+    if (m.obs_type == eObservationType::PROPAGATION) {
+      auto meas_arr = HistMeas.get_all_at_t(m.t_m);
+      for (MeasData &m_ : meas_arr) {
+        if (m_.obs_type == eObservationType::PRIVATE_OBSERVATION
+            || m_.obs_type == eObservationType::JOINT_OBSERVATION) {
+          return true;
+        }
+      }
+    }
+    return false;
+    break;
+  }
+  default:
+    ikf::Logger::ikf_logger()->error("C_IKF_Handler::is_order_violated::apply_observation(): strategy not supported");
+    return false;
+  }
+}
+
 bool C_IKF_Handler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H, const Eigen::MatrixXd &R,
                                       const Eigen::VectorXd &r, const Timestamp &t,
                                       const KalmanFilter::CorrectionCfg_t &cfg) {
