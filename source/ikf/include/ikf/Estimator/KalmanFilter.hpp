@@ -1,21 +1,27 @@
 /******************************************************************************
-* FILENAME:     KalmanFilter.hpp
-* PURPOSE:      Part of the ikf_lib
-* AUTHOR:       Roland Jung
-* MAIL:         <roland.jung@ieee.org>
-* VERSION:      v0.0.0
-* CREATION:     26.01.2023
-*
-* Copyright (C) 2023 Roland Jung, Control of Networked Systems, University of Klagenfurt, Austria.
-*
-* All rights reserved.
-*
-* This software is licensed under the terms of the BSD-2-Clause-License with
-* no commercial use allowed, the full terms of which are made available
-* in the LICENSE file. No license in patents is granted.
-*
-* You can contact the author at <roland.jung@aau.at>
-******************************************************************************/
+ * FILENAME:     KalmanFilter.hpp
+ * PURPOSE:      Part of the ikf_lib
+ * AUTHOR:       Roland Jung
+ * MAIL:         <roland.jung@ieee.org>
+ * VERSION:      v0.0.0
+ * CREATION:     26.01.2023
+ *
+ * Copyright (C) 2023 Roland Jung, Control of Networked Systems, University of Klagenfurt, Austria.
+ *
+ * All rights reserved.
+ *
+ * This software is licensed under the terms of the BSD-2-Clause-License with
+ * no commercial use allowed, the full terms of which are made available
+ * in the LICENSE file. No license in patents is granted.
+ *
+ * You can contact the author at <roland.jung@aau.at>
+ *
+ *
+ * #References:
+ * [a] P. Zhu, Y. Yang, W. Ren and G. Huang, "Cooperative Visual-Inertial Odometry," 2021 IEEE International Conference
+ *
+ *
+ ******************************************************************************/
 #ifndef KALMANFILTER_HPP
 #define KALMANFILTER_HPP
 #include <ikf/ikf_api.h>
@@ -68,6 +74,13 @@ public:
   static bool check_dim(Eigen::MatrixXd const& Sigma_apri, Eigen::MatrixXd const& Phi, Eigen::MatrixXd const& Q);
   static bool check_dim(Eigen::MatrixXd const& H, Eigen::MatrixXd const& R, Eigen::VectorXd const& r,
                         Eigen::MatrixXd const& Sigma);
+
+  // CI-EKF update step described in Eq (27-29) in [a]:
+  static CorrectionResult_t covariance_intersection_correction(Eigen::MatrixXd const& H_ii, Eigen::MatrixXd const& H_jj,
+                                                               Eigen::MatrixXd const& R, Eigen::VectorXd const& r,
+                                                               Eigen::MatrixXd const& Sigma_ii_apri,
+                                                               Eigen::MatrixXd const& Sigma_jj_apri,
+                                                               const double omega_i, CorrectionCfg_t const& cfg);
   /// HELPER
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

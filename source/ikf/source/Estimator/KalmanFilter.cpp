@@ -44,7 +44,7 @@ KalmanFilter::CorrectionResult_t KalmanFilter::correction_step(const Eigen::Matr
     size_t const dim = Sigma_apri.rows();
     res.rejected = false;
 
-
+    // innovation covariance:
     Eigen::MatrixXd S = H * Sigma_apri  * H.transpose() + R;
     S = utils::stabilize_covariance(S, cfg.eps);
     if (cfg.use_outlier_rejection) {
@@ -52,6 +52,8 @@ KalmanFilter::CorrectionResult_t KalmanFilter::correction_step(const Eigen::Matr
         res.rejected = true;
       }
     }
+
+    // Kalman gain:
     Eigen::MatrixXd K = Sigma_apri*H.transpose() * S.inverse();
     res.delta_mean = K * r;
     res.U = (Eigen::MatrixXd::Identity(dim, dim) - K*H);
@@ -118,6 +120,44 @@ bool KalmanFilter::check_dim(const Eigen::MatrixXd &H, const Eigen::MatrixXd &R,
     good = false;
   }
   return good;
+}
+
+ikf::KalmanFilter::CorrectionResult_t ikf::KalmanFilter::covariance_intersection_correction(
+  const Eigen::MatrixXd &H_ii, const Eigen::MatrixXd &H_jj, const Eigen::MatrixXd &R, const Eigen::VectorXd &r,
+  const Eigen::MatrixXd &Sigma_ii_apri, const Eigen::MatrixXd &Sigma_jj_apri, const double omega_i,
+  const CorrectionCfg_t &cfg) {
+  CorrectionResult_t res;
+
+  if (check_dim(H_ii, R, r, Sigma_ii_apri) && check_dim(H_jj, R, r, Sigma_jj_apri)) {
+    res.rejected = false;
+
+    // constant: Sec 5 [a]
+    double omega_j = 1.0 - omega_i;
+
+    //  S: Eq (29) [a] (innovation from CI)
+    Eigen::MatrixXd S = (1 / omega_j) * H_jj * Sigma_jj_apri * H_jj.transpose() + R;
+
+    // outlier rejection:
+    S = utils::stabilize_covariance(S, cfg.eps);
+    if (cfg.use_outlier_rejection) {
+      if (!NormalizedInnovationSquared::check_NIS(S, r, cfg.confidence_interval)) {
+        res.rejected = true;
+      }
+    }
+    Eigen::MatrixXd S_inv = S.inverse();
+    // Sigma_ii_apos: Eq (28) [a]
+    res.Sigma_apos = (1 / omega_i) * Sigma_ii_apri
+                     - (1 / std::pow(omega_i, 2)) * Sigma_ii_apri * H_ii.transpose() * S_inv * H_ii * Sigma_ii_apri;
+
+    // delta_x: Eq (27) [a]
+    res.delta_mean = (1 / omega_i) * Sigma_ii_apri * H_ii.transpose() * S_inv * r;
+
+    if (cfg.nummerical_stabilization) {
+      res.Sigma_apos = utils::stabilize_covariance(res.Sigma_apos, cfg.eps);
+    }
+  }
+
+  return res;
 }
 
 } // ns mmsf

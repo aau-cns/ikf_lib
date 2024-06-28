@@ -108,43 +108,33 @@ ApplyObsResult_t DCI_IKF_Handler::apply_inter_agent_observation(
                         "DCI_IKF_Handler::apply_inter_agent_observation(): apri Sigma_JJ is not PSD at t=" + t.str());
 
     // constant: Sec 5 [a]
-    double omega_i = 0.99, omega_j = 1.0 - omega_i;
-
-    //  Eq (29) [a]
-    Eigen::MatrixXd S = (1 / omega_j) * H_jj * Sigma_jj_apri * H_jj.transpose() + R;
-    Eigen::MatrixXd S_inv = S.inverse();
-    // Eq (28) [a]
-    Eigen::MatrixXd Sigma_ii_apos
-      = (1 / omega_i) * Sigma_ii_apri
-        - (1 / std::pow(omega_i, 2)) * Sigma_ii_apri * H_ii.transpose() * S_inv * H_ii * Sigma_ii_apri;
-    Eigen::VectorXd delta_x = (1 / omega_i) * Sigma_ii_apri * H_ii.transpose() * S_inv * H_r.second;
-
-    // IMPORTANT: MAINTAIN ORDER STRICKTLY
-    // 1) LOCAL: add correction terms on all a aprior factorized cross-covariances!
-    ikf::Logger::ikf_logger()->debug("DCI_IKF_Handler::apply_inter_agent_observation(): apply_corrections_at_t...");
-    apply_corrections_at_t(Sigma_ii_apos, local_beliefs, t);
-
-    // 2) LOCAL: afterwards, overwrite/set factorized a posterioiry cross-covariance (apply no corrections afterwards on
-    split_right_upper_covariance(Sigma_ii_apos, local_beliefs, t);
-    /*std::map<size_t, std::map<size_t, Eigen::MatrixXd>> FCCs_apos;
-    split_Sigma_locally(Sigma_ii_apos, local_beliefs, FCCs_apos);
-
-    for (auto const &ID_I : local_IDs) {
-      if (local_beliefs.find(ID_I) != local_beliefs.end() && !local_beliefs[ID_I]->options().is_fixed) {
-        for (auto const &e : FCCs_apos.at(ID_I)) {
-          size_t const ID_J = e.first;
-          if (local_beliefs.find(ID_J) != local_beliefs.end() && !local_beliefs[ID_J]->options().is_fixed) {
-            get(ID_I)->set_CrossCovFact_at_t(t, ID_J, e.second);
-          }
-        }
+    double omega_i = 0.95;
+    auto res = KalmanFilter::covariance_intersection_correction(H_ii, H_jj, R, H_r.second, Sigma_ii_apri, Sigma_jj_apri,
+                                                                omega_i, cfg);
+    if (!res.rejected) {
+      bool is_psd = utils::is_positive_semidefinite(res.Sigma_apos);
+      RTV_EXPECT_TRUE_MSG(is_psd, "Joint apos covariance is not PSD at t=" + t.str());
+      if (!is_psd) {
+        res.Sigma_apos = utils::nearest_covariance(res.Sigma_apos, 1e-6);
       }
-    }*/
+      Eigen::MatrixXd Sigma_ii_apos = res.Sigma_apos;
+      Eigen::VectorXd delta_x = res.delta_mean;
 
-    // 3) LOCAL: correct beliefs implace!
-    correct_beliefs_implace(Sigma_ii_apos, delta_x, local_beliefs);
+      // IMPORTANT: MAINTAIN ORDER STRICKTLY
+      // 1) LOCAL: add correction terms on all a aprior factorized cross-covariances!
+      ikf::Logger::ikf_logger()->debug("DCI_IKF_Handler::apply_inter_agent_observation(): apply_corrections_at_t...");
+      apply_corrections_at_t(Sigma_ii_apos, local_beliefs, t);
 
-    ikf::Logger::ikf_logger()->debug("DCI_IKF_Handler::apply_inter_agent_observation(): DONE!");
-    return ApplyObsResult_t(eMeasStatus::PROCESSED, H_r.second);
+      // 2) LOCAL: afterwards, overwrite/set factorized a posterioiry cross-cov (apply no corrections afterwards on
+      split_right_upper_covariance(Sigma_ii_apos, local_beliefs, t);
+
+      // 3) LOCAL: correct beliefs implace!
+      correct_beliefs_implace(Sigma_ii_apos, delta_x, local_beliefs);
+
+      ikf::Logger::ikf_logger()->debug("DCI_IKF_Handler::apply_inter_agent_observation(): DONE!");
+      return ApplyObsResult_t(eMeasStatus::PROCESSED, H_r.second);
+    }
+    return ApplyObsResult_t(eMeasStatus::REJECTED, H_r.second);
   } else {
     ikf::Logger::ikf_logger()->error("DCI_IKF_Handler::apply_inter_agent_observation(): mutex FAILED");
     return ApplyObsResult_t(eMeasStatus::OUTOFORDER);
