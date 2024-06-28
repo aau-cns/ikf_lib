@@ -55,14 +55,14 @@ ApplyObsResult_t DCI_IKF_Handler::apply_inter_agent_observation(
 
     if (!m_pAgentHandler->get_beliefs_and_FCC_at_t(remote_IDs, remote_IDs, t, remote_beliefs, remote_FFCs)) {
       ikf::Logger::ikf_logger()->error(
-        "CI_IKF_Handler::apply_inter_agent_observation: failed to obtain remote data...");
+        "DCI_IKF_Handler::apply_inter_agent_observation: failed to obtain remote data...");
       return ApplyObsResult_t(eMeasStatus::OUTOFORDER);
     }
     if (remote_beliefs.empty()) {
       return ApplyObsResult_t(eMeasStatus::OUTOFORDER);
     }
 
-    ikf::Logger::ikf_logger()->debug("CI_IKF_Handler::apply_inter_agent_observation() stack beliefs...");
+    ikf::Logger::ikf_logger()->debug("DCI_IKF_Handler::apply_inter_agent_observation() stack beliefs...");
 
     // STACK BELIEFS AND Factorized-Cross-Covariances (FFCs)
     std::map<IMultiAgentHandler::IDEstimator_t, pBelief_t> dict_bel;
@@ -103,9 +103,9 @@ ApplyObsResult_t DCI_IKF_Handler::apply_inter_agent_observation(
 
     // stack individual's covariances:
     RTV_EXPECT_TRUE_MSG(utils::correct_covariance(Sigma_ii_apri),
-                        "CI_IKF_Handler::apply_inter_agent_observation(): apri Sigma_II is not PSD at t=" + t.str());
+                        "DCI_IKF_Handler::apply_inter_agent_observation(): apri Sigma_II is not PSD at t=" + t.str());
     RTV_EXPECT_TRUE_MSG(utils::correct_covariance(Sigma_jj_apri),
-                        "CI_IKF_Handler::apply_inter_agent_observation(): apri Sigma_JJ is not PSD at t=" + t.str());
+                        "DCI_IKF_Handler::apply_inter_agent_observation(): apri Sigma_JJ is not PSD at t=" + t.str());
 
     // constant: Sec 5 [a]
     double omega_i = 0.99, omega_j = 1.0 - omega_i;
@@ -121,11 +121,12 @@ ApplyObsResult_t DCI_IKF_Handler::apply_inter_agent_observation(
 
     // IMPORTANT: MAINTAIN ORDER STRICKTLY
     // 1) LOCAL: add correction terms on all a aprior factorized cross-covariances!
-    ikf::Logger::ikf_logger()->debug("CI_IKF_Handler::apply_inter_agent_observation(): apply_corrections_at_t...");
+    ikf::Logger::ikf_logger()->debug("DCI_IKF_Handler::apply_inter_agent_observation(): apply_corrections_at_t...");
     apply_corrections_at_t(Sigma_ii_apos, local_beliefs, t);
 
     // 2) LOCAL: afterwards, overwrite/set factorized a posterioiry cross-covariance (apply no corrections afterwards on
-    std::map<size_t, std::map<size_t, Eigen::MatrixXd>> FCCs_apos;
+    split_right_upper_covariance(Sigma_ii_apos, local_beliefs, t);
+    /*std::map<size_t, std::map<size_t, Eigen::MatrixXd>> FCCs_apos;
     split_Sigma_locally(Sigma_ii_apos, local_beliefs, FCCs_apos);
 
     for (auto const &ID_I : local_IDs) {
@@ -137,15 +138,15 @@ ApplyObsResult_t DCI_IKF_Handler::apply_inter_agent_observation(
           }
         }
       }
-    }
+    }*/
 
-    // 3) correct beliefs implace! will change local_beliefs and remote_beliefs as well!
+    // 3) LOCAL: correct beliefs implace!
     correct_beliefs_implace(Sigma_ii_apos, delta_x, local_beliefs);
 
-    ikf::Logger::ikf_logger()->debug("CI_IKF_Handler::apply_inter_agent_observation(): DONE!");
+    ikf::Logger::ikf_logger()->debug("DCI_IKF_Handler::apply_inter_agent_observation(): DONE!");
     return ApplyObsResult_t(eMeasStatus::PROCESSED, H_r.second);
   } else {
-    ikf::Logger::ikf_logger()->error("CI_IKF_Handler::apply_inter_agent_observation(): mutex FAILED");
+    ikf::Logger::ikf_logger()->error("DCI_IKF_Handler::apply_inter_agent_observation(): mutex FAILED");
     return ApplyObsResult_t(eMeasStatus::OUTOFORDER);
   }
 }
