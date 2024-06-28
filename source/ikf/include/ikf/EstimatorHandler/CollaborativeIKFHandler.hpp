@@ -32,11 +32,13 @@ enum class IKF_API eRedoUpdateStrategy {
 
 std::string IKF_API to_string(eRedoUpdateStrategy const t);
 
+// check ref: 'hidden' given overloaded virtual functions: https://stackoverflow.com/a/15295515
 class IKF_API CollaborativeIKFHandler : public ICSE_IKF_Handler {
 public:
   CollaborativeIKFHandler(MultiAgentHdl_ptr pAgentHdler, double const horizon_sec = 1.0);
   ~CollaborativeIKFHandler() = default;
 
+  // IsolatedKalmanFilter:
   virtual bool apply_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::MatrixXd& R,
                                  const Eigen::VectorXd& r, const Timestamp& t,
                                  const KalmanFilter::CorrectionCfg_t& cfg) override final;
@@ -47,9 +49,12 @@ public:
   virtual ProcessMeasResult_vec_t redo_updates_after_t(const Timestamp& t) override final;
 
 protected:
-  // IDICOHandler_
-  virtual bool discard_measurement(MeasData const& m) override final;
-  virtual ProcessMeasResult_vec_t redo_updates_from_t(const Timestamp& t) override final;
+  // ICSE_IKF_Handler:
+  virtual ApplyObsResult_t apply_inter_agent_observation(
+    const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t, IIsolatedKalmanFilter::h_joint const& h,
+    std::vector<size_t> const& IDs, const KalmanFilter::CorrectionCfg_t& cfg,
+    std::vector<IMultiAgentHandler::IDEstimator_t> const& remote_IDs,
+    std::vector<IMultiAgentHandler::IDEstimator_t> const& local_IDs) override final;
 
   bool apply_inter_agent_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::MatrixXd& R,
                                      const Eigen::VectorXd& r, const Timestamp& t,
@@ -57,11 +62,8 @@ protected:
                                      std::vector<IMultiAgentHandler::IDEstimator_t> const& remote_IDs,
                                      std::vector<IMultiAgentHandler::IDEstimator_t> const& local_IDs);
 
-  virtual ApplyObsResult_t apply_inter_agent_observation(
-    const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t, IIsolatedKalmanFilter::h_joint const& h,
-    std::vector<size_t> const& IDs, const KalmanFilter::CorrectionCfg_t& cfg,
-    std::vector<IMultiAgentHandler::IDEstimator_t> const& remote_IDs,
-    std::vector<IMultiAgentHandler::IDEstimator_t> const& local_IDs) override final;
+  virtual bool discard_measurement(MeasData const& m) override final;
+  virtual ProcessMeasResult_vec_t redo_updates_from_t(const Timestamp& t) override final;
 
   virtual std::map<size_t, pBelief_t> get_dict_bel(const std::map<size_t, Eigen::MatrixXd>& dict_H,
                                                    Timestamp const& t) override final;
@@ -71,6 +73,7 @@ protected:
   virtual void set_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd& Sigma_IJ,
                                  const Timestamp& t) override final;
 
+  using IsolatedKalmanFilterHandler::apply_corrections_at_t;
   void apply_corrections_at_t(Eigen::MatrixXd& Sigma_apos, const std::map<size_t, pBelief_t>& dict_bel,
                               Timestamp const& t, const bool only_local_beliefs);
 
@@ -78,9 +81,7 @@ protected:
 
   std::set<size_t> get_remote_correlated_IDs_after_t(Timestamp const& t);
 
-  MultiAgentHdl_ptr m_pAgentHandler;
   eRedoUpdateStrategy mRedoStrategy{eRedoUpdateStrategy::POSTCORRELATED};
-
 };  // class CollaborativeIKFHandler
 
 }  // namespace ikf

@@ -373,107 +373,114 @@ bool CollaborativeIKFHandler::apply_inter_agent_observation(
   const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg,
   const std::vector<IMultiAgentHandler::IDEstimator_t> &remote_IDs,
   const std::vector<IMultiAgentHandler::IDEstimator_t> &local_IDs) {
-  std::vector<IMultiAgentHandler::IDEstimator_t> ID_participants = remote_IDs;
-  ID_participants.insert(ID_participants.end(), local_IDs.begin(), local_IDs.end());
+  //
+  ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
+  if (lock.try_lock()) {
+    std::vector<IMultiAgentHandler::IDEstimator_t> ID_participants = remote_IDs;
+    ID_participants.insert(ID_participants.end(), local_IDs.begin(), local_IDs.end());
 
-  Eigen::MatrixXd H = stack_H(dict_H);
-  std::map<IMultiAgentHandler::IDEstimator_t, pBelief_t> remote_beliefs, local_beliefs;
-  std::map<size_t, std::map<size_t, Eigen::MatrixXd>> remote_FFCs, local_FFCs;
-  if (!get_local_beliefs_and_FCC_at_t(local_IDs, ID_participants, t, local_beliefs, local_FFCs)) {
-    ikf::Logger::ikf_logger()->error(
-      "CollaborativeIKFHandler::apply_inter_agent_observation: failed to obtain local data...");
-    return false;
-  }
-  if (local_beliefs.empty()) {
-    return false;
-  }
-  if (!m_pAgentHandler->get_beliefs_and_FCC_at_t(remote_IDs, ID_participants, t, remote_beliefs, remote_FFCs)) {
-    ikf::Logger::ikf_logger()->error(
-      "CollaborativeIKFHandler::apply_inter_agent_observation: failed to obtain remote data...");
-    return false;
-  }
-  if (remote_beliefs.empty()) {
-    return false;
-  }
-
-  ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation() stack beliefs...");
-
-  // STACK BELIEFS AND Factorized-Cross-Covariances (FFCs)
-  std::map<IMultiAgentHandler::IDEstimator_t, pBelief_t> dict_bel;
-  dict_bel.insert(local_beliefs.begin(), local_beliefs.end());
-  dict_bel.insert(remote_beliefs.begin(), remote_beliefs.end());
-  std::map<size_t, std::map<size_t, Eigen::MatrixXd>> FCCs;
-  FCCs.insert(local_FFCs.begin(), local_FFCs.end());
-  FCCs.insert(remote_FFCs.begin(), remote_FFCs.end());
-
-  Eigen::MatrixXd Sigma_apri = stack_Sigma_locally(dict_bel, t, FCCs);
-
-  // stack individual's covariances:
-  Sigma_apri = utils::stabilize_covariance(Sigma_apri);
-  bool is_psd = utils::is_positive_semidefinite(Sigma_apri);
-  RTV_EXPECT_TRUE_MSG(is_psd, "Joint apri covariance is not PSD at t=" + t.str());
-  if (!is_psd) {
-    Sigma_apri = utils::nearest_covariance(Sigma_apri, 1e-6);
-  }
-
-  KalmanFilter::CorrectionResult_t res;
-  ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(): correction step");
-  res = KalmanFilter::correction_step(H, R, r, Sigma_apri, cfg);
-  if (!res.rejected) {
-    bool is_psd = utils::is_positive_semidefinite(res.Sigma_apos);
-    RTV_EXPECT_TRUE_MSG(is_psd, "Joint apos covariance is not PSD at t=" + t.str());
-    if (!is_psd) {
-      res.Sigma_apos = utils::nearest_covariance(res.Sigma_apos, 1e-6);
+    Eigen::MatrixXd H = stack_H(dict_H);
+    std::map<IMultiAgentHandler::IDEstimator_t, pBelief_t> remote_beliefs, local_beliefs;
+    std::map<size_t, std::map<size_t, Eigen::MatrixXd>> remote_FFCs, local_FFCs;
+    if (!get_local_beliefs_and_FCC_at_t(local_IDs, ID_participants, t, local_beliefs, local_FFCs)) {
+      ikf::Logger::ikf_logger()->error(
+        "CollaborativeIKFHandler::apply_inter_agent_observation(H): failed to obtain local data...");
+      return false;
+    }
+    if (local_beliefs.empty()) {
+      return false;
+    }
+    if (!m_pAgentHandler->get_beliefs_and_FCC_at_t(remote_IDs, ID_participants, t, remote_beliefs, remote_FFCs)) {
+      ikf::Logger::ikf_logger()->error(
+        "CollaborativeIKFHandler::apply_inter_agent_observation: failed to obtain remote data...");
+      return false;
+    }
+    if (remote_beliefs.empty()) {
+      return false;
     }
 
-    // IMPORTANT: MAINTAIN ORDER STRICKTLY
-    // 1) LOCAL: add correction terms on all a aprior factorized cross-covariances!
-    ikf::Logger::ikf_logger()->debug(
-      "CollaborativeIKFHandler::apply_inter_agent_observation(): apply_corrections_at_t...");
-    apply_corrections_at_t(res.Sigma_apos, dict_bel, t, true);
+    ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(H) stack beliefs...");
 
-    // 2) LOCAL: afterwards, overwrite/set factorized a posterioiry cross-covariance (apply no corrections afterwards
-    // on them)
+    // STACK BELIEFS AND Factorized-Cross-Covariances (FFCs)
+    std::map<IMultiAgentHandler::IDEstimator_t, pBelief_t> dict_bel;
+    dict_bel.insert(local_beliefs.begin(), local_beliefs.end());
+    dict_bel.insert(remote_beliefs.begin(), remote_beliefs.end());
+    std::map<size_t, std::map<size_t, Eigen::MatrixXd>> FCCs;
+    FCCs.insert(local_FFCs.begin(), local_FFCs.end());
+    FCCs.insert(remote_FFCs.begin(), remote_FFCs.end());
 
-    ikf::Logger::ikf_logger()->debug(
-      "CollaborativeIKFHandler::apply_inter_agent_observation(): split_Sigma_locally...");
+    Eigen::MatrixXd Sigma_apri = stack_Sigma_locally(dict_bel, t, FCCs);
 
-    split_Sigma_locally(res.Sigma_apos, dict_bel, FCCs);
+    // stack individual's covariances:
+    Sigma_apri = utils::stabilize_covariance(Sigma_apri);
+    bool is_psd = utils::is_positive_semidefinite(Sigma_apri);
+    RTV_EXPECT_TRUE_MSG(is_psd, "Joint apri covariance is not PSD at t=" + t.str());
+    if (!is_psd) {
+      Sigma_apri = utils::nearest_covariance(Sigma_apri, 1e-6);
+    }
 
-    for (auto const &ID_I : local_IDs) {
-      for (auto const &e : FCCs.at(ID_I)) {
-        size_t const ID_J = e.first;
-        get(ID_I)->set_CrossCovFact_at_t(t, ID_J, e.second);
+    KalmanFilter::CorrectionResult_t res;
+    ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(H): correction step");
+    res = KalmanFilter::correction_step(H, R, r, Sigma_apri, cfg);
+    if (!res.rejected) {
+      bool is_psd = utils::is_positive_semidefinite(res.Sigma_apos);
+      RTV_EXPECT_TRUE_MSG(is_psd, "Joint apos covariance is not PSD at t=" + t.str());
+      if (!is_psd) {
+        res.Sigma_apos = utils::nearest_covariance(res.Sigma_apos, 1e-6);
+      }
+
+      // IMPORTANT: MAINTAIN ORDER STRICKTLY
+      // 1) LOCAL: add correction terms on all a aprior factorized cross-covariances!
+      ikf::Logger::ikf_logger()->debug(
+        "CollaborativeIKFHandler::apply_inter_agent_observation(H): apply_corrections_at_t...");
+      apply_corrections_at_t(res.Sigma_apos, dict_bel, t, true);
+
+      // 2) LOCAL: afterwards, overwrite/set factorized a posterioiry cross-covariance (apply no corrections afterwards
+      // on them)
+
+      ikf::Logger::ikf_logger()->debug(
+        "CollaborativeIKFHandler::apply_inter_agent_observation(H): split_Sigma_locally...");
+
+      split_Sigma_locally(res.Sigma_apos, dict_bel, FCCs);
+
+      for (auto const &ID_I : local_IDs) {
+        for (auto const &e : FCCs.at(ID_I)) {
+          size_t const ID_J = e.first;
+          get(ID_I)->set_CrossCovFact_at_t(t, ID_J, e.second);
+        }
+      }
+
+      ikf::Logger::ikf_logger()->debug(
+        "CollaborativeIKFHandler::apply_inter_agent_observation(H): correct_beliefs_implace...");
+
+      // 3) correct beliefs implace! will change local_beliefs and remote_beliefs as well!
+      correct_beliefs_implace(res.Sigma_apos, res.delta_mean, dict_bel);
+
+      ikf::Logger::ikf_logger()->debug(
+        "CollaborativeIKFHandler::apply_inter_agent_observation(H): send info to other agent...");
+
+      // 4) send info to other agent:
+      remote_FFCs.clear();
+      for (auto const &ID_I : remote_IDs) {
+        remote_FFCs[ID_I] = FCCs[ID_I];
+      }
+
+      // schedules redo updates automatically
+      if (!m_pAgentHandler->set_beliefs_and_FCC_at_t(t, remote_beliefs, remote_FFCs, true, true)) {
+        ikf::Logger::ikf_logger()->error(
+          "CollaborativeIKFHandler::apply_inter_agent_observation: failed set belief on remote agent...");
+        return false;
+      } else {
+        ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(H): DONE!");
+        return true;
       }
     }
 
-    ikf::Logger::ikf_logger()->debug(
-      "CollaborativeIKFHandler::apply_inter_agent_observation(): correct_beliefs_implace...");
-
-    // 3) correct beliefs implace! will change local_beliefs and remote_beliefs as well!
-    correct_beliefs_implace(res.Sigma_apos, res.delta_mean, dict_bel);
-
-    ikf::Logger::ikf_logger()->debug(
-      "CollaborativeIKFHandler::apply_inter_agent_observation(): send info to other agent...");
-
-    // 4) send info to other agent:
-    remote_FFCs.clear();
-    for (auto const &ID_I : remote_IDs) {
-      remote_FFCs[ID_I] = FCCs[ID_I];
-    }
-
-    // schedules redo updates automatically
-    if (!m_pAgentHandler->set_beliefs_and_FCC_at_t(t, remote_beliefs, remote_FFCs, true, true)) {
-      ikf::Logger::ikf_logger()->error(
-        "CollaborativeIKFHandler::apply_inter_agent_observation: failed set belief on remote agent...");
-      return false;
-    } else {
-      ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(): DONE!");
-      return true;
-    }
+    return true;
+  } else {
+    ikf::Logger::ikf_logger()->error("CollaborativeIKFHandler::apply_inter_agent_observation(H): mutex FAILED");
+    return false;
   }
-
-  return true;
 }
 
 ApplyObsResult_t CollaborativeIKFHandler::apply_inter_agent_observation(
@@ -491,7 +498,7 @@ ApplyObsResult_t CollaborativeIKFHandler::apply_inter_agent_observation(
     std::map<size_t, std::map<size_t, Eigen::MatrixXd>> remote_FFCs, local_FFCs;
     if (!get_local_beliefs_and_FCC_at_t(local_IDs, ID_participants, t, local_beliefs, local_FFCs)) {
       ikf::Logger::ikf_logger()->error(
-        "CollaborativeIKFHandler::apply_inter_agent_observation: failed to obtain local data...");
+        "CollaborativeIKFHandler::apply_inter_agent_observation(h()): failed to obtain local data...");
       return ApplyObsResult_t(eMeasStatus::OUTOFORDER);
     }
 
@@ -501,14 +508,14 @@ ApplyObsResult_t CollaborativeIKFHandler::apply_inter_agent_observation(
 
     if (!m_pAgentHandler->get_beliefs_and_FCC_at_t(remote_IDs, ID_participants, t, remote_beliefs, remote_FFCs)) {
       ikf::Logger::ikf_logger()->error(
-        "CollaborativeIKFHandler::apply_inter_agent_observation: failed to obtain remote data...");
+        "CollaborativeIKFHandler::apply_inter_agent_observation(h()): failed to obtain remote data...");
       return ApplyObsResult_t(eMeasStatus::OUTOFORDER);
     }
     if (remote_beliefs.empty()) {
       return ApplyObsResult_t(eMeasStatus::OUTOFORDER);
     }
 
-    ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation() stack beliefs...");
+    ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(h()) stack beliefs...");
 
     // STACK BELIEFS AND Factorized-Cross-Covariances (FFCs)
     std::map<IMultiAgentHandler::IDEstimator_t, pBelief_t> dict_bel;
@@ -520,11 +527,11 @@ ApplyObsResult_t CollaborativeIKFHandler::apply_inter_agent_observation(
 
     for (auto ID : IDs) {
       if (dict_bel.find(ID) == dict_bel.end()) {
-        ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(): belief for ID="
+        ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(h()): belief for ID="
                                          + std::to_string(ID) + " is missing!");
       }
       if (FCCs.find(ID) == FCCs.end()) {
-        ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(): FCC for ID="
+        ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(h()): FCC for ID="
                                          + std::to_string(ID) + " is missing!");
       }
     }
@@ -534,6 +541,8 @@ ApplyObsResult_t CollaborativeIKFHandler::apply_inter_agent_observation(
 
     // remove fixed measurement Jacobians, beliefs, and FCCs again:
     for (auto iter_bel_I = dict_bel.cbegin(); iter_bel_I != dict_bel.cend() /* not hoisted */; /* no increment */) {
+      RTV_EXPECT_TRUE_THROW(iter_bel_I->second != nullptr,
+                            "CollaborativeIKFHandler::apply_inter_agent_observation(h()): nullptr in bel_I!");
       if (iter_bel_I->second->options().is_fixed) {
         H_r.first.erase(iter_bel_I->first);  // remove a column of H
         FCCs.erase(iter_bel_I->first);       // remove a row of the FCCs (note: the column persits, but does no harm)
@@ -556,7 +565,7 @@ ApplyObsResult_t CollaborativeIKFHandler::apply_inter_agent_observation(
     }
 
     KalmanFilter::CorrectionResult_t res;
-    ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(): correction step");
+    ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(h()): correction step");
     res = KalmanFilter::correction_step(H, R, H_r.second, Sigma_apri, cfg);
     if (!res.rejected) {
       bool is_psd = utils::is_positive_semidefinite(res.Sigma_apos);
@@ -568,14 +577,14 @@ ApplyObsResult_t CollaborativeIKFHandler::apply_inter_agent_observation(
       // IMPORTANT: MAINTAIN ORDER STRICKTLY
       // 1) LOCAL: add correction terms on all a aprior factorized cross-covariances!
       ikf::Logger::ikf_logger()->debug(
-        "CollaborativeIKFHandler::apply_inter_agent_observation(): apply_corrections_at_t...");
+        "CollaborativeIKFHandler::apply_inter_agent_observation(h()): apply_corrections_at_t...");
       apply_corrections_at_t(res.Sigma_apos, dict_bel, t, true);
 
       // 2) LOCAL: afterwards, overwrite/set factorized a posterioiry cross-covariance (apply no corrections afterwards
       // on them)
 
       ikf::Logger::ikf_logger()->debug(
-        "CollaborativeIKFHandler::apply_inter_agent_observation(): split_Sigma_locally...");
+        "CollaborativeIKFHandler::apply_inter_agent_observation(h()): split_Sigma_locally...");
 
       split_Sigma_locally(res.Sigma_apos, dict_bel, FCCs);
 
@@ -591,13 +600,13 @@ ApplyObsResult_t CollaborativeIKFHandler::apply_inter_agent_observation(
       }
 
       ikf::Logger::ikf_logger()->debug(
-        "CollaborativeIKFHandler::apply_inter_agent_observation(): correct_beliefs_implace...");
+        "CollaborativeIKFHandler::apply_inter_agent_observation(h()): correct_beliefs_implace...");
 
       // 3) correct beliefs implace! will change local_beliefs and remote_beliefs as well!
       correct_beliefs_implace(res.Sigma_apos, res.delta_mean, dict_bel);
 
       ikf::Logger::ikf_logger()->debug(
-        "CollaborativeIKFHandler::apply_inter_agent_observation(): send info to other agent...");
+        "CollaborativeIKFHandler::apply_inter_agent_observation(h()): send info to other agent...");
 
       // 4) send info to other agent:
       remote_FFCs.clear();
@@ -614,14 +623,14 @@ ApplyObsResult_t CollaborativeIKFHandler::apply_inter_agent_observation(
         return ApplyObsResult_t(eMeasStatus::DISCARED);
         ;
       } else {
-        ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(): DONE!");
+        ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(h()): DONE!");
         return ApplyObsResult_t(eMeasStatus::PROCESSED, H_r.second);
       }
     }
 
     return ApplyObsResult_t(eMeasStatus::REJECTED, H_r.second);
   } else {
-    ikf::Logger::ikf_logger()->error("CollaborativeIKFHandler::apply_inter_agent_observation(): mutex FAILED");
+    ikf::Logger::ikf_logger()->error("CollaborativeIKFHandler::apply_inter_agent_observation((h()): mutex FAILED");
     return ApplyObsResult_t(eMeasStatus::OUTOFORDER);
   }
 }
