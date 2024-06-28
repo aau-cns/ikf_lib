@@ -668,7 +668,7 @@ ApplyObsResult_t C_IKF_Handler::apply_inter_agent_observation(
       if (!m_pAgentHandler->set_beliefs_and_FCC_at_t(t, remote_beliefs, remote_FFCs, true, true)) {
         ikf::Logger::ikf_logger()->error(
           "CollaborativeIKFHandler::apply_inter_agent_observation: failed set belief on remote agent...");
-        return ApplyObsResult_t(eMeasStatus::DISCARED);
+        return ApplyObsResult_t(eMeasStatus::OUTOFORDER);
         ;
       } else {
         ikf::Logger::ikf_logger()->debug("CollaborativeIKFHandler::apply_inter_agent_observation(h()): DONE!");
