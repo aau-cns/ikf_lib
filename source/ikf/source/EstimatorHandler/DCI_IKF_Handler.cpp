@@ -72,16 +72,6 @@ ApplyObsResult_t DCI_IKF_Handler::apply_inter_agent_observation(
     // linearize the measurement function with the beliefs:
     std::pair<std::map<size_t, Eigen::MatrixXd>, Eigen::VectorXd> H_r = h(dict_bel, IDs, z);
 
-    /*// remove fixed measurement Jacobians, beliefs, and FCCs again:
-    for (auto iter_bel_I = dict_bel.cbegin(); iter_bel_I != dict_bel.cend(); ) {
-      if (iter_bel_I->second->options().is_fixed) {
-        H_r.first.erase(iter_bel_I->first);  // remove a column of H
-        iter_bel_I = dict_bel.erase(iter_bel_I);
-      } else {
-        ++iter_bel_I;
-      }
-    }*/
-
     // split up H into H_local, H_remote
     // split up Sigma into Sigma_local, Sigma_remote
     std::map<size_t, Eigen::MatrixXd> dict_H_ii, dict_H_jj;
@@ -95,6 +85,27 @@ ApplyObsResult_t DCI_IKF_Handler::apply_inter_agent_observation(
         dict_H_jj[id_i] = H_r.first.at(id_i);
       }
     }
+    // remove fixed measurement Jacobians, beliefs, and FCCs again:
+    for (auto iter_bel_I = local_beliefs.cbegin(); iter_bel_I != local_beliefs.cend();) {
+      if (iter_bel_I->second->options().is_fixed) {
+        dict_H_ii.erase(iter_bel_I->first);   // remove a column of H
+        local_FFCs.erase(iter_bel_I->first);  // remove a row of FFCs
+        iter_bel_I = local_beliefs.erase(iter_bel_I);
+      } else {
+        ++iter_bel_I;
+      }
+    }
+    // remove fixed measurement Jacobians, beliefs, and FCCs again:
+    for (auto iter_bel_I = remote_beliefs.cbegin(); iter_bel_I != remote_beliefs.cend();) {
+      if (iter_bel_I->second->options().is_fixed) {
+        dict_H_jj.erase(iter_bel_I->first);    // remove a column of H
+        remote_FFCs.erase(iter_bel_I->first);  // remove a row of FFCs
+        iter_bel_I = remote_beliefs.erase(iter_bel_I);
+      } else {
+        ++iter_bel_I;
+      }
+    }
+
     Eigen::MatrixXd H_ii = stack_H(dict_H_ii);
     Eigen::MatrixXd H_jj = stack_H(dict_H_jj);
 
@@ -108,7 +119,7 @@ ApplyObsResult_t DCI_IKF_Handler::apply_inter_agent_observation(
                         "DCI_IKF_Handler::apply_inter_agent_observation(): apri Sigma_JJ is not PSD at t=" + t.str());
 
     // constant: Sec 5 [a]
-    double omega_i = 0.95;
+    double omega_i = 0.995;
     auto res = KalmanFilter::covariance_intersection_correction(H_ii, H_jj, R, H_r.second, Sigma_ii_apri, Sigma_jj_apri,
                                                                 omega_i, cfg);
     if (!res.rejected) {
