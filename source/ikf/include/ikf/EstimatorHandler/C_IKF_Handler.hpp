@@ -30,13 +30,19 @@ enum class IKF_API eRedoUpdateStrategy {
   DISCARD = 2,         // measurement needs to be discared, since post-correlation exists
 };
 
+enum class IKF_API eOrderStrategy {
+  STRICT = 0,   // propagation < private < joint
+  RELAXED = 1,  // propagation < private = joint
+};
+
 std::string IKF_API to_string(eRedoUpdateStrategy const t);
+std::string IKF_API to_string(eOrderStrategy const t);
 
 // check ref: 'hidden' given overloaded virtual functions: https://stackoverflow.com/a/15295515
-class IKF_API CollaborativeIKFHandler : public ICSE_IKF_Handler {
+class IKF_API C_IKF_Handler : public ICSE_IKF_Handler {
 public:
-  CollaborativeIKFHandler(MultiAgentHdl_ptr pAgentHdler, double const horizon_sec = 1.0);
-  ~CollaborativeIKFHandler() = default;
+  C_IKF_Handler(MultiAgentHdl_ptr pAgentHdler, double const horizon_sec = 1.0);
+  ~C_IKF_Handler() = default;
 
   // IsolatedKalmanFilter:
   virtual bool apply_observation(std::map<size_t, Eigen::MatrixXd> const& dict_H, const Eigen::MatrixXd& R,
@@ -82,6 +88,7 @@ protected:
   std::set<size_t> get_remote_correlated_IDs_after_t(Timestamp const& t);
 
   eRedoUpdateStrategy mRedoStrategy{eRedoUpdateStrategy::POSTCORRELATED};
+  eOrderStrategy mOrderStrategy{eOrderStrategy::STRICT};
 };  // class CollaborativeIKFHandler
 
 }  // namespace ikf

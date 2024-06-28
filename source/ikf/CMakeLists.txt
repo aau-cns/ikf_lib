@@ -52,7 +52,7 @@ include/ikf/EstimatorHandler/eFusionStrategy.hpp
  include/ikf/EstimatorHandler/DecoupledPropagationHandler.hpp
  include/ikf/EstimatorHandler/ICSE_IKF_Handler.hpp
  include/ikf/EstimatorHandler/DCI_IKF_Handler.hpp
- include/ikf/EstimatorHandler/CollaborativeIKFHandler.hpp
+ include/ikf/EstimatorHandler/C_IKF_Handler.hpp
  include/ikf/EstimatorHandler/IMultiAgentHandler.hpp
 
 
@@ -111,7 +111,7 @@ set(sources
  source/EstimatorHandler/IsolatedKalmanFilterHandler.cpp
  source/EstimatorHandler/DecoupledPropagationHandler.cpp
  source/EstimatorHandler/ICSE_IKF_Handler.cpp
- source/EstimatorHandler/CollaborativeIKFHandler.cpp
+ source/EstimatorHandler/C_IKF_Handler.cpp
  source/EstimatorHandler/DCI_IKF_Handler.cpp
  source/EstimatorHandler/IMultiAgentHandler.cpp
 )

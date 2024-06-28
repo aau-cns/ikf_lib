@@ -20,7 +20,7 @@ enum class IKF_API eFusionStrategy {
   UNKNOWN = 0,
   IKF,
   DP,
-  CSE_IKF,
+  C_IKF,
   DCI_IKF
   //
 };

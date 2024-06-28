@@ -16,7 +16,7 @@
  *
  * You can contact the author at <roland.jung@aau.at>
  ******************************************************************************/
-#include <ikf/EstimatorHandler/CollaborativeIKFHandler.hpp>
+#include <ikf/EstimatorHandler/C_IKF_Handler.hpp>
 #include <ikf/Logger/Logger.hpp>
 #include <ikf/utils/eigen_utils.hpp>
 #include <ikf/utils/lock_guard_timed.hpp>
@@ -37,15 +37,30 @@ std::string to_string(const eRedoUpdateStrategy t) {
   return std::string();
 }
 
-CollaborativeIKFHandler::CollaborativeIKFHandler(MultiAgentHdl_ptr pAgentHdler, const double horizon_sec)
-  : ICSE_IKF_Handler(pAgentHdler, horizon_sec), mRedoStrategy(eRedoUpdateStrategy::POSTCORRELATED) {
+std::string to_string(const eOrderStrategy t) {
+  switch (t) {
+  case eOrderStrategy::STRICT:
+    return std::string("STRICT");
+  case eOrderStrategy::RELAXED:
+    return std::string("STRICT");
+  default:
+    break;
+  }
+  return std::string();
+}
+
+C_IKF_Handler::C_IKF_Handler(MultiAgentHdl_ptr pAgentHdler, const double horizon_sec)
+  : ICSE_IKF_Handler(pAgentHdler, horizon_sec),
+    mRedoStrategy(eRedoUpdateStrategy::POSTCORRELATED),
+    mOrderStrategy(eOrderStrategy::RELAXED) {
   Logger::ikf_logger()->info(
     "CollaborativeIKFHandler(): will perform inter-agent observation isolated (partially coupled) using IKF update!");
   Logger::ikf_logger()->info("* RedoStrategy=" + to_string(mRedoStrategy));
+  Logger::ikf_logger()->info("* OrderStrategy=" + to_string(mOrderStrategy));
 }
 
-std::map<size_t, pBelief_t> CollaborativeIKFHandler::get_dict_bel(const std::map<size_t, Eigen::MatrixXd> &dict_H,
-                                                                  const Timestamp &t) {
+std::map<size_t, pBelief_t> C_IKF_Handler::get_dict_bel(const std::map<size_t, Eigen::MatrixXd> &dict_H,
+                                                        const Timestamp &t) {
   std::vector<size_t> IDs;
   IDs.reserve(dict_H.size());
   for (auto const &e : dict_H) {
@@ -54,7 +69,7 @@ std::map<size_t, pBelief_t> CollaborativeIKFHandler::get_dict_bel(const std::map
   return ICSE_IKF_Handler::get_dict_bel(IDs, t);
 }
 
-Eigen::MatrixXd CollaborativeIKFHandler::get_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, const Timestamp &t) {
+Eigen::MatrixXd C_IKF_Handler::get_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, const Timestamp &t) {
   Eigen::MatrixXd SigmaFact_IJ, SigmaFact_JI;
   if (exists(ID_I)) {
     SigmaFact_IJ = get(ID_I)->get_CrossCovFact_at_t(t, ID_J);
@@ -82,8 +97,8 @@ Eigen::MatrixXd CollaborativeIKFHandler::get_Sigma_IJ_at_t(const size_t ID_I, co
 }
 
 //  Eq (1) and Algorithm 6 in [1]
-void CollaborativeIKFHandler::set_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd &Sigma_IJ,
-                                                const Timestamp &t) {
+void C_IKF_Handler::set_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, const Eigen::MatrixXd &Sigma_IJ,
+                                      const Timestamp &t) {
   if (ID_I < ID_J) {
     if (exists(ID_I)) {
       get(ID_I)->set_CrossCovFact_at_t(t, ID_J, Sigma_IJ);
@@ -113,9 +128,8 @@ void CollaborativeIKFHandler::set_Sigma_IJ_at_t(const size_t ID_I, const size_t 
   }
 }
 
-void CollaborativeIKFHandler::apply_corrections_at_t(Eigen::MatrixXd &Sigma_apos,
-                                                     const std::map<size_t, pBelief_t> &dict_bel, const Timestamp &t,
-                                                     bool const only_local_beliefs) {
+void C_IKF_Handler::apply_corrections_at_t(Eigen::MatrixXd &Sigma_apos, const std::map<size_t, pBelief_t> &dict_bel,
+                                           const Timestamp &t, bool const only_local_beliefs) {
   size_t row_start = 0;
   for (auto const &e_i : dict_bel) {
     size_t dim_I = e_i.second->es_dim();
@@ -130,7 +144,7 @@ void CollaborativeIKFHandler::apply_corrections_at_t(Eigen::MatrixXd &Sigma_apos
   }
 }
 
-std::set<size_t> CollaborativeIKFHandler::get_correlated_IDs_after_t(const Timestamp &t) {
+std::set<size_t> C_IKF_Handler::get_correlated_IDs_after_t(const Timestamp &t) {
   std::set<size_t> IDs_post_corr;
   for (auto ID : this->get_instance_ids()) {
     auto IDs = this->get(ID)->get_correlated_IDs_after_t(t);
@@ -139,7 +153,7 @@ std::set<size_t> CollaborativeIKFHandler::get_correlated_IDs_after_t(const Times
   return IDs_post_corr;
 }
 
-std::set<size_t> CollaborativeIKFHandler::get_remote_correlated_IDs_after_t(const Timestamp &t) {
+std::set<size_t> C_IKF_Handler::get_remote_correlated_IDs_after_t(const Timestamp &t) {
   std::set<size_t> IDs_post_corr_remote;
   for (auto ID : get_correlated_IDs_after_t(t)) {
     if (!exists(ID)) {
@@ -149,9 +163,9 @@ std::set<size_t> CollaborativeIKFHandler::get_remote_correlated_IDs_after_t(cons
   return IDs_post_corr_remote;
 }
 
-bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H,
-                                                const Eigen::MatrixXd &R, const Eigen::VectorXd &r, const Timestamp &t,
-                                                const KalmanFilter::CorrectionCfg_t &cfg) {
+bool C_IKF_Handler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H, const Eigen::MatrixXd &R,
+                                      const Eigen::VectorXd &r, const Timestamp &t,
+                                      const KalmanFilter::CorrectionCfg_t &cfg) {
   ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
   if (lock.try_lock()) {
     std::set<IMultiAgentHandler::IDAgent_t> ID_agents;
@@ -248,9 +262,9 @@ bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::Ma
   }
 }
 
-bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H,
-                                                const Eigen::VectorXd &z, const Eigen::MatrixXd &R, const Timestamp &t,
-                                                const KalmanFilter::CorrectionCfg_t &cfg) {
+bool C_IKF_Handler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H, const Eigen::VectorXd &z,
+                                      const Eigen::MatrixXd &R, const Timestamp &t,
+                                      const KalmanFilter::CorrectionCfg_t &cfg) {
   ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
   if (lock.try_lock()) {
     std::vector<IMultiAgentHandler::IDEstimator_t> ID_remote_participants;
@@ -317,7 +331,7 @@ bool CollaborativeIKFHandler::apply_observation(const std::map<size_t, Eigen::Ma
   }
 }
 
-ProcessMeasResult_vec_t CollaborativeIKFHandler::redo_updates_after_t(const Timestamp &t) {
+ProcessMeasResult_vec_t C_IKF_Handler::redo_updates_after_t(const Timestamp &t) {
   // trigger remote agent asynchonrously to redo updates as well...
   // -> hopefully, we are done before remote ones need our beliefs again...
   if (mRedoStrategy == eRedoUpdateStrategy::POSTCORRELATED) {
@@ -334,7 +348,7 @@ ProcessMeasResult_vec_t CollaborativeIKFHandler::redo_updates_after_t(const Time
   return IDICOHandler::redo_updates_after_t(t);
 }
 
-bool CollaborativeIKFHandler::discard_measurement(const MeasData &m) {
+bool C_IKF_Handler::discard_measurement(const MeasData &m) {
   if (mRedoStrategy == eRedoUpdateStrategy::DISCARD) {
     // check if there are remote post-correlated instances after m.t_m, if so, order is NOT violated, and measurement
     // has no effect. Reason: we are not triggering the other agent to redo it's updates after our delayed
@@ -351,7 +365,7 @@ bool CollaborativeIKFHandler::discard_measurement(const MeasData &m) {
   return false;
 }
 
-ProcessMeasResult_vec_t CollaborativeIKFHandler::redo_updates_from_t(const Timestamp &t) {
+ProcessMeasResult_vec_t C_IKF_Handler::redo_updates_from_t(const Timestamp &t) {
   // trigger remote agent asynchonrously to redo updates as well...
   // -> hopefully, we are done before remote ones need our beliefs again...
   if (mRedoStrategy == eRedoUpdateStrategy::POSTCORRELATED) {
@@ -368,11 +382,11 @@ ProcessMeasResult_vec_t CollaborativeIKFHandler::redo_updates_from_t(const Times
   return IDICOHandler::redo_updates_from_t(t);
 }
 
-bool CollaborativeIKFHandler::apply_inter_agent_observation(
-  const std::map<size_t, Eigen::MatrixXd> &dict_H, const Eigen::MatrixXd &R, const Eigen::VectorXd &r,
-  const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg,
-  const std::vector<IMultiAgentHandler::IDEstimator_t> &remote_IDs,
-  const std::vector<IMultiAgentHandler::IDEstimator_t> &local_IDs) {
+bool C_IKF_Handler::apply_inter_agent_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H,
+                                                  const Eigen::MatrixXd &R, const Eigen::VectorXd &r,
+                                                  const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg,
+                                                  const std::vector<IMultiAgentHandler::IDEstimator_t> &remote_IDs,
+                                                  const std::vector<IMultiAgentHandler::IDEstimator_t> &local_IDs) {
   //
   ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
   if (lock.try_lock()) {
@@ -483,7 +497,7 @@ bool CollaborativeIKFHandler::apply_inter_agent_observation(
   }
 }
 
-ApplyObsResult_t CollaborativeIKFHandler::apply_inter_agent_observation(
+ApplyObsResult_t C_IKF_Handler::apply_inter_agent_observation(
   const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t, const IIsolatedKalmanFilter::h_joint &h,
   const std::vector<size_t> &IDs, const KalmanFilter::CorrectionCfg_t &cfg,
   const std::vector<IMultiAgentHandler::IDEstimator_t> &remote_IDs,
