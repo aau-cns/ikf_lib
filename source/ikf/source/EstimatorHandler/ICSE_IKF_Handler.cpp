@@ -132,8 +132,8 @@ ApplyObsResult_t ICSE_IKF_Handler::apply_observation(const Eigen::MatrixXd &R, c
     }
 
     ikf::Logger::ikf_logger()->info(
-      "ICSE_IKF_Handler::apply_observation():  num local IDs=" + std::to_string(local_IDs.size())
-      + "num remote IDs=" + std::to_string(remote_IDs.size()) + ", num ID_agents=" + std::to_string(ID_agents.size()));
+      "ICSE_IKF_Handler::apply_observation():  local IDs=" + std::to_string(local_IDs.size())
+      + ", remote IDs=" + std::to_string(remote_IDs.size()) + ", agent IDs=" + std::to_string(ID_agents.size()));
 
     // only local instances involved... we are done here!
     if (remote_IDs.size() == 0) {
@@ -142,7 +142,7 @@ ApplyObsResult_t ICSE_IKF_Handler::apply_observation(const Eigen::MatrixXd &R, c
     if (ID_agents.size() == 1) {
       // we can perform an optimized update using jumbo messages!
 
-      ikf::Logger::ikf_logger()->debug("ICSE_IKF_Handler::apply_corrections_at_t(): apply_inter_agent_observation...");
+      ikf::Logger::ikf_logger()->debug("ICSE_IKF_Handler::apply_observation(): apply_inter_agent_observation...");
 
       // call method of child:
       return apply_inter_agent_observation(R, z, t, h, IDs, cfg, remote_IDs, local_IDs);
@@ -175,19 +175,13 @@ std::map<size_t, pBelief_t> ICSE_IKF_Handler::get_dict_bel(const std::vector<siz
   if (lock.try_lock()) {
     for (auto const &e : ids) {
       size_t id = e;
-      pBelief_t bel_apri;
+      pBelief_t bel_apri(nullptr);
       if (!exists(id)) {
-        // RTV_EXPECT_TRUE_THROW(
-        //   m_pAgentHandler->get_belief_at_t(id, t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF),
-        //   "CIKF_Hdl::get_dict_bel(): Could not obtain belief from [" + std::to_string(id) + "] at t=" + t.str());
         if (!m_pAgentHandler->get_belief_at_t(id, t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF)) {
           //  OUT OF ORDER MEASUREMENT
           return std::map<size_t, pBelief_t>();
         }
       } else {
-        // RTV_EXPECT_TRUE_THROW(
-        //   get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF),
-        //   "CIKF_Hdl::get_dict_bel(): Could not obtain belief from [" + std::to_string(id) + "] at t=" + t.str());
         if (!get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF)) {
           //  OUT OF ORDER MEASUREMENT
           return std::map<size_t, pBelief_t>();
@@ -210,12 +204,13 @@ bool ICSE_IKF_Handler::get_local_beliefs_and_FCC_at_t(
   //
   beliefs.clear();
   dict_FFC.clear();
+  //
   ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
   if (lock.try_lock()) {
     for (size_t idx = 0; idx < IDs.size(); idx++) {
       auto ID_I = IDs.at(idx);
       if (exists(ID_I)) {
-        ikf::pBelief_t pBel;
+        ikf::pBelief_t pBel(nullptr);
         ikf::eGetBeliefStrategy type = ikf::eGetBeliefStrategy::PREDICT_BELIEF;
         if (get(ID_I)->get_belief_at_t(t, pBel, type)) {
           beliefs.insert({ID_I, pBel});

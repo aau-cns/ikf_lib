@@ -32,18 +32,20 @@ public:
   virtual bool get_beliefs_at_t(std::vector<size_t> const& IDs, std::vector<eGetBeliefStrategy> const& types,
                                 Timestamp const& t, std::map<size_t, pBelief_t>& beliefs) override final;
 
+  using IsolatedKalmanFilterHandler::apply_observation;  // bring all overloads into the scope
   virtual ApplyObsResult_t apply_observation(const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t,
                                              IIsolatedKalmanFilter::h_joint const& h, std::vector<size_t> const& IDs,
                                              const KalmanFilter::CorrectionCfg_t& cfg) override final;
 
 protected:
-  std::set<IMultiAgentHandler::IDAgent_t> IDs_to_Agent_IDs(std::set<size_t> const& IDs);
   virtual ApplyObsResult_t apply_inter_agent_observation(
     const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t, IIsolatedKalmanFilter::h_joint const& h,
     std::vector<size_t> const& IDs, const KalmanFilter::CorrectionCfg_t& cfg,
     std::vector<IMultiAgentHandler::IDEstimator_t> const& remote_IDs,
     std::vector<IMultiAgentHandler::IDEstimator_t> const& local_IDs)
     = 0;
+
+  std::set<IMultiAgentHandler::IDAgent_t> IDs_to_Agent_IDs(std::set<size_t> const& IDs);
 
   virtual std::map<size_t, pBelief_t> get_dict_bel(const std::vector<size_t>& ids, Timestamp const& t) override final;
 
