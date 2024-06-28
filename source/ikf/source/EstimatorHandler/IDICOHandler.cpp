@@ -18,7 +18,9 @@ IDICOHandler::IDICOHandler(const double horizon_sec)
   : HistMeas(horizon_sec),
     HistMeas_OOO(horizon_sec * 0.5),
     m_horzion_sec(horizon_sec),
-    HistRedoUpdateRequest(horizon_sec * 0.5) {
+    HistRedoUpdateRequest(horizon_sec * 0.5),
+    mtx_timeout_ms(5ms)  // how long a threads waits to acess a locked state
+{
   Logger::ikf_logger()->info("IDICOHandler will handle delayed measurements for all it's instances (centralized)!");
   Logger::ikf_logger()->info("IDICOHandler: m_horizon_sec=" + std::to_string(m_horzion_sec));
 }

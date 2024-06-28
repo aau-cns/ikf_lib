@@ -111,7 +111,7 @@ protected:
   size_t m_PropSensor_ID{0};
   TTimeHorizonBuffer<bool> HistRedoUpdateRequest;
 
-  std::chrono::milliseconds mtx_timeout_ms{50ms};
+  std::chrono::milliseconds mtx_timeout_ms{25ms};
   std::recursive_timed_mutex m_mtx;
   std::mutex m_mtx_histRUR;
 };
