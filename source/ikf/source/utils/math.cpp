@@ -83,5 +83,17 @@ void quat2rpy(const Eigen::Quaterniond &q, double &roll, double &pitch, double &
   yaw = std::atan2(2.0 * (q.w() * q.z() + q.x() * q.y()), 1.0 - 2.0 * (q.y() * q.y() + q.z() * q.z()));
 }
 
+void quat2roll(const Eigen::Quaterniond &q, double &roll) {
+  roll = std::atan2(2.0 * (q.w() * q.x() + q.y() * q.z()), 1.0 - 2.0 * (q.x() * q.x() + q.y() * q.y()));
+}
+
+void quat2pitch(const Eigen::Quaterniond &q, double &roll, double &pitch, double &yaw) {
+  pitch = std::asin(q.w() * q.y() - q.z() * q.x());
+}
+
+void quat2yaw(const Eigen::Quaterniond &q, double &yaw) {
+  yaw = std::atan2(2.0 * (q.w() * q.z() + q.x() * q.y()), 1.0 - 2.0 * (q.y() * q.y() + q.z() * q.z()));
+}
+
 } // ns utils
 } // ns ikf

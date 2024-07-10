@@ -48,7 +48,9 @@ double IKF_API wrapTo360deg(double const x_deg);
 
 //  R = axang2rot([0,0,1], yaw) * axang2rot([0,1,0], pitch) * axang2rot([1,0,0], roll)
 void IKF_API quat2rpy(Eigen::Quaterniond const& q, double& roll, double& pitch, double& yaw);
-
+void IKF_API quat2roll(Eigen::Quaterniond const& q, double& roll);
+void IKF_API quat2pitch(Eigen::Quaterniond const& q, double& pitch);
+void IKF_API quat2yaw(Eigen::Quaterniond const& q, double& yaw);
 }  // namespace utils
 } // ns ikf
 #endif // IKF_UTILS_MATH_HPP
