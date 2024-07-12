@@ -28,197 +28,187 @@
 #include <algorithm>
 #include <functional>
 
-namespace ikf
-{
-  /**
-   * @brief The THistoryBuffer class to store data with associated timestamps
-   */
-  template<typename T>
-  class IKF_API THistoryBuffer
-  {
-    public:
-      typedef TStampedData<T> TData;
-      typedef std::map<std::int64_t, T> TContainer;
+namespace ikf {
+/**
+ * @brief The THistoryBuffer class to store data with associated timestamps at [ns] resolution in a INT64_T.
+ *
+ * The current time since epoch (1970-01-01 00:00 UTC) is roughly 1720712106 seconds which requires already
+ * 31-bit. Since we use an int64_t for the timestamp in nanoseconds, the max date since epoch in is
+ * +9223372036.854775807 [s] == ´Friday, April 11, 2262 11:47:16 PM
+ */
+template <typename T>
+class IKF_API THistoryBuffer {
+public:
+  typedef TStampedData<T> TData;
+  typedef std::map<std::int64_t, T> TContainer;
 
-      void insert(T const& data, Timestamp const t);
-      void insert(T const& data, double const t_sec);
-      void insert(TData const& data);
-      size_t size() const;
-      bool empty() const {
-        return buffer_.empty();
+  void insert(T const& data, Timestamp const t);
+  void insert(T const& data, double const t_sec);
+  void insert(TData const& data);
+  size_t size() const;
+  bool empty() const { return buffer_.empty(); }
+  bool at(size_t const idx, TData& data);
+  bool at(size_t const idx, T& data);
+  void clear();
+
+  void set(TContainer const& buffer) { buffer_ = buffer; }
+
+  bool index_at_t(Timestamp const& t, size_t& idx) const;
+
+  bool exist_at_t(double const t) const;
+  bool exist_at_t(Timestamp const& t) const;
+  bool exist_after_t(Timestamp const& t) const;
+  bool exist_before_t(Timestamp const& t) const;
+
+  bool get_oldest_t(Timestamp& t) const;
+  bool get_latest_t(Timestamp& t) const;
+  bool get_oldest(T& elem) const;
+  bool get_latest(T& elem) const;
+
+  THistoryBuffer get_between_t1_t2(Timestamp const& t1, Timestamp const& t2) {
+    if (t1 < t2 && size() > 0) {
+      auto itlow = lower_bound(t1);
+      auto itup = upper_bound(t2);
+      THistoryBuffer h;
+      h.set(TContainer(itlow, itup));
+      return h;
+    }
+    return THistoryBuffer();
+  }
+
+  ///
+  /// \brief op binary operation function object that will be applied. The binary operator takes the current
+  ///           accumulation value a (initialized to init) and the value of the current element b.
+  ///           The signature of the function should be equivalent to the following: T fun(const T &a, const T &b)
+  ///
+  template <typename BinaryOperation>  // Ret fun(const Type1 &a, const Type2 &b)
+  inline T accumulate_between_t1_t2(Timestamp const& t1, Timestamp const& t2, T init, BinaryOperation op) const {
+    if (t1 <= t2 && size() > 0) {
+      auto __first = lower_bound(t1);
+      auto __last = upper_bound(t2);
+      for (; __first != __last; ++__first) init = op(init, __first->second);
+      return init;
+    }
+    return init;
+  }
+
+  template <typename BinaryOperation>  // Ret fun(const Type1 &a, const Type2 &b)
+  inline T accumulate(T init, BinaryOperation op) {
+    auto __first = buffer_.begin();
+    auto __last = buffer_.end();
+    for (; __first != __last; ++__first) init = op(init, __first->second);
+    return init;
+  }
+
+  template <typename Operation>
+  inline void foreach_between_t1_t2(Timestamp const& t1, Timestamp const& t2, Operation op) {
+    if (t1 <= t2 && size() > 0) {
+      auto __first = lower_bound(t1);
+      auto __last = upper_bound(t2);
+
+      for (; __first != __last; ++__first) op(__first->second);
+    }
+  }
+
+  template <typename Operation>
+  inline void foreach (Operation op) {
+    auto __first = buffer_.begin();
+    auto __last = buffer_.end();
+    for (; __first != __last; ++__first) {
+      op(__first->second);
+    }
+  }
+
+  template <typename Operation>
+  inline void foreach_reverse(Operation op) {
+    auto __first = buffer_.rbegin();
+    auto __last = buffer_.rend();
+    for (; __first != __last; ++__first) {
+      op(__first->second);
+    }
+  }
+
+  bool get_at_t(Timestamp const& t, T& elem) const;
+  bool get_at_t(Timestamp const& t, TData& elem) const;
+  bool get_at_t(double const t_sec, T& elem) const;
+  bool get_before_t(Timestamp const& t, T& elem) const;
+  bool get_before_t(Timestamp const& t, Timestamp& elem) const;
+  bool get_before_t(Timestamp const& t, TData& elem) const;
+  bool get_after_t(Timestamp const& t, T& elem) const;
+  bool get_after_t(Timestamp const& t, Timestamp& elem) const;
+  bool get_after_t(Timestamp const& t, TData& elem) const;
+  bool get_closest_t(Timestamp const& t, T& elem) const;
+  bool get_closest_t(Timestamp const& t, Timestamp& elem) const;
+  bool get_closest_t(Timestamp const& t, TData& elem) const;
+  void remove_at_t(Timestamp const& t);
+  void remove_at_t(double const t);
+  void remove_before_t(Timestamp const& t);
+  void remove_before_t(double const t);
+  void remove_after_t(Timestamp const& t);
+  void remove_after_t(double const t);
+
+  friend std::ostream& operator<<(std::ostream& out, const THistoryBuffer<T>& obj) {
+    out << "THistoryBuffer: len=" << obj.size() << std::endl;
+    for (auto const& elem : obj.buffer_) {
+      out << "* t=" << elem.first << ", data=" << elem.second << "\n";
+    }
+    return out;
+  }
+
+  void print(std::ostream& out, size_t const N = 0) {
+    size_t len = N;
+    if (N == 0) {
+      len = size();
+    }
+
+    size_t cnt = 0;
+    for (auto const& elem : buffer_) {
+      if (cnt < len) {
+        out << "* t=" << elem.first << ", data=" << elem.second << "\n";
+      } else {
+        break;
       }
-      bool at(size_t const idx, TData& data);
-      bool at(size_t const idx, T& data);
-      void clear();
+      cnt++;
+    }
+  }
 
-      void set(TContainer const& buffer){
-        buffer_ = buffer;
+  void print_reverse(std::ostream& out, size_t const N = 0) {
+    size_t len = N;
+    if (N == 0) {
+      len = size();
+    }
+
+    size_t cnt = 0;
+    for (auto iter = buffer_.rbegin(); iter != buffer_.rend(); ++iter) {
+      if (cnt < len) {
+        out << "* t=" << iter->first << ", data=" << iter->second << "\n";
+      } else {
+        break;
       }
+      cnt++;
+    }
+  }
 
-      bool index_at_t(Timestamp const&t, size_t &idx) const;
+protected:
+  friend std::ostream;
+  TContainer buffer_;
 
-      bool exist_at_t(double const t) const;
-      bool exist_at_t(Timestamp const&t) const;
-      bool exist_after_t(Timestamp const&t) const;
-      bool exist_before_t(Timestamp const&t) const;
+private:
+  void insert_sorted(Timestamp const& t, T const& elem) { buffer_[t.stamp_ns()] = elem; }
 
-      bool get_oldest_t(Timestamp &t) const;
-      bool get_latest_t(Timestamp &t) const;
-      bool get_oldest(T & elem) const;
-      bool get_latest(T& elem) const;
+  // https://stackoverflow.com/a/72835502
+  typename TContainer::const_iterator upper_bound(Timestamp const& t) const {
+    return std::upper_bound(
+      buffer_.begin(), buffer_.end(), t.stamp_ns(),
+      [](const std::int64_t& value, const std::pair<std::int64_t, T> iter) { return value < iter.first; });
+  }
 
-      THistoryBuffer get_between_t1_t2(Timestamp const& t1, Timestamp const& t2) {
-        if (t1 < t2 && size() > 0) {
-          auto itlow = lower_bound(t1);
-          auto itup = upper_bound(t2);
-          THistoryBuffer h;
-          h.set(TContainer(itlow, itup));
-          return h;
-        }
-        return THistoryBuffer();
-      }
-
-      ///
-      /// \brief op binary operation function object that will be applied. The binary operator takes the current
-      ///           accumulation value a (initialized to init) and the value of the current element b.
-      ///           The signature of the function should be equivalent to the following: T fun(const T &a, const T &b)
-      ///
-      template<typename BinaryOperation> // Ret fun(const Type1 &a, const Type2 &b)
-      inline T accumulate_between_t1_t2(Timestamp const& t1, Timestamp const& t2, T init, BinaryOperation op ) const {
-
-        if (t1 <= t2 && size() > 0) {
-          auto __first = lower_bound(t1);
-          auto __last = upper_bound(t2);
-          for(; __first != __last; ++__first)
-            init = op(init, __first->second);
-          return init;
-        }
-        return init;
-      }
-
-      template<typename BinaryOperation> // Ret fun(const Type1 &a, const Type2 &b)
-      inline T accumulate(T init, BinaryOperation op ) {
-        auto __first = buffer_.begin();
-        auto __last =  buffer_.end();
-        for(; __first != __last; ++__first)
-          init = op(init, __first->second);
-        return init;
-      }
-
-      template<typename Operation>
-      inline void foreach_between_t1_t2(Timestamp const& t1, Timestamp const& t2, Operation op ) {
-        if (t1 <= t2 && size() > 0) {
-          auto __first = lower_bound(t1);
-          auto __last = upper_bound(t2);
-
-          for(; __first != __last; ++__first)
-            op(__first->second);
-        }
-      }
-
-      template<typename Operation>
-      inline void foreach(Operation op ) {
-        auto __first = buffer_.begin();
-        auto __last =  buffer_.end();
-        for(; __first != __last; ++__first) {
-            op(__first->second);
-        }
-      }
-
-      template<typename Operation>
-      inline void foreach_reverse(Operation op ) {
-        auto __first = buffer_.rbegin();
-        auto __last =  buffer_.rend();
-        for(; __first != __last; ++__first) {
-            op(__first->second);
-        }
-      }
-
-      bool get_at_t(Timestamp const& t, T& elem) const;
-      bool get_at_t(Timestamp const& t, TData& elem) const;
-      bool get_at_t(double const t_sec, T& elem) const;
-      bool get_before_t(Timestamp const& t, T& elem) const;
-      bool get_before_t( Timestamp const& t, Timestamp& elem) const;
-      bool get_before_t(Timestamp const& t, TData &elem) const;
-      bool get_after_t(Timestamp const& t, T& elem) const;
-      bool get_after_t(Timestamp const& t, Timestamp& elem) const;
-      bool get_after_t(Timestamp const& t, TData& elem) const;
-      bool get_closest_t(Timestamp const& t, T& elem) const;
-      bool get_closest_t(Timestamp const& t, Timestamp& elem) const;
-      bool get_closest_t(Timestamp const& t, TData& elem) const;
-      void remove_at_t(Timestamp const& t);
-      void remove_at_t(double const t);
-      void remove_before_t(Timestamp const& t);
-      void remove_before_t(double const t);
-      void remove_after_t(Timestamp const& t);
-      void remove_after_t(double const t);
-
-      friend std::ostream& operator<< (std::ostream& out, const THistoryBuffer<T>& obj)  {
-        out << "THistoryBuffer: len=" << obj.size() << std::endl;
-        for (auto const& elem : obj.buffer_)
-        {
-            out << "* t=" << elem.first << ", data=" << elem.second << "\n";
-        }
-        return out;
-      }
-
-      void print(std::ostream& out, size_t const N = 0) {
-        size_t len = N;
-        if(N == 0) {
-            len = size();
-        }
-
-        size_t cnt = 0;
-        for (auto const& elem : buffer_)
-        {
-          if(cnt < len) {
-            out << "* t=" << elem.first << ", data=" << elem.second << "\n";
-          } else {
-            break;
-          }
-          cnt++;
-        }
-      }
-
-      void print_reverse(std::ostream& out, size_t const N = 0) {
-        size_t len = N;
-        if(N == 0) {
-          len = size();
-        }
-
-        size_t cnt = 0;
-        for (auto iter = buffer_.rbegin(); iter!= buffer_.rend(); ++iter)
-        {
-          if(cnt < len) {
-              out << "* t=" << iter->first << ", data=" << iter->second << "\n";
-          } else {
-            break;
-          }
-          cnt++;
-        }
-      }
-    protected:
-      friend std::ostream;
-      TContainer buffer_;
-    private:
-       void insert_sorted(Timestamp const& t, T const& elem){
-          buffer_[t.stamp_ns()] = elem;
-       }
-
-       // https://stackoverflow.com/a/72835502
-       typename TContainer::const_iterator upper_bound(Timestamp const& t) const {
-          return std::upper_bound(buffer_.begin(), buffer_.end(), t.stamp_ns(), [](const std::int64_t &value, const std::pair<std::int64_t, T> iter) {
-            return value < iter.first;
-          });
-       }
-
-       typename TContainer::const_iterator lower_bound(Timestamp const& t) const {
-          return std::lower_bound(buffer_.begin(), buffer_.end(), t.stamp_ns(), [](const std::pair<std::int64_t, T> &iter, const std::int64_t &value) {
-            return iter.first < value;
-          });
-       }
-
-  };
+  typename TContainer::const_iterator lower_bound(Timestamp const& t) const {
+    return std::lower_bound(
+      buffer_.begin(), buffer_.end(), t.stamp_ns(),
+      [](const std::pair<std::int64_t, T>& iter, const std::int64_t& value) { return iter.first < value; });
+  }
+};
 
   template<typename T>
   void THistoryBuffer<T>::insert(const T &data, const Timestamp t) {
@@ -566,7 +556,6 @@ namespace ikf
       remove_after_t(Timestamp(t));
   }
 
-
-  } // namespace ikf
+  }  // namespace ikf
 
 #endif // IKF_THISTORYBUFFER_HPP

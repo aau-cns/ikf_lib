@@ -35,8 +35,10 @@ namespace ikf {
  * @brief The Timestamp class
  * The current time is roughly 1720712106 seconds since the Epoch (1970-01-01 00:00 UTC) which requires already
  * 31-bit. Since we use a signed integer, this time would fit in INT32_t variable, but leaves no headroom for numerical
- * operations (adding two of them to compute the average causes an overflow!). Therefore the seconds are represented as
- * INT64_t.
+ * operations (adding two of them to compute the average causes an overflow!).
+ * Using INT32_t for seconds, the max positive values is 2147483647 which is Tuesday, January 19, 2038 3:14:07 AM,
+ * according to https://www.epochconverter.com/.
+ * Therefore the seconds are represented as * INT64_t.
  */
 class IKF_API Timestamp {
 public:
@@ -60,6 +62,7 @@ public:
   void from_stamp_ms(std::int64_t const stamp_ms = 0);
   std::int64_t stamp_us() const;
   void from_stamp_us(std::int64_t const stamp_us = 0);
+  //  max: +9223372036.854775807 [s] == Friday, April 11, 2262 11:47:16 PM
   std::int64_t stamp_ns() const;
   void from_stamp_ns(std::int64_t const stamp_ns = 0);
 

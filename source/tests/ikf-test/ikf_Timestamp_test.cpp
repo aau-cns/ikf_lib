@@ -265,3 +265,24 @@ TEST_F(IKF_Timestamp_test, sub) {
     EXPECT_EQ(stamp_ns, 1000000002);
   }
 }
+
+TEST_F(IKF_Timestamp_test, boundardy) {
+  {
+    // Tuesday, January 19, 2038 3:14:07 AM (max INT32_t sec.)
+    std::int64_t stamp_ns = 2147483647999999999;
+    ikf::Timestamp t;
+    t.from_stamp_ns(stamp_ns);
+    EXPECT_EQ(t.nsec, 999999999);
+    EXPECT_EQ(t.sec, 2147483647);
+    EXPECT_EQ(stamp_ns, t.stamp_ns());
+  }
+  {
+    // Friday, April 11, 2262 11:47:16 PM (max. INT64_t ns)
+    std::int64_t stamp_ns = 9223372036854775807;
+    ikf::Timestamp t;
+    t.from_stamp_ns(stamp_ns);
+    EXPECT_EQ(t.nsec, 9223372036);
+    EXPECT_EQ(t.sec, 854775807);
+    EXPECT_EQ(stamp_ns, t.stamp_ns());
+  }
+}

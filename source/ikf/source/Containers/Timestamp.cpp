@@ -65,12 +65,13 @@ void Timestamp::from_stamp_us(const int64_t stamp_us) {
 
 int64_t Timestamp::stamp_ns() const {
   // the seconds parts can take positive 33bits, cause we need 30bits for the nano seconds
-  if (sec <= __INT64_C(0x1FFFFFFFF)) {
+  if (sec <= __INT64_C(9223372036)) {
     std::int64_t time64 = static_cast<std::int64_t>(sec) * 1000000000l;
     time64 = time64 + nsec;
     return time64;
   } else {
-    ikf::Logger::ikf_logger()->error("Timestamp::stamp_ns(): time is out of INT32 range: ");
+    // seconds exceed: Friday, April 11, 2262 11:47:16 PM!
+    ikf::Logger::ikf_logger()->error("Timestamp::stamp_ns(): time is out of convertible range! ");
     return 0;
   }
 }
