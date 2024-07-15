@@ -52,10 +52,12 @@ bool NormalizedInnovationSquared::check_NIS(const Eigen::MatrixXd &H, const Eige
 }
 
 bool NormalizedInnovationSquared::check_NIS(const Eigen::MatrixXd &S, const Eigen::VectorXd &r, double confidence_interval) {
-  double s = NIS(S, r);
-  double s_threshold = NormalizedInnovationSquared::chi2inv(confidence_interval, r.rows());
-  if (s > s_threshold) {
-    return false;
+  if (confidence_interval > 0) {
+    double s = NIS(S, r);
+    double s_threshold = NormalizedInnovationSquared::chi2inv(confidence_interval, r.rows());
+    if (s > s_threshold) {
+      return false;
+    }
   }
   return true;
 }
