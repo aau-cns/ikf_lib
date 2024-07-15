@@ -204,14 +204,22 @@ ProcessMeasResult_vec_t IDICOHandler::process_measurement(const MeasData &m) {
         HistRedoUpdateRequest.get_oldest(after);
         HistRedoUpdateRequest.clear();
       }
-      if (after) {
-        IDICOHandler::redo_updates_after_t(t_oldest);  // restrict overloading
-        ikf::Logger::ikf_logger()->info(
-          "IDICOHandler::process_measurement(): requested redo update AFTER t=" + t_oldest.str() + " processed!");
+
+      // make sure that the request does not delete
+      Timestamp t_oldest_meas;
+      if (HistMeas.get_oldest_t(t_oldest_meas) && t_oldest_meas < t_oldest) {
+        if (after) {
+          IDICOHandler::redo_updates_after_t(t_oldest);  // restrict overloading
+          ikf::Logger::ikf_logger()->info(
+            "IDICOHandler::process_measurement(): requested redo update AFTER t=" + t_oldest.str() + " processed!");
+        } else {
+          IDICOHandler::redo_updates_from_t(t_oldest);  // restrict overloading
+          ikf::Logger::ikf_logger()->info(
+            "IDICOHandler::process_measurement(): requested redo update FROM t=" + t_oldest.str() + " processed!");
+        }
       } else {
-        IDICOHandler::redo_updates_from_t(t_oldest);  // restrict overloading
-        ikf::Logger::ikf_logger()->info(
-          "IDICOHandler::process_measurement(): requested redo update FROM t=" + t_oldest.str() + " processed!");
+        ikf::Logger::ikf_logger()->warn(
+          "IDICOHandler::process_measurement(): redo upate request is too much delayed, thus ignored!");
       }
     }
 
@@ -228,12 +236,15 @@ ProcessMeasResult_vec_t IDICOHandler::process_measurement(const MeasData &m) {
 
       insert_measurement(m, m.t_m);
       if (HistMeas_OOO.exist_before_t(m.t_m) || HistMeas_OOO.exist_at_t(m.t_m)) {
-        HistMeas_OOO.get_oldest_t(t_start);
-        HistMeas_OOO.foreach_between_t1_t2(t_start, m.t_m, [&](auto const &m) { insert_measurement(m, m.t_m); });
-        HistMeas_OOO.remove_before_t(m.t_m);
-        HistMeas_OOO.remove_at_t(m.t_m);
-        ikf::Logger::ikf_logger()->info("IDICOHandler::process_measurement(): insert OOO measurements starting from ="
-                                        + t_start.str() + " to " + m.t_m.str());
+        ikf::Timestamp t_oldest;
+        if (HistMeas_OOO.get_oldest_t(t_oldest) && t_oldest < m.t_m) {
+          HistMeas_OOO.foreach_between_t1_t2(t_oldest, m.t_m, [&](auto const &m) { insert_measurement(m, m.t_m); });
+          HistMeas_OOO.remove_before_t(m.t_m);
+          HistMeas_OOO.remove_at_t(m.t_m);
+          ikf::Logger::ikf_logger()->info("IDICOHandler::process_measurement(): insert OOO measurements starting from ="
+                                          + t_oldest.str() + " to " + m.t_m.str());
+          t_start = t_oldest;
+        }
       }
 
       sort_measurements_from_t(t_start);
