@@ -72,6 +72,8 @@ public:
   Timestamp current_t() const;
   pBelief_t current_belief() const;
   bool exist_belief_at_t(Timestamp const &t) const;
+  bool exist_belief_before_t(Timestamp const &t) const;
+  bool exist_belief_after_t(Timestamp const &t) const;
 
   pBelief_t get_belief_at_t(Timestamp const &t) const;
   pBelief_t get_belief_at_t(Timestamp const &t, eGetBeliefStrategy const type);

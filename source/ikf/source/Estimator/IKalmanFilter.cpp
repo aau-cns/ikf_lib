@@ -116,6 +116,10 @@ bool IKalmanFilter::exist_belief_at_t(const Timestamp &t) const {
   return HistBelief.exist_at_t(t);
 }
 
+bool ikf::IKalmanFilter::exist_belief_after_t(const Timestamp &t) const { return HistBelief.exist_after_t(t); }
+
+bool ikf::IKalmanFilter::exist_belief_before_t(const Timestamp &t) const { return HistBelief.exist_before_t(t); }
+
 pBelief_t ikf::IKalmanFilter::get_belief_at_t(const Timestamp &t) const {
   pBelief_t bel;
   if (!HistBelief.get_at_t(t, bel)) {

@@ -327,13 +327,19 @@ ProcessMeasResult_vec_t IDICOHandler::redo_updates_after_t(const Timestamp &t) {
 
 void IDICOHandler::remove_beliefs_after_t(const Timestamp &t) {
   for (auto &elem : id_dict) {
-    elem.second->remove_after_t(t);
+    // avoid deleting all beliefs from an instance
+    if (elem.second->exist_belief_at_t(t) || elem.second->exist_belief_before_t(t)) {
+      elem.second->remove_after_t(t);
+    }
   }
 }
 
 void IDICOHandler::remove_beliefs_from_t(const Timestamp &t) {
   for (auto &elem : id_dict) {
-    elem.second->remove_from_t(t);
+    // avoid deleting all beliefs from an instance
+    if (elem.second->exist_belief_before_t(t)) {
+      elem.second->remove_from_t(t);
+    }
   }
 }
 
