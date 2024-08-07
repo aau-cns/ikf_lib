@@ -105,7 +105,7 @@ protected:
   std::unordered_map<size_t, std::shared_ptr<IIsolatedKalmanFilter>> id_dict;
   bool m_handle_delayed_meas = true;
   TTimeHorizonBuffer<MeasData, TMultiHistoryBuffer<MeasData>> HistMeas;     // measurements that have ben processed
-  TTimeHorizonBuffer<MeasData, TMultiHistoryBuffer<MeasData>> HistMeas_OOO; // measurements that have not been processed yet
+  TTimeHorizonBuffer<bool> Hist_OOO_Flag;  // flags measurements timestamps that have not been processed!
   double m_horzion_sec;
 
   size_t m_PropSensor_ID{0};

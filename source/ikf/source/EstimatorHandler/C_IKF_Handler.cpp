@@ -173,10 +173,6 @@ bool C_IKF_Handler::is_order_violated(const MeasData &m) {
     if (HistMeas.exist_after_t(m.t_m)) {
       return true;
     }
-    // if an unused measurements exist at that timestamp or before
-    if (HistMeas_OOO.exist_before_t(m.t_m) || HistMeas_OOO.exist_at_t(m.t_m)) {
-      return true;
-    }
 
     // if we have concurrent measurements, propagation before private or joint
     if (m.obs_type == eObservationType::PROPAGATION) {
