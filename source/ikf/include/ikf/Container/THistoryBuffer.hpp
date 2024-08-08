@@ -52,6 +52,7 @@ public:
   void clear();
 
   void set(TContainer const& buffer) { buffer_ = buffer; }
+  TContainer& get() { return buffer_; }
 
   bool index_at_t(Timestamp const& t, size_t& idx) const;
 
@@ -146,6 +147,8 @@ public:
   void remove_before_t(double const t);
   void remove_after_t(Timestamp const& t);
   void remove_after_t(double const t);
+  void remove_every_N(size_t const subsample);
+  void subsample_by_N(size_t const subsample);
 
   friend std::ostream& operator<<(std::ostream& out, const THistoryBuffer<T>& obj) {
     out << "THistoryBuffer: len=" << obj.size() << std::endl;
@@ -556,6 +559,31 @@ private:
       remove_after_t(Timestamp(t));
   }
 
+  template <typename T>
+  void THistoryBuffer<T>::remove_every_N(size_t const subsample) {
+      size_t cnt = 0;
+      for (auto it = buffer_.cbegin(); it != buffer_.cend() /* not hoisted */; /* no increment */) {
+          if (cnt % subsample == 0) {
+              it = buffer_.erase(it);  // or "it = m.erase(it)" since C++11
+          } else {
+              ++it;
+          }
+          cnt++;
+      }
+  }
+
+  template <typename T>
+  void THistoryBuffer<T>::subsample_by_N(size_t const subsample) {
+      size_t cnt = 0;
+      for (auto it = buffer_.cbegin(); it != buffer_.cend() /* not hoisted */; /* no increment */) {
+          if (cnt % subsample != 0) {
+              it = buffer_.erase(it);  // or "it = m.erase(it)" since C++11
+          } else {
+              ++it;
+          }
+          cnt++;
+      }
+  }
   }  // namespace ikf
 
 #endif // IKF_THISTORYBUFFER_HPP

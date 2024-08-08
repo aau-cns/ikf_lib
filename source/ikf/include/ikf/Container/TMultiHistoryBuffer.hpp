@@ -192,8 +192,10 @@ public:
   void remove_before_t(double const t);
   void remove_after_t(Timestamp const& t);
   void remove_after_t(double const t);
+  void remove_every_N(size_t const subsample);
+  void subsample_by_N(size_t const subsample);
 
-  friend std::ostream& operator<< (std::ostream& out, const TMultiHistoryBuffer<T>& obj)  {
+  friend std::ostream& operator<<(std::ostream& out, const TMultiHistoryBuffer<T>& obj) {
     out << "TMultiHistoryBuffer: len=" << obj.size() << std::endl;
     for (auto const& elem : obj.buffer_)
     {
@@ -520,6 +522,31 @@ void TMultiHistoryBuffer<T>::remove_after_t(const double t) {
   remove_after_t(Timestamp(t));
 }
 
+template <typename T>
+void TMultiHistoryBuffer<T>::remove_every_N(size_t const subsample) {
+  size_t cnt = 0;
+  for (auto it = buffer_.cbegin(); it != buffer_.cend() /* not hoisted */; /* no increment */) {
+    if (cnt % subsample == 0) {
+      it = buffer_.erase(it);  // or "it = m.erase(it)" since C++11
+    } else {
+      ++it;
+    }
+    cnt++;
+  }
+}
+
+template <typename T>
+void TMultiHistoryBuffer<T>::subsample_by_N(size_t const subsample) {
+  size_t cnt = 0;
+  for (auto it = buffer_.cbegin(); it != buffer_.cend() /* not hoisted */; /* no increment */) {
+    if (cnt % subsample != 0) {
+      it = buffer_.erase(it);  // or "it = m.erase(it)" since C++11
+    } else {
+      ++it;
+    }
+    cnt++;
+  }
+}
 
 } // ns ikf
 
