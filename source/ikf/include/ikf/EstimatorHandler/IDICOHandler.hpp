@@ -48,7 +48,8 @@ public:
   std::vector<std::string> get_instance_types();
   double horizon_sec() const;
   void set_horizon(double const t_hor);
-  void reset();
+  bool reset();
+  bool reset_buffer();
 
   // TODO: hack needed for mmsf::SensorEstimatorHandler
   virtual size_t get_propagation_sensor_ID(size_t const ID = 0);
