@@ -45,7 +45,8 @@ public:
   bool remove(const size_t ID);
   bool exists(const size_t ID);
   std::vector<size_t> get_instance_ids();
-  std::vector<std::string> get_instance_types();
+  std::map<size_t, std::string> get_instance_types();
+
   double horizon_sec() const;
   void set_horizon(double const t_hor);
   bool reset();

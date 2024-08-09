@@ -80,19 +80,18 @@ std::vector<size_t> IDICOHandler::get_instance_ids() {
   return std::vector<size_t>();
 }
 
-std::vector<std::string> IDICOHandler::get_instance_types() {
+std::map<size_t, std::string> IDICOHandler::get_instance_types() {
   ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
   if (lock.try_lock()) {
-    std::vector<std::string> IDs;
-    IDs.reserve(id_dict.size());
+    std::map<size_t, std::string> types;
     for (auto const &elem : id_dict) {
-      IDs.push_back(elem.second->m_type);
+      types[elem.first] = elem.second->m_type;
     }
-    return IDs;
+    return types;
   } else {
     ikf::Logger::ikf_logger()->error("IDICOHandler::get_instance_types(): mutex FAILED");
   }
-  return std::vector<std::string>();
+  return std::map<size_t, std::string>();
 }
 
 double ikf::IDICOHandler::horizon_sec() const { return m_horzion_sec; }
