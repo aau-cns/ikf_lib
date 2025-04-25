@@ -78,6 +78,26 @@ void IBelief::set_options(const BeliefOptions &o) {
   m_options = o;
 }
 
+Eigen::VectorXd IBelief::boxminus(std::shared_ptr<IBelief> right) { return m_mean - right->mean(); }
+
+void IBelief::boxplus(const Eigen::VectorXd &dx) { correct(dx); }
+
+void IBelief::correct(const Eigen::VectorXd &dx)  // inplace and accoring to the error definiton!
+{
+  m_mean += dx;
+}
+
+void IBelief::correct(const Eigen::VectorXd &dx,
+                      const Eigen::MatrixXd &Sigma_apos)  // inplace and accoring to the error definiton!
+{
+  correct(dx);
+  Sigma(Sigma_apos);
+}
+
+Eigen::MatrixXd IBelief::plus_jacobian(const Eigen::VectorXd &dx) {
+  return Eigen::MatrixXd::Identity(m_es_dim, m_es_dim);
+}
+
 const BeliefOptions &IBelief::options() const { return m_options; }
 
 void IBelief::apply_init_strategy(std::shared_ptr<IBelief> &bel_0, const eInitStrategies type, const int seed) {
@@ -87,5 +107,5 @@ void IBelief::apply_init_strategy(std::shared_ptr<IBelief> &bel_0, const eInitSt
   }
 }
 
-
+size_t ikf::IBelief::dof() const { return m_es_dim; }
 }

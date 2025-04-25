@@ -29,12 +29,10 @@ LinearBelief::~LinearBelief() {}
 
 std::shared_ptr<IBelief> LinearBelief::clone() {
   auto p_bel = std::make_shared<LinearBelief>(LinearBelief(*this));
-//  p_bel->set(this->mean(), this->Sigma());
-//  p_bel->set_timestamp(this->timestamp());
+  //  p_bel->set(this->mean(), this->Sigma());
+  //  p_bel->set_timestamp(this->timestamp());
   return p_bel;
 }
-
-std::shared_ptr<IBelief> LinearBelief::interpolate(std::shared_ptr<IBelief> obj_a, std::shared_ptr<IBelief> obj_b, const double i) { return std::shared_ptr<IBelief>(nullptr); }
 
 void LinearBelief::correct(const Eigen::VectorXd &dx) {
   m_mean += dx;

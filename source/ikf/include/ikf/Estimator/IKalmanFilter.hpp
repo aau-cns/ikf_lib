@@ -18,12 +18,14 @@
 ******************************************************************************/
 #ifndef I_KALMAN_FILTER_HPP
 #define I_KALMAN_FILTER_HPP
+#include <functional>
 #include <ikf/ikf_api.h>
-#include "ikf/Container/TMultiHistoryBuffer.hpp"
+#include <ikf/Estimate/IBelief.hpp>
 #include <ikf/Estimator/KalmanFilter.hpp>
 #include <ikf/Estimator/ProcessMeasResult_t.hpp>
 #include <ikf/Measurement/MeasData.hpp>
-#include <ikf/Estimate/IBelief.hpp>
+#include "ikf/utils/Profiler.hpp"
+#include "ikf/Container/TMultiHistoryBuffer.hpp"
 
 
 namespace ikf {
@@ -31,12 +33,8 @@ namespace ikf {
 enum class IKF_API eGetBeliefStrategy {
   EXACT = 0,    // a belief is expected at a given timestamp
   CLOSEST = 1,  // if exist, return the closes belief in HistBelief (if any)
-  LINEAR_INTERPOL_BELIEF
-  = 2,  // if exist, interpolate between two beliefs and add them to the HistBelief, else PREDICT_BELIEF
-  LINEAR_INTERPOL_MEAS
-  = 3,  // if exist, interpolate between proprioceptive measurements linearly and perform a pseudo prediction step.
-  PREDICT_BELIEF = 4,  // if KF has a prediction model, a belief is predicted
-  AUTO = 5,            // 1.) exact, 2.) if(proagation measurements available) 3). linear interpol meas, ele predict.
+  PREDICT_BELIEF = 2,  // if KF has a prediction model, a belief is predicted
+
 };
 
 std::string IKF_API to_string(const eGetBeliefStrategy e);
@@ -48,8 +46,15 @@ eGetBeliefStrategy IKF_API str2eGetBeliefStrategy(const std::string &str);
 /// stored as "MeasData" in a fixed time horizon buffer "HistMeas".
 class IKF_API IKalmanFilter {
 public:
+  // typedef std::function<Eigen::VectorXd(pBelief_t &)> h_priv;
+  // typedef std::function<Eigen::MatrixXd(pBelief_t &)> h_priv_dx;
+
+  // h_priv(Belief bel, measurement z) : measurement matrix H, residual r
+  typedef std::function<std::pair<Eigen::MatrixXd, Eigen::VectorXd>(pBelief_t &, Eigen::VectorXd const &)> h_priv;
+
+public:
   IKalmanFilter(double const horizon_sec_=1.0, bool const handle_delayed_meas=true);
-  IKalmanFilter(pBelief_t bel_0, double const horizon_sec_=1.0, bool const handle_delayed_meas=true);
+  IKalmanFilter(pBelief_t bel_0, double const horizon_sec_ = 1.0, bool const handle_delayed_meas = true);
 
   ///////////////////////////////////////////////////////////////////////////////////
   /// Trigger the filter:
@@ -67,6 +72,8 @@ public:
   Timestamp current_t() const;
   pBelief_t current_belief() const;
   bool exist_belief_at_t(Timestamp const &t) const;
+  bool exist_belief_before_t(Timestamp const &t) const;
+  bool exist_belief_after_t(Timestamp const &t) const;
 
   pBelief_t get_belief_at_t(Timestamp const &t) const;
   pBelief_t get_belief_at_t(Timestamp const &t, eGetBeliefStrategy const type);
@@ -77,9 +84,6 @@ public:
   Eigen::MatrixXd get_Sigma_at_t(Timestamp const &t) const;
   void print_HistMeas(size_t max = 100, bool reverse = false);
   void print_HistBelief(size_t max = 100, bool reverse = false);
-
-  bool get_prop_meas_at_t(Timestamp const &t, MeasData &m);
-
 protected:
   ///////////////////////////////////////////////////////////////////////////////////
   /// pure virtual method
@@ -92,9 +96,9 @@ protected:
   virtual bool insert_measurement(MeasData const &m, Timestamp const &t);
 
   virtual ProcessMeasResult_vec_t redo_updates_after_t(Timestamp const &t);
-  bool correct_belief_at_t(Eigen::VectorXd const& mean_corr, Eigen::MatrixXd const& Sigma_apos, Timestamp const&t);
+  bool correct_belief_at_t(Eigen::VectorXd const &mean_corr, Eigen::MatrixXd const &Sigma_apos, Timestamp const &t);
 
-  virtual void remove_beliefs_after_t(Timestamp const& t);
+  virtual void remove_beliefs_after_t(Timestamp const &t);
   virtual void check_horizon();
 
   ///
@@ -108,10 +112,12 @@ protected:
   // KF:
   virtual  bool apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
   // EKF: if linearizing about bel_II_apri
-  virtual  bool apply_propagation(pBelief_t& bel_II_a, const Eigen::VectorXd &mean_II_b, const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a, const Timestamp &t_b);
+  virtual bool apply_propagation(pBelief_t &bel_II_a, const Eigen::VectorXd &mean_II_b,
+                                 const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab, const Timestamp &t_a,
+                                 const Timestamp &t_b);
 
-  virtual  bool apply_propagation(pBelief_t bel_II_b, const Eigen::MatrixXd &Phi_II_ab,  const Timestamp &t_a, const Timestamp &t_b);
-
+  virtual bool apply_propagation(pBelief_t bel_II_b, const Eigen::MatrixXd &Phi_II_ab, const Timestamp &t_a,
+                                 const Timestamp &t_b);
 
   // KF:
   virtual bool apply_private_observation(const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg);
@@ -119,16 +125,20 @@ protected:
   virtual bool apply_private_observation(pBelief_t &bel_II_apri, const Eigen::MatrixXd &H_II, const Eigen::MatrixXd &R,
                                          const Eigen::VectorXd &r, const KalmanFilter::CorrectionCfg_t &cfg);
 
+  // TODO: z is assumed to be an Euclidean object, but could originate from Manifold as well, e.g. SO3
+  // Maybe pass z as pBelief(z, R), then h_priv must return a pBelief as well...
+  virtual bool apply_private_observation(const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t,
+                                         h_priv h, const KalmanFilter::CorrectionCfg_t &cfg);
+
   TTimeHorizonBuffer<pBelief_t> HistBelief;
   TTimeHorizonBuffer<MeasData, TMultiHistoryBuffer<MeasData>> HistMeas;
-  TTimeHorizonBuffer<MeasData> HistMeasPropagation;
   double max_time_horizon_sec;
   bool m_handle_delayed_meas = true;  // specifies, if the instance maintains a history of past measurements or not
   bool m_enabled = true;              // specifies, if the instance processed measurements or not
-  KalmanFilter::CorrectionCfg_t m_CorrCfg; // specifies the default correction config.
+  KalmanFilter::CorrectionCfg_t m_CorrCfg;  // specifies the default correction config.
+  ikf::utils::Profiler m_profiler;
 
+};  // class IKalmanFilter
 
-}; // class IKalmanFilter
-
-} // namespace ikf
+}  // namespace ikf
 #endif // I_KALMAN_FILTER_HPP

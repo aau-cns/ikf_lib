@@ -50,9 +50,10 @@ include/ikf/EstimatorHandler/eFusionStrategy.hpp
 
  include/ikf/EstimatorHandler/IsolatedKalmanFilterHandler.hpp
  include/ikf/EstimatorHandler/DecoupledPropagationHandler.hpp
- include/ikf/EstimatorHandler/CollaborativeIKFHandler.hpp
+ include/ikf/EstimatorHandler/ICSE_IKF_Handler.hpp
+ include/ikf/EstimatorHandler/DCI_IKF_Handler.hpp
+ include/ikf/EstimatorHandler/C_IKF_Handler.hpp
  include/ikf/EstimatorHandler/IMultiAgentHandler.hpp
-
 
 
  include/ikf/Container/Timestamp.hpp
@@ -69,7 +70,7 @@ include/ikf/EstimatorHandler/eFusionStrategy.hpp
  include/ikf/utils/rand_op.hpp
  include/ikf/utils/MultivariateNormal.hpp
  include/ikf/utils/UnivariateNormal.hpp
-
+ include/ikf/utils/lock_guard_timed.hpp
 
  ${include_local_path}/helper.hpp
 )
@@ -109,10 +110,10 @@ set(sources
  source/EstimatorHandler/IDICOHandler.cpp
  source/EstimatorHandler/IsolatedKalmanFilterHandler.cpp
  source/EstimatorHandler/DecoupledPropagationHandler.cpp
- source/EstimatorHandler/CollaborativeIKFHandler.cpp
+ source/EstimatorHandler/ICSE_IKF_Handler.cpp
+ source/EstimatorHandler/C_IKF_Handler.cpp
+ source/EstimatorHandler/DCI_IKF_Handler.cpp
  source/EstimatorHandler/IMultiAgentHandler.cpp
-
-
 )
 
 # Group source files

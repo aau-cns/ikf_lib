@@ -18,16 +18,18 @@
 ******************************************************************************/
 #include <ikf/Estimator/IKalmanFilter.hpp>
 #include <ikf/Estimator/KalmanFilter.hpp>
-#include <ikf/utils/eigen_utils.hpp>
+#include <ikf/Estimator/NormalizedInnovationSquared.hpp>
 #include <ikf/Logger/Logger.hpp>
+#include <ikf/utils/eigen_utils.hpp>
+#include <ikf/utils/Profiler.hpp>
 
 namespace ikf {
 
-IKalmanFilter::IKalmanFilter(const double horizon_sec_, const bool handle_delayed_meas) : HistBelief(horizon_sec_), HistMeas(horizon_sec_), HistMeasPropagation(horizon_sec_), max_time_horizon_sec(horizon_sec_), m_handle_delayed_meas(handle_delayed_meas) {
+IKalmanFilter::IKalmanFilter(const double horizon_sec_, const bool handle_delayed_meas) : HistBelief(horizon_sec_), HistMeas(horizon_sec_), max_time_horizon_sec(horizon_sec_), m_handle_delayed_meas(handle_delayed_meas) {
 
 }
 
-IKalmanFilter::IKalmanFilter(pBelief_t bel_0, const double horizon_sec_, const bool handle_delayed_meas) : HistBelief(horizon_sec_), HistMeas(horizon_sec_), HistMeasPropagation(horizon_sec_), max_time_horizon_sec(horizon_sec_), m_handle_delayed_meas(handle_delayed_meas)
+IKalmanFilter::IKalmanFilter(pBelief_t bel_0, const double horizon_sec_, const bool handle_delayed_meas) : HistBelief(horizon_sec_), HistMeas(horizon_sec_), max_time_horizon_sec(horizon_sec_), m_handle_delayed_meas(handle_delayed_meas)
 {
   HistBelief.insert(bel_0, bel_0->timestamp());
 }
@@ -114,6 +116,10 @@ bool IKalmanFilter::exist_belief_at_t(const Timestamp &t) const {
   return HistBelief.exist_at_t(t);
 }
 
+bool ikf::IKalmanFilter::exist_belief_after_t(const Timestamp &t) const { return HistBelief.exist_after_t(t); }
+
+bool ikf::IKalmanFilter::exist_belief_before_t(const Timestamp &t) const { return HistBelief.exist_before_t(t); }
+
 pBelief_t ikf::IKalmanFilter::get_belief_at_t(const Timestamp &t) const {
   pBelief_t bel;
   if (!HistBelief.get_at_t(t, bel)) {
@@ -174,94 +180,11 @@ bool IKalmanFilter::get_belief_at_t(const Timestamp &t, pBelief_t &bel, const ik
         }
         break;
       }
-      case eGetBeliefStrategy::LINEAR_INTERPOL_BELIEF:
-      {
-        TStampedData<pBelief_t> stamped_bel_prev, stamped_bel_after;
-        if(HistBelief.get_before_t(t, stamped_bel_prev) && HistBelief.get_after_t(t, stamped_bel_after))
-        {
-
-          // bounded between two beliefs
-          double const i = (t.to_sec() - stamped_bel_prev.stamp.to_sec())/(stamped_bel_after.stamp.to_sec() - stamped_bel_prev.stamp.to_sec());
-          bel = stamped_bel_prev.data->interpolate(stamped_bel_prev.data, stamped_bel_after.data, i);
-
-          // INFO: this lead to a "state transition" and needs to trigger apply_propagation (as hook for other filter approaches to track cross-covariances)!
-          // insert new element into HistBeliefs
-          Eigen::MatrixXd Lambda = bel->Sigma() * stamped_bel_prev.data->Sigma().inverse();
-          return apply_propagation(bel, Lambda, stamped_bel_prev.stamp, t);
-        }
-        else {
-          //  no bounds
-          return false;
-        }
-        break;
-      }
-      case eGetBeliefStrategy::LINEAR_INTERPOL_MEAS:
-      {
-        if (HistMeasPropagation.size() > 1) {
-          TStampedData<MeasData> stamped_meas_prev, stamped_meas_after;
-          if(HistMeasPropagation.get_before_t(t, stamped_meas_prev) && HistMeasPropagation.get_after_t(t, stamped_meas_after)) {
-            // bounded between two measurements
-
-            if (!HistBelief.exist_at_t(stamped_meas_prev.stamp)) {
-              Logger::ikf_logger()->debug("IKalmanFilter::get_belief_at_t: No blief exist at t= "
-                                          + stamped_meas_prev.stamp.str() + " in LINEAR_INTERPOL_MEAS");
-
-              Logger::ikf_logger()->debug(
-                "IKalmanFilter::get_belief_at_t: NO BOUNDING measurements for LINEAR_INTERPOL_MEAS found! at t="
-                + t.str());
-              return false;
-            }
-            MeasData pseudo_meas_b = MeasData::lin_interpolate(stamped_meas_prev.data, stamped_meas_after.data, t);
-
-            // ACCESS TO MODEL
-            ikf::ProcessMeasResult_t res = progapation_measurement(pseudo_meas_b);
-
-            HistMeasPropagation.insert(pseudo_meas_b, t);
-
-            // HOOK for child classes (IsolatedKalmanFilter)
-            if(!RTV_EXPECT_TRUE_MSG(insert_measurement(pseudo_meas_b, t), "IKalmanFilter::get_belief_at_t(): Pseudo measurement cannot be added at t=" + t.str()))
-            {
-              return false;
-            }
-
-            if (res.status == eMeasStatus::REJECTED) {
-              Logger::ikf_logger()->debug(
-                "IKalmanFilter::get_belief_at_t: pseudo measurement for LINEAR_INTERPOL_MEAS was REJECTED! at t="
-                + t.str());
-            }
-
-            // if not rejected, it will insert a new element into HistBeliefs
-            return (res.status == eMeasStatus::PROCESSED) && HistBelief.get_at_t(t, bel);
-          } else {
-            Logger::ikf_logger()->debug(
-              "IKalmanFilter::get_belief_at_t: NO BOUNDING measurements for LINEAR_INTERPOL_MEAS found! at t="
-              + t.str());
-            return false;
-          }
-        } else {
-          // no proprioceptive measurements available!
-          Logger::ikf_logger()->debug(
-            "IKalmanFilter::get_belief_at_t: NO MEASUREMENTS for LINEAR_INTERPOL_MEAS found! at t=" + t.str());
-          return false;
-        }
-        break;
-      }
       case eGetBeliefStrategy::PREDICT_BELIEF:
       {
         // if true, it will insert a new element into HistBeliefs
         bool res =  predict_to(t);
         return res && HistBelief.get_at_t(t, bel);
-      }
-
-      case eGetBeliefStrategy::AUTO: {
-        bool res = false;
-        if (HistMeasPropagation.size() > 1) {
-          res = get_belief_at_t(t, bel, eGetBeliefStrategy::LINEAR_INTERPOL_MEAS);
-        }
-        if (!res) {
-          res = get_belief_at_t(t, bel, eGetBeliefStrategy::PREDICT_BELIEF);
-        }
-        return res;
       }
       default:
       {
@@ -312,7 +235,6 @@ void IKalmanFilter::reset() {
   HistBelief.clear();
   // IMPORTANT: DO NOT CLEAR
   // HistMeas.clear();
-  // HistMeasPropagation.clear();
 }
 
 bool IKalmanFilter::insert_measurement(const MeasData &m, const Timestamp &t) {
@@ -330,13 +252,11 @@ void IKalmanFilter::set_horizon(const double t_hor) {
   max_time_horizon_sec = t_hor;
   HistBelief.set_horizon(t_hor);
   HistMeas.set_horizon(t_hor);
-  HistMeasPropagation.set_horizon(t_hor);
 }
 
 void IKalmanFilter::check_horizon() {
   HistBelief.check_horizon();
   HistMeas.check_horizon();
-  HistMeasPropagation.check_horizon();
 }
 
 void IKalmanFilter::print_HistMeas(size_t max, bool reverse) {
@@ -374,38 +294,34 @@ void IKalmanFilter::print_HistBelief(size_t max, bool reverse) {
   }
 }
 
-bool ikf::IKalmanFilter::get_prop_meas_at_t(const Timestamp &t, MeasData &m) {
-  if(HistMeasPropagation.exist_at_t(t)) {
-    HistMeasPropagation.get_at_t(t, m);
-    return true;
-  }
-  return false;
-}
+
 
 ProcessMeasResult_t IKalmanFilter::delegate_measurement(const MeasData &m) {
   ProcessMeasResult_t res;
+
   res.status = eMeasStatus::DISCARED;
+  m_profiler.start();
+
   switch (m.obs_type) {
   case eObservationType::PROPAGATION: {
     res = progapation_measurement(m);
-
-    // needed for inter-properation interpolation (replace in case of re-do updates
-    HistMeasPropagation.insert(m, m.t_m);
     break;
   }
   case eObservationType::PRIVATE_OBSERVATION: {
     res = local_private_measurement(m);
     break;
   }
-    case eObservationType::JOINT_OBSERVATION:
-    case eObservationType::UNKNOWN:
-    default:
+  case eObservationType::JOINT_OBSERVATION:
+  case eObservationType::UNKNOWN:
+  default:
     break;
-    }
+  }
 
-    res.t = m.t_m;
-    res.observation_type = m.meas_type;
-    return res;
+  res.exec_time = m_profiler.elapsedSec();
+  res.t = m.t_m;
+  res.meas_type = m.meas_type;
+  res.obs_type = m.obs_type;
+  return res;
 }
 
 bool IKalmanFilter::apply_propagation(const Eigen::MatrixXd &Phi_II_ab, const Eigen::MatrixXd &Q_II_ab,
@@ -505,15 +421,77 @@ bool IKalmanFilter::apply_private_observation(pBelief_t &bel_II_apri, const Eige
   return !res.rejected;
 }
 
+bool IKalmanFilter::apply_private_observation(const Eigen::MatrixXd &R, const Eigen::VectorXd &z, const Timestamp &t,
+                                              h_priv h, const KalmanFilter::CorrectionCfg_t &cfg) {
+  pBelief_t bel_apri;
+  Eigen::MatrixXd Sigma_apri = bel_apri->Sigma();
+  if (get_belief_at_t(t, bel_apri)) {
+    pBelief_t bel_idx = bel_apri->clone();
+    Eigen::MatrixXd H_idx;
+    Eigen::MatrixXd K_idx;
+    size_t const dim = bel_apri->es_dim();
+    Eigen::VectorXd mean_idx = bel_apri->mean();
+    for (size_t iter = 0; iter < cfg.num_iter; iter++) {
+      auto H_r = h(bel_idx, z);
+      auto H_idx = H_r.first;
+      Eigen::VectorXd r_idx = H_r.second;
+
+      if (!KalmanFilter::check_dim(H_idx, R, r_idx, Sigma_apri)) {
+          return false;
+      }
+
+      if (iter > 0) {
+          r_idx = r_idx - H_idx * bel_apri->mean() + H_idx * bel_idx->mean();
+      }
+      Eigen::MatrixXd S_idx = H_idx * Sigma_apri * H_idx.transpose() + R;
+      S_idx = utils::stabilize_covariance(S_idx, cfg.eps);
+      if (cfg.use_outlier_rejection) {
+          if (!NormalizedInnovationSquared::check_NIS(S_idx, r_idx, cfg.confidence_interval)) {
+            // outlier...
+            return false;
+          }
+      }
+
+      K_idx = Sigma_apri * H_idx * S_idx.inverse();
+
+      // apply correction from the initial apri mean
+      bel_idx->mean(bel_apri->mean());
+      bel_idx->correct(K_idx * r_idx);
+
+      // check the difference of the means over the iteration steps:
+      Eigen::VectorXd mean_idx_new = bel_idx->mean();
+      Eigen::VectorXd dx = mean_idx - mean_idx_new;
+      if (dx.norm() < cfg.tol_eps) {
+          break;
+      }
+      mean_idx = mean_idx_new;
+    }
+
+    Eigen::MatrixXd U = (Eigen::MatrixXd::Identity(dim, dim) - K_idx * H_idx);
+    Eigen::MatrixXd Sigma_apos;
+    if (cfg.use_Josephs_form) {
+      Sigma_apos = U * Sigma_apri * U.transpose() + K_idx * R * K_idx.transpose();
+    } else {
+      Sigma_apos = U * Sigma_apri;
+    }
+
+    if (cfg.nummerical_stabilization) {
+      Sigma_apos = utils::stabilize_covariance(Sigma_apos, cfg.eps);
+    }
+
+    // correct inplace:
+    bel_apri->mean(bel_idx->mean());
+    bel_apri->Sigma(Sigma_apos);
+    return true;
+  }
+  return false;
+}
+
 eGetBeliefStrategy str2eGetBeliefStrategy(const std::string &str) {
   if (str == "EXACT") {
     return eGetBeliefStrategy::EXACT;
   } else if (str == "CLOSEST") {
     return eGetBeliefStrategy::CLOSEST;
-  } else if (str == "LINEAR_INTERPOL_BELIEF") {
-    return eGetBeliefStrategy::LINEAR_INTERPOL_BELIEF;
-  } else if (str == "LINEAR_INTERPOL_MEAS") {
-    return eGetBeliefStrategy::LINEAR_INTERPOL_MEAS;
   } else if (str == "PREDICT_BELIEF") {
     return eGetBeliefStrategy::PREDICT_BELIEF;
   }
@@ -526,10 +504,6 @@ std::string to_string(const eGetBeliefStrategy e) {
     return "EXACT";
   case eGetBeliefStrategy::CLOSEST:
     return "CLOSEST";
-  case eGetBeliefStrategy::LINEAR_INTERPOL_BELIEF:
-    return "LINEAR_INTERPOL_BELIEF";
-  case eGetBeliefStrategy::LINEAR_INTERPOL_MEAS:
-    return "LINEAR_INTERPOL_MEAS";
   case eGetBeliefStrategy::PREDICT_BELIEF:
     return "PREDICT_BELIEF";
   default:

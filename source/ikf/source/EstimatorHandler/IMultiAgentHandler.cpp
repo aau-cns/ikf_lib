@@ -22,8 +22,8 @@ IMultiAgentHandler::IDAgent_t IMultiAgentHandler::ID() const { return m_AgentID;
 std::vector<IMultiAgentHandler::IDEstimator_t> IMultiAgentHandler::get_estimator_IDs() {
   std::set<IDEstimator_t> IDs;
   for (auto const& e : dict_agents_ids) {
-    for (auto const& id : e.second) {
-      IDs.insert(id);
+    for (EstimatorInfo_t const& info : e.second) {
+      IDs.insert(info.ID);
     }
   }
   return std::vector<IDEstimator_t>(IDs.begin(), IDs.end());
@@ -38,11 +38,27 @@ std::vector<IMultiAgentHandler::IDAgent_t> IMultiAgentHandler::get_agent_IDs() {
   return IDs;
 }
 
-IMultiAgentHandler::IDAgent_t IMultiAgentHandler::estimatorID2agentID(const IDEstimator_t ID_est) {
+IMultiAgentHandler::dict_id_type_t IMultiAgentHandler::get_types() {
+  dict_id_type_t dict;
   for (auto const& e : dict_agents_ids) {
-    if (std::find(e.second.begin(), e.second.end(), ID_est) != e.second.end()) {
-      return e.first;
+    for (EstimatorInfo_t const& info : e.second) {
+      dict[info.ID] = info.type;
     }
+  }
+  return dict;
+}
+
+std::string IMultiAgentHandler::get_type_by_ID(const IDEstimator_t ID) {
+  dict_id_type_t dict = get_types();
+  if (dict.find(ID) != dict.end()) {
+    return dict[ID];
+  }
+  return "";
+}
+
+IMultiAgentHandler::IDAgent_t IMultiAgentHandler::estimatorID2agentID(const IDEstimator_t ID_est) {
+  if (dict_ID2Agent.find(ID_est) != dict_ID2Agent.end()) {
+    return dict_ID2Agent[ID_est];
   }
   return 0;
 }
@@ -61,7 +77,7 @@ std::ostream& operator<<(std::ostream& out, const IMultiAgentHandler& obj) {
   for (auto const& e : obj.dict_agents_ids) {
     out << "*  other Agent_ID[" << e.first << "]: Sensor IDs: [";
     for (auto const& i : e.second) {
-      out << i << ",";
+      out << "(" << i.ID << "/" << i.type << "),";
     }
     out << "]" << std::endl;
   }

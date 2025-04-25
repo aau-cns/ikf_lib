@@ -62,5 +62,38 @@ Eigen::Matrix4d MatExp(const Eigen::Matrix4d& A, const int order)
   return matexp;
 }
 
+double wrapMax(const double x, const double max) {
+  /* integer math: `(max + x % max) % max` */
+  return fmod(max + fmod(x, max), max);
+}
+
+double wrapMinMax(const double x, const double min, const double max) { return min + wrapMax(x - min, max - min); }
+
+double wrapToPi(const double x_rad) { return wrapMinMax(x_rad, -M_PI, +M_PI); }
+
+double wrapTo2Pi(const double x_rad) { return wrapMinMax(x_rad, -M_2_PI, +M_2_PI); }
+
+double wrapTo180deg(const double x_deg) { return wrapMinMax(x_deg, -180, +180); }
+
+double wrapTo360deg(const double x_deg) { return wrapMinMax(x_deg, -360, +360); }
+
+void quat2rpy(const Eigen::Quaterniond &q, double &roll, double &pitch, double &yaw) {
+  roll = std::atan2(2.0 * (q.w() * q.x() + q.y() * q.z()), 1.0 - 2.0 * (q.x() * q.x() + q.y() * q.y()));
+  pitch = std::asin(q.w() * q.y() - q.z() * q.x());
+  yaw = std::atan2(2.0 * (q.w() * q.z() + q.x() * q.y()), 1.0 - 2.0 * (q.y() * q.y() + q.z() * q.z()));
+}
+
+void quat2roll(const Eigen::Quaterniond &q, double &roll) {
+  roll = std::atan2(2.0 * (q.w() * q.x() + q.y() * q.z()), 1.0 - 2.0 * (q.x() * q.x() + q.y() * q.y()));
+}
+
+void quat2pitch(const Eigen::Quaterniond &q, double &roll, double &pitch, double &yaw) {
+  pitch = std::asin(q.w() * q.y() - q.z() * q.x());
+}
+
+void quat2yaw(const Eigen::Quaterniond &q, double &yaw) {
+  yaw = std::atan2(2.0 * (q.w() * q.z() + q.x() * q.y()), 1.0 - 2.0 * (q.y() * q.y() + q.z() * q.z()));
+}
+
 } // ns utils
 } // ns ikf

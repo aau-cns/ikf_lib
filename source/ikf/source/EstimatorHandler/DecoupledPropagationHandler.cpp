@@ -63,7 +63,7 @@ std::map<size_t, pBelief_t> DecoupledPropagationHandler::get_dict_bel(const std:
   std::vector<size_t> IDs = get_instance_ids();
   for (auto const id : IDs) {
     pBelief_t bel_apri;
-    RTV_EXPECT_TRUE_THROW(get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::AUTO), "Could not obtain belief");
+    RTV_EXPECT_TRUE_THROW(get(id)->get_belief_at_t(t, bel_apri, eGetBeliefStrategy::PREDICT_BELIEF), "Could not obtain belief");
     dict_bel.insert({id, bel_apri});
   }
   return dict_bel;
@@ -72,7 +72,7 @@ std::map<size_t, pBelief_t> DecoupledPropagationHandler::get_dict_bel(const std:
 bool DecoupledPropagationHandler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H,
                                                     const Eigen::MatrixXd &R, const Eigen::VectorXd &r,
                                                     const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
-  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+  std::lock_guard<std::recursive_timed_mutex> lk(m_mtx);
   Eigen::MatrixXd H = stack_H(dict_H);
 
   std::map<size_t, pBelief_t> dict_bel = get_dict_bel(dict_H, t);
@@ -104,7 +104,7 @@ bool DecoupledPropagationHandler::apply_observation(const std::map<size_t, Eigen
 bool DecoupledPropagationHandler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H,
                                                     const Eigen::VectorXd &z, const Eigen::MatrixXd &R,
                                                     const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
-  std::lock_guard<std::recursive_mutex> lk(m_mtx);
+  std::lock_guard<std::recursive_timed_mutex> lk(m_mtx);
   Eigen::MatrixXd H = stack_H(dict_H);
 
   std::map<size_t, pBelief_t> dict_bel = get_dict_bel(dict_H, t);
@@ -134,6 +134,27 @@ bool DecoupledPropagationHandler::apply_observation(const std::map<size_t, Eigen
     correct_beliefs_implace(res.Sigma_apos, res.delta_mean, dict_bel);
   }
   return !res.rejected;
+}
+
+ApplyObsResult_t DecoupledPropagationHandler::apply_observation(const Eigen::MatrixXd &R, const Eigen::VectorXd &z,
+                                                                const Timestamp &t,
+                                                                const IIsolatedKalmanFilter::h_joint &h,
+                                                                const std::vector<size_t> &IDs,
+                                                                const KalmanFilter::CorrectionCfg_t &cfg) {
+  std::lock_guard<std::recursive_timed_mutex> lk(m_mtx);
+  std::map<size_t, pBelief_t> dict_bel;
+  Eigen::MatrixXd Sigma_apos;
+  Eigen::VectorXd delta_mean;
+
+  ApplyObsResult_t res = process_observation(R, z, t, h, IDs, cfg, Sigma_apos, delta_mean, dict_bel);
+  if (res.status == eMeasStatus::PROCESSED) {
+    // 2) set a corrected factorized a posterioiry cross-covariance
+    split_right_upper_covariance(Sigma_apos, dict_bel, t);
+
+    // 3) correct beliefs implace!
+    correct_beliefs_implace(Sigma_apos, delta_mean, dict_bel);
+  }
+  return res;
 }
 
 }  // namespace ikf

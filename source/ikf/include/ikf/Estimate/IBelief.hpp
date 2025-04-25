@@ -54,6 +54,7 @@ public:
   // TODO: double check if operators are needed
   IBelief& operator= (const IBelief& param) = default;
   // Error-state size; should be DoF of the system process
+  virtual size_t dof() const;
   virtual size_t es_dim() const;
   // Nominal-state size; actual representation of the system process.
   virtual size_t ns_dim() const;
@@ -67,12 +68,13 @@ public:
   //// PURE VIRTUAL:
   virtual std::shared_ptr<IBelief> clone() = 0;
 
+  virtual Eigen::VectorXd boxminus(std::shared_ptr<IBelief> right);  //  returns an error-state element (first order
+                                                                     //  approximation, e.g., a quaternion to theta)!
+  virtual void boxplus(Eigen::VectorXd const& dx);
+  virtual void correct(Eigen::VectorXd const& dx);
+  virtual void correct(Eigen::VectorXd const& dx, const Eigen::MatrixXd& Sigma_apos);
+  virtual Eigen::MatrixXd plus_jacobian(Eigen::VectorXd const& dx);
 
-  virtual std::shared_ptr<IBelief> interpolate(std::shared_ptr<IBelief> obj_a,
-                                                       std::shared_ptr<IBelief> obj_b,
-                                                       double const i) = 0; //  returns a new object!
-  virtual void correct(Eigen::VectorXd const& dx) = 0; // inplace and accoring to the error definiton!
-  virtual void correct(Eigen::VectorXd const& dx, const Eigen::MatrixXd& Sigma_apos) = 0; // inplace and accoring to the error definiton!
   //// PURE VIRTUAL:
   ////////////////////////////////////////////////////////
 
@@ -89,6 +91,7 @@ public:
     out << " t=" << std::setw(16) << m_timestamp.str();
     out << ", mean=" << std::setprecision(4) <<  m_mean.transpose();
     out << ", diag(Sigma)=" << std::setprecision(4) << m_Sigma.diagonal().transpose();
+    out << ", fix=" << std::to_string((int)m_options.is_fixed);
     out << std::internal;
   }
 
@@ -97,6 +100,11 @@ public:
     return out;
   }
 protected:
+  // TODO (18.1.2024): mean should not be limited to R(n) and support any manifold!
+  // this makes ns_dim obsulete and es_dim becomes DoF.
+  // TODO (23.5.2024): if .mean() would not return a const ref, a mean vector could be assambled in child classes if
+  // they overwrite that method. consequently the m_mean member could be part of a dedicated class, m_Sigma might be the
+  // same for all. Note that mean() is needed for instance for generic plotting.
   Eigen::VectorXd m_mean;
   Eigen::MatrixXd m_Sigma;
   size_t m_es_dim = 0;

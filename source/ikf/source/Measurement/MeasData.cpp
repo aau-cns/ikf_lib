@@ -31,7 +31,7 @@ std::string to_string(const eObservationType ot) {
 }
 
 bool MeasData::has_meas_noise() const {
-  if (R.size() && R.norm() > 0.01) {
+  if (R.size() && R.norm() > 0.00000000001) {
       return true;
   }
   return false;
@@ -46,8 +46,7 @@ Eigen::MatrixXd MeasData::get_R() const {
 
 }
 
-std::ostream &operator<<(std::ostream &out, const MeasData &obj)
-{
+std::ostream &operator<<(std::ostream &out, const MeasData &obj) {
   out << "MeasData:";
   out << std::left;
   out << " t_m=" << std::setw(16) << obj.t_m.str();
@@ -89,6 +88,14 @@ std::string MeasData::str() const {
   return ss.str();
 }
 
+std::string ikf::MeasData::str_short() const {
+  std::stringstream out;
+  out << "MeasData:";
+  out << std::left;
+  out << " t_m=" << std::setw(16) << t_m.str();
+  out << ", ID=" << std::setw(3) << id_sensor;
+  out << ", meas_type=" << std::left << std::setw(20) << meas_type;
+  return out.str();
+}
 
-
-} // ns ikf
+}  // namespace ikf

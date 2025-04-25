@@ -31,6 +31,7 @@
 
 namespace ikf {
 
+struct ApplyObsResult_t;
 class IDICOHandler;
 
 ///
@@ -74,9 +75,21 @@ class IDICOHandler;
 /// Answer: The IKF-Paradigm is a state decoupling strategy. Meaning, it allows partitioning full-state vector in
 /// smaller junks, if their input/prediction model is decoupled and to couple their outputs through their fusion center.
 ///
+///
+
+// TODO rename to IDICOFilter
 class IKF_API IIsolatedKalmanFilter: public IKalmanFilter {
 public:
-  IIsolatedKalmanFilter(std::shared_ptr<IDICOHandler> ptr_Handler, size_t const ID, double const horizon_sec = 1.0);
+  // input: dictionary of beliefs and a vector if IDs; output: estimated measurmement
+  // typedef std::function<Eigen::VectorXd(std::map<size_t, pBelief_t> const&, std::vector<size_t> const&)> h_joint;
+  // input: dictionary of beliefs and a vector if IDs; output: dictionary of measurement Jacobians and residual
+  typedef std::function<std::pair<std::map<size_t, Eigen::MatrixXd>, Eigen::VectorXd>(
+    std::map<size_t, pBelief_t> const&, std::vector<size_t> const&, Eigen::VectorXd const&)>
+    h_joint;
+
+public:
+  IIsolatedKalmanFilter(std::shared_ptr<IDICOHandler> ptr_Handler, size_t const ID, double const horizon_sec = 1.0,
+                        std::string const& type = "");
   virtual ~IIsolatedKalmanFilter() {}
 
   size_t ID() const;
@@ -88,6 +101,10 @@ public:
   // Algorithm 7 in [1]
   virtual ProcessMeasResult_vec_t process_measurement(MeasData const& m) override;
   ///////////////////////////////////////////////////////////////////////////////////
+
+  virtual std::vector<size_t> get_correlated_IDs() const;
+  virtual std::vector<size_t> get_correlated_IDs_at_t(Timestamp const& t) const;
+  virtual std::vector<size_t> get_correlated_IDs_after_t(Timestamp const& t) const;
 
   virtual Eigen::MatrixXd get_CrossCovFact_at_t(Timestamp const& t, size_t ID_J);
   void set_CrossCovFact_at_t(Timestamp const& t, size_t const unique_ID, Eigen::MatrixXd const& ccf);
@@ -164,6 +181,10 @@ protected:
                          const Eigen::VectorXd& r, const ikf::Timestamp& t,
                          const ikf::KalmanFilter::CorrectionCfg_t& cfg);
 
+  ApplyObsResult_t apply_observation(const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t,
+                                     h_joint const& h, std::vector<size_t> const& IDs,
+                                     const KalmanFilter::CorrectionCfg_t& cfg);
+
   // call m_pHandler->apply_observation(...)
   //  bool apply_private_observation(pBelief_t& bel_II_apri, const size_t ID_I, const Eigen::MatrixXd& H_II,
   //                                 const Eigen::MatrixXd& R, const Eigen::VectorXd& r,
@@ -172,7 +193,7 @@ protected:
   std::shared_ptr<IDICOHandler> m_pHandler;
   std::unordered_map<size_t, TTimeHorizonBuffer<Eigen::MatrixXd>> HistCrossCovFactors;
   size_t m_ID;
-
+  std::string m_type;
 
 }; // class IIsolatedKalmanFilter
 

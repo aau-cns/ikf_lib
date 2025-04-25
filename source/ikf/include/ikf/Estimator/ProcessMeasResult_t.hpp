@@ -18,11 +18,12 @@
  ******************************************************************************/
 #ifndef PROCESSMEASRESULT_T_HPP
 #define PROCESSMEASRESULT_T_HPP
-#include <Eigen/Dense>
-#include <ikf/Container/Timestamp.hpp>
-#include <ikf/ikf_api.h>
-#include <string>
 #include <vector>
+#include <string>
+#include <Eigen/Dense>
+#include <ikf/ikf_api.h>
+#include <ikf/Container/Timestamp.hpp>
+#include <ikf/Measurement/MeasData.hpp>
 
 namespace ikf {
 enum class IKF_API eMeasStatus {
@@ -36,10 +37,12 @@ std::string IKF_API to_string(eMeasStatus const s);
 
 struct IKF_API ProcessMeasResult_t {
   eMeasStatus status{eMeasStatus::REJECTED};
+  eObservationType obs_type{eObservationType::UNKNOWN};
   Eigen::VectorXd residual;
-  std::string observation_type;
+  std::string meas_type{""}; // TODO: rename to meas_type
   std::vector<size_t> ID_participants;
   Timestamp t;
+  double exec_time = 0.0;
 
   ProcessMeasResult_t() = default;
   ProcessMeasResult_t(eMeasStatus const& s);
@@ -48,12 +51,23 @@ struct IKF_API ProcessMeasResult_t {
   friend std::ostream& operator<<(std::ostream& out, const ProcessMeasResult_t& obj) {
     out << "MeasResult: "
         << "status=:" << to_string(obj.status);
-    out << ", residual:" << obj.residual << ", observation_type=" << obj.observation_type;
-    out << ", num participants: " << obj.ID_participants.size();
+    out << ", residual:" << obj.residual;
+    out << ", meas_type=" << obj.meas_type;
+    out << ", #part.: " << obj.ID_participants.size();
+    out << ", exec time:" << obj.exec_time;
     return out;
   }
 };
 
 typedef std::vector<ProcessMeasResult_t> ProcessMeasResult_vec_t;
+
+inline std::ostream& operator<<(std::ostream& out, const ProcessMeasResult_vec_t& obj) {
+  for (auto const& e : obj) {
+    out << e << std::endl;
+  }
+  return out;
+}
+
 }  // namespace ikf
+
 #endif  // PROCESSMEASRESULT_T_HPP

@@ -28,9 +28,10 @@
 namespace ikf {
 
 IIsolatedKalmanFilter::IIsolatedKalmanFilter(std::shared_ptr<IDICOHandler> ptr_Handler, const size_t ID,
-                                             const double horizon_sec)
-  : IKalmanFilter(horizon_sec, false), m_pHandler(ptr_Handler), m_ID(ID) {
-  Logger::ikf_logger()->info("IIsolatedKalmanFilter: horizon_sec=" + std::to_string(horizon_sec));
+                                             const double horizon_sec, const std::string &type)
+  : IKalmanFilter(horizon_sec, false), m_pHandler(ptr_Handler), m_ID(ID), m_type(type) {
+  Logger::ikf_logger()->info("IIsolatedKalmanFilter: horizon_sec=" + std::to_string(horizon_sec) + ", ID=["
+                             + std::to_string(ID) + "], type=" + type);
 }
 
 size_t IIsolatedKalmanFilter::ID() const { return m_ID; }
@@ -44,6 +45,37 @@ void IIsolatedKalmanFilter::reset() {
 // Algorithm 7 in [1]
 ProcessMeasResult_vec_t IIsolatedKalmanFilter::process_measurement(const MeasData &m) {
   return m_pHandler->process_measurement(m);
+}
+
+std::vector<size_t> IIsolatedKalmanFilter::get_correlated_IDs() const {
+  std::vector<size_t> IDs;
+  IDs.reserve(HistCrossCovFactors.size());
+  for(auto const & e : HistCrossCovFactors) {
+    IDs.push_back(e.first);
+  }
+  return IDs;
+}
+
+std::vector<size_t> IIsolatedKalmanFilter::get_correlated_IDs_at_t(const Timestamp &t) const {
+  std::vector<size_t> IDs;
+  IDs.reserve(HistCrossCovFactors.size());
+  for(auto const & e : HistCrossCovFactors) {
+    if(e.second.exist_at_t(t)) {
+      IDs.push_back(e.first);
+    }
+  }
+  return IDs;
+}
+
+std::vector<size_t> ikf::IIsolatedKalmanFilter::get_correlated_IDs_after_t(const Timestamp &t) const {
+  std::vector<size_t> IDs;
+  IDs.reserve(HistCrossCovFactors.size());
+  for(auto const & e : HistCrossCovFactors) {
+    if(e.second.exist_after_t(t)) {
+      IDs.push_back(e.first);
+    }
+  }
+  return IDs;
 }
 
 ProcessMeasResult_vec_t IIsolatedKalmanFilter::redo_updates_after_t(const Timestamp &t) {
@@ -116,7 +148,6 @@ void IIsolatedKalmanFilter::remove_from_t(const Timestamp &t) {
 
 void IIsolatedKalmanFilter::set_horizon(const double t_hor) {
   IKalmanFilter::set_horizon(t_hor);
-  HistBelief.set_horizon(t_hor);
   for (auto& elem : HistCrossCovFactors){
     elem.second.set_horizon(t_hor);
   }
@@ -127,7 +158,6 @@ void IIsolatedKalmanFilter::check_horizon() {
 
   HistBelief.check_horizon_restricted(keep_elems);
   HistMeas.check_horizon_restricted(keep_elems);
-  HistMeasPropagation.check_horizon_restricted(keep_elems);
   for (auto& elem : HistCrossCovFactors){
     elem.second.check_horizon_restricted(keep_elems);
   }
@@ -176,9 +206,13 @@ ProcessMeasResult_t IIsolatedKalmanFilter::delegate_measurement(const MeasData &
   ProcessMeasResult_t res;
 
   if (m.obs_type == eObservationType::JOINT_OBSERVATION) {
+    res.status = eMeasStatus::DISCARED;
+    m_profiler.start();
     res = local_joint_measurement(m);
+    res.exec_time = m_profiler.elapsedSec();
     res.t = m.t_m;
-    res.observation_type = m.meas_type;
+    res.meas_type = m.meas_type;
+    res.obs_type = m.obs_type;
   } else {
     res = IKalmanFilter::delegate_measurement(m);
   }
@@ -281,6 +315,13 @@ bool IIsolatedKalmanFilter::apply_observation(const std::map<size_t, Eigen::Matr
                                               const Eigen::VectorXd &r, const Timestamp &t,
                                               const KalmanFilter::CorrectionCfg_t &cfg) {
   return m_pHandler->apply_observation(dict_H, R, r, t, cfg);
+}
+
+ApplyObsResult_t IIsolatedKalmanFilter::apply_observation(const Eigen::MatrixXd &R, const Eigen::VectorXd &z,
+                                                          const Timestamp &t, h_joint const &h,
+                                                          const std::vector<size_t> &IDs,
+                                                          const KalmanFilter::CorrectionCfg_t &cfg) {
+  return m_pHandler->apply_observation(R, z, t, h, IDs, cfg);
 }
 
 }  // namespace ikf

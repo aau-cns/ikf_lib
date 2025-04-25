@@ -170,6 +170,63 @@ TEST_F(IKF_THistoryBuffer_test, get_after)
     EXPECT_FALSE(test.get_after_t(t2, stamp));
 }
 
+TEST_F(IKF_THistoryBuffer_test, get_closest) {
+    ikf::THistoryBuffer<int> test = get_sorted_buffer(10);
+    ikf::TStampedData<int> tdata;
+    int data = 0;
+    ikf::Timestamp stamp;
+
+    {
+    ikf::Timestamp t(0.3);
+    EXPECT_TRUE(test.get_closest_t(t, tdata));
+    EXPECT_TRUE(test.get_closest_t(t, data));
+    EXPECT_TRUE(test.get_closest_t(t, stamp));
+    EXPECT_TRUE(tdata.data == 3);
+    EXPECT_TRUE(tdata.stamp == ikf::Timestamp(0.3));
+    EXPECT_TRUE(data == 3);
+    EXPECT_TRUE(stamp == ikf::Timestamp(0.3));
+    }
+    {
+    ikf::Timestamp t(0.35);
+    EXPECT_TRUE(test.get_closest_t(t, tdata));
+    EXPECT_TRUE(test.get_closest_t(t, data));
+    EXPECT_TRUE(test.get_closest_t(t, stamp));
+    EXPECT_TRUE(tdata.data == 4);
+    EXPECT_TRUE(tdata.stamp == ikf::Timestamp(0.4));
+    EXPECT_TRUE(data == 4);
+    EXPECT_TRUE(stamp == ikf::Timestamp(0.4));
+    }
+    {
+    ikf::Timestamp t(0.349);
+    EXPECT_TRUE(test.get_closest_t(t, tdata));
+    EXPECT_TRUE(test.get_closest_t(t, data));
+    EXPECT_TRUE(test.get_closest_t(t, stamp));
+    EXPECT_TRUE(tdata.data == 3);
+    EXPECT_TRUE(tdata.stamp == ikf::Timestamp(0.3));
+    EXPECT_TRUE(data == 3);
+    EXPECT_TRUE(stamp == ikf::Timestamp(0.3));
+    }
+    {
+    ikf::Timestamp t(2.0);
+    EXPECT_TRUE(test.get_closest_t(t, tdata));
+    EXPECT_TRUE(test.get_closest_t(t, data));
+    EXPECT_TRUE(test.get_closest_t(t, stamp));
+    EXPECT_TRUE(tdata.data == 10);
+    EXPECT_TRUE(tdata.stamp == ikf::Timestamp(1.0));
+    EXPECT_TRUE(data == 10);
+    EXPECT_TRUE(stamp == ikf::Timestamp(1.0));
+    }
+    {
+    ikf::Timestamp t(-1.0);
+    EXPECT_TRUE(test.get_closest_t(t, tdata));
+    EXPECT_TRUE(test.get_closest_t(t, data));
+    EXPECT_TRUE(test.get_closest_t(t, stamp));
+    EXPECT_TRUE(tdata.data == 1);
+    EXPECT_TRUE(tdata.stamp == ikf::Timestamp(0.1));
+    EXPECT_TRUE(data == 1);
+    EXPECT_TRUE(stamp == ikf::Timestamp(0.1));
+    }
+}
 
 TEST_F(IKF_THistoryBuffer_test, erase_after)
 {

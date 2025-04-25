@@ -69,6 +69,7 @@ public:
 
    res.observation_type = "control_input_acc";
    res.status = ikf::eMeasStatus::PROCESSED;
+
    return res;
   }
   ikf::ProcessMeasResult_t local_private_measurement(const ikf::MeasData &m) override {
@@ -85,7 +86,7 @@ public:
     }
 
     Eigen::VectorXd r = m.z - H_private * bel->mean();
-    res.observation_type = "local_position";
+    res.meas_type = "local_position";
     res.residual = r;
     ikf::KalmanFilter::CorrectionCfg_t cfg;
 
@@ -119,7 +120,7 @@ public:
 
     size_t ID_J = std::stoi(m.meta_info);
     res.ID_participants.push_back(ID_J);
-    res.observation_type = m.meas_type + " between [" + std::to_string(m_ID) + "," + m.meta_info + "]";
+    res.meas_type = m.meas_type + " between [" + std::to_string(m_ID) + "," + m.meta_info + "]";
     ikf::KalmanFilter::CorrectionCfg_t cfg;
 
 // choose an API for private observations

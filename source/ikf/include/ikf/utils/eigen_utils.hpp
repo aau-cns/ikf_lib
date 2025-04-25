@@ -69,7 +69,7 @@ template<typename scalar>
 Eigen::Array<scalar, Eigen::Dynamic, 1> from_vector(std::vector<scalar> const & vec)
 {
   // allocate and deep copy
-  Eigen::VectorXd v(vec.size());
+  Eigen::VectorX<scalar> v(vec.size());
   for(size_t i = 0; i < vec.size(); i++) {
     v(i) = vec.at(i);
   }
@@ -86,13 +86,39 @@ Eigen::Matrix<scalar, Eigen::Dynamic, Eigen::Dynamic> toEigenMatrix(std::vector<
     cols = mat[0].size();
   }
 
-  Eigen::MatrixXd m(rows, cols);
+  Eigen::MatrixX<scalar> m(rows, cols);
   for(size_t r = 0; r < rows;  r++) {
     for(size_t c = 0; c < cols;  c++) {
       m(r, c) = mat.at(r).at(c);
     }
   }
   return m;
+}
+
+template <typename scalar, size_t dim>
+Eigen::Matrix<scalar, dim, Eigen::Dynamic> toEigenColMatrix(std::vector<Eigen::Vector<scalar, dim>> const& mat) {
+  // allocate and deep copy
+  size_t rows = dim;
+  size_t cols = mat.size();
+
+  Eigen::MatrixX<scalar> M(rows, cols);
+  for (size_t c = 0; c < cols; c++) {
+    M.col(c) = mat.at(c);
+  }
+  return M;
+}
+
+template <typename scalar, size_t dim>
+Eigen::Matrix<scalar, Eigen::Dynamic, dim> toEigenRowMatrix(std::vector<Eigen::Vector<scalar, dim>> const& mat) {
+  // allocate and deep copy
+  size_t rows = mat.size();
+  size_t cols = dim;
+
+  Eigen::MatrixX<scalar> M(rows, cols);
+  for (size_t c = 0; c < cols; c++) {
+    M.row(c) = mat.at(c).transpose();
+  }
+  return M;
 }
 
 template<typename scalar>
@@ -207,7 +233,22 @@ Eigen::MatrixXd IKF_API stabilize_covariance(Eigen::MatrixXd const& Sigma, doubl
 
 Eigen::MatrixXd IKF_API symmetrize_covariance(Eigen::MatrixXd const& Sigma);
 
+bool IKF_API correct_covariance(Eigen::MatrixXd& Sigma);
 //
+
+template <typename scalar, int dim>
+Eigen::Matrix<scalar, dim, dim> sample_covariance(const std::vector<Eigen::Vector<scalar, dim>>& m_buffer) {
+  if (m_buffer.size() > 0) {
+    Eigen::MatrixXd M = Eigen::MatrixXd::Zero(dim, m_buffer.size());
+    for (size_t c = 0; c < m_buffer.size(); c++) {
+      M.col(c) = m_buffer.at(c);
+    }
+    Eigen::MatrixXd C = M.colwise() - M.rowwise().mean();
+    Eigen::MatrixXd Q = (C * C.transpose()) / double(m_buffer.size() - 1);
+    return Q;
+  }
+  return Eigen::Matrix<scalar, dim, dim>();
+}
 
 ///
 /// \brief Applies a eps on negative eigenvalues. Adapted from Christian Brommer:
@@ -240,6 +281,14 @@ static inline std::string print(Eigen::Matrix<Derived, 3, 1> const& p)
   std::stringstream str;
   str << " (x,y,z) " << p.x() << " " << p.y() << " " << p.z();
   return str.str();
+}
+
+template <typename Derived = double>
+std::pair<Eigen::MatrixX<Derived>, Eigen::VectorX<Derived>> calc_cov_mean(Eigen::MatrixX<Derived>& M) {
+  Eigen::VectorXd mu = M.rowwise().mean();
+  Eigen::MatrixXd C = M.colwise() - mu;
+  Eigen::MatrixXd Q = (C * C.transpose()) / Derived(M.cols() - 1);
+  return std::pair<Eigen::MatrixX<Derived>, Eigen::VectorX<Derived>>(Q, mu);
 }
 
 } // namespace utils
