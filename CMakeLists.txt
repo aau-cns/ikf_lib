@@ -1,7 +1,7 @@
 
 #
 # CMake options
-# 
+#
 
 # CMake version
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
@@ -27,7 +27,7 @@ endif()
 # Register general cmake commands
 # Include cmake modules
 #list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-#list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(cmake/Custom.cmake)
 
 # Set policies
@@ -51,16 +51,16 @@ include(cmake/GetGitRevisionDescription.cmake)
 include(cmake/HealthCheck.cmake)
 
 
-# 
+#
 # Project configuration options
-# 
+#
 
 # Project options
 option(BUILD_SHARED_LIBS      "Build shared instead of static libraries."              ON)
 option(OPTION_SELF_CONTAINED  "Create a self-contained install with all dependencies." OFF)
 option(OPTION_BUILD_TESTS     "Build tests."                                           ON)
-option(OPTION_BUILD_DOCS      "Build documentation."                                   OFF)
-option(OPTION_BUILD_EXAMPLES  "Build examples."                                        OFF)
+option(OPTION_BUILD_DOCS      "Build documentation."                                   ON)
+option(OPTION_BUILD_EXAMPLES  "Build examples."                                        ON)
 option(OPTION_ENABLE_COVERAGE "Add coverage information."                              OFF)
 
 # Get git revision
@@ -76,9 +76,9 @@ else()
 endif()
 
 
-# 
+#
 # Project description and (meta) information
-# 
+#
 
 # Meta information about the project
 set(META_PROJECT_NAME        "ikf_lib")
@@ -99,9 +99,9 @@ string(MAKE_C_IDENTIFIER ${META_PROJECT_NAME} META_PROJECT_ID)
 string(TOUPPER ${META_PROJECT_ID} META_PROJECT_ID)
 
 
-# 
+#
 # Declare project
-# 
+#
 
 # Generate folders for IDE targets (e.g., VisualStudio solutions)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -138,16 +138,16 @@ enable_clang_tidy(ON)
 enable_coverage(${OPTION_ENABLE_COVERAGE})
 
 
-# 
+#
 # Compiler settings and options
-# 
+#
 
 include(cmake/CompileOptions.cmake)
 
 
-# 
+#
 # Deployment/installation setup
-# 
+#
 
 # Get project name
 set(project ${META_PROJECT_NAME})
@@ -206,18 +206,18 @@ if(NOT SYSTEM_DIR_INSTALL)
 endif()
 
 
-# 
+#
 # Project modules
-# 
+#
 
 add_subdirectory(source)
 add_subdirectory(docs)
 add_subdirectory(deploy)
 
 
-# 
+#
 # Deployment (global project files)
-# 
+#
 
 # Install version file
 install(FILES "${PROJECT_BINARY_DIR}/VERSION" DESTINATION ${INSTALL_ROOT} COMPONENT runtime)
