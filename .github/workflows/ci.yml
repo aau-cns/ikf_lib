@@ -14,7 +14,7 @@ jobs:
       - name: install cmake
         run: sudo apt install -y cmake
       - name: install dependencies
-        run: sudo apt install libeigen3-dev libspdlog-dev libgmock-dev -y
+        run: sudo apt install -y libeigen3-dev libspdlog-dev
       - name: configure
         run: ./configure && ./configure
       - name: make
@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: install cmake and googletest
-        run: sudo apt install -y cmake libgmock-dev lcov
+        run: sudo apt install -y cmake libgmock-dev lcov libeigen3-dev libspdlog-dev
       - name: configure
         run: ./configure && CMAKE_OPTIONS="-DOPTION_ENABLE_COVERAGE=On" ./configure
       - name: tests
