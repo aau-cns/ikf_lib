@@ -47,7 +47,14 @@ void ctor_init_test() {
 
   test.insert(1, 0.1);
   test.insert(2, ikf::Timestamp(0.2));
+
   EXPECT_TRUE(test.exist_at_t(ikf::Timestamp(0.2)));
+  EXPECT_TRUE(test.exist_before_t(ikf::Timestamp(0.2)));
+  EXPECT_FALSE(test.exist_before_t(ikf::Timestamp(0.01)));
+  EXPECT_TRUE(test.exist_after_t(ikf::Timestamp(0.1)));
+  EXPECT_TRUE(test.exist_after_t(ikf::Timestamp(0.19)));
+  EXPECT_FALSE(test.exist_after_t(ikf::Timestamp(0.21)));
+
   test.insert(3, ikf::Timestamp(0.15));
   test.insert(4, ikf::Timestamp(0.4));
   test.insert(5, ikf::Timestamp(0.5));
