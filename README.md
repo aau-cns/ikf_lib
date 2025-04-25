@@ -1,3 +1,6 @@
+![IKF Logo](./resources/diagrams/ikf-lib-diag-Logo-IKF.png)
+
+
 # ikf_lib (Isolated Kalman Filtering C++ library) 
 
 [![License](https://img.shields.io/badge/License-AAUCNS-336B81.svg)](https://github.com/aau-cns/flight_stack/blob/main/LICENSE)
@@ -12,15 +15,16 @@ This software is made available to the public to use (_source-available_), licen
 
 ### Usage for academic purposes
 If you use this software in an academic research setting, please cite the
-corresponding [academic paper] and consult the `LICENSE` file for a detailed explanation.
+corresponding [academic paper](https://rdcu.be/d9OAw) and consult the `LICENSE` file for a detailed explanation.
 
 ```latex
-@inproceedings{jung_isolated_2023,
+@inproceedings{jung_isolated_2025,
    author   = {Jung, Roland and Luft, Lukas and Weiss, Stephan},
-   journal  = {tbd},
-   doi      = {tbd},
+   journal  = {Autonomous Robots},
+   doi      = {10.1007/s10514-025-10191-x},
    title    = {Isolated Kalman Filtering: Theory and Decoupled Estimator Design},
-   year     = {2023},
+   year     = {2025},
+   url      ={https://doi.org/10.1007/s10514-025-10191-x}
 }
 ```
 
