@@ -24,7 +24,7 @@ corresponding [academic paper](https://rdcu.be/d9OAw) and consult the `LICENSE` 
    doi      = {10.1007/s10514-025-10191-x},
    title    = {Isolated Kalman Filtering: Theory and Decoupled Estimator Design},
    year     = {2025},
-   url      ={https://doi.org/10.1007/s10514-025-10191-x}
+   url      = {https://doi.org/10.1007/s10514-025-10191-x}
 }
 ```
 
