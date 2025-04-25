@@ -48,6 +48,7 @@ Find a commandline example tool for non-delayed measurements in `source/examples
 sudo apt update
 sudo apt install build-essential cmake -y
 sudo apt install libspdlog-dev -y
+sudo apt install libgmock-dev -y
 ```
 
 ## Build project
@@ -65,8 +66,8 @@ View the documentation in your browser: `build/doc/index.html`.
 
 
 Testet under `Ubunut 20.04` with `gcc`  version `(Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0`. 
-Note `C++17` is required in examples, due to [matplotplusplus](https://github.com/alandefreitas/matplotplusplus) for visualization. Without examples, the library works perfectly well with `C++11` standard. 
-Change the option in [CompileOptions.cmake](./cmake/CompileOptions.cmake), if you want/need, but then build the library without examples.
+Note `C++17` is required, due to [matplotplusplus](https://github.com/alandefreitas/matplotplusplus) for visualization and the use of [std::sample](https://en.cppreference.com/w/cpp/algorithm/sample) in [RandomSampler](./source/ikf/include/ikf/utils/RandomSampler.hpp). 
+
 
 ## Run examples
 

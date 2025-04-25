@@ -1,8 +1,12 @@
 
 # This config script tries to locate the project either in its source tree
 # or from an install location.
-#
+# 
 # Please adjust the list of submodules to search for.
+
+# Find depencencies
+include(CMakeFindDependencyMacro)
+#find_dependency(glm)
 
 
 # List of modules
@@ -39,6 +43,7 @@ if(MODULE_FOUND)
     return()
 endif()
 
+
 # Try common build locations
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     find_modules("build-debug/cmake")
@@ -47,6 +52,7 @@ else()
     find_modules("build/cmake")
     find_modules("build-debug/cmake")
 endif()
+
 
 # Signal success/failure to CMake
 set(template_FOUND ${MODULE_FOUND})

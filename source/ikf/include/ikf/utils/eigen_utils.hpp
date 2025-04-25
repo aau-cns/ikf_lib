@@ -18,9 +18,10 @@
 ******************************************************************************/
 #ifndef EIGEN_UTILS_HPP
 #define EIGEN_UTILS_HPP
-#include <ikf/ikf_api.h>
 #include <Eigen/Dense>
+#include <ikf/ikf_api.h>
 #include <iostream>
+#include <vector>
 
 namespace ikf{
 namespace utils {

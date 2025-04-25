@@ -67,10 +67,10 @@ public:
       res.status = ikf::eMeasStatus::REJECTED;
     }
 
-   res.observation_type = "control_input_acc";
-   res.status = ikf::eMeasStatus::PROCESSED;
+    res.obs_type = ikf::eObservationType::PROPAGATION;  // "control_input_acc";
+    res.status = ikf::eMeasStatus::PROCESSED;
 
-   return res;
+    return res;
   }
   ikf::ProcessMeasResult_t local_private_measurement(const ikf::MeasData &m) override {
     ikf::ProcessMeasResult_t res;

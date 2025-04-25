@@ -1,15 +1,24 @@
 
 #
 # CMake options
-#
-
-if (NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "Release")
-  message("**** Release build ****")
-endif ()
+# 
 
 # CMake version
-cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+
+
+#
+# Detect type of CMake setup
+#
+
+# Use PROJECT_IS_TOP_LEVEL once we bump the required CMake version up to 3.21
+get_directory_property(META_HAS_PARENT PARENT_DIRECTORY)
+if(META_HAS_PARENT)
+  set(META_BUILD_AS_ROOT Off)
+else()
+  set(META_BUILD_AS_ROOT On)
+endif()
+
 
 #
 # Configure CMake environment
@@ -18,43 +27,58 @@ cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 # Register general cmake commands
 # Include cmake modules
 #list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+#list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(cmake/Custom.cmake)
 
 # Set policies
-set_policy(CMP0028 NEW) # ENABLE CMP0028: Double colon in target name means ALIAS or IMPORTED target.
-set_policy(CMP0054 NEW) # ENABLE CMP0054: Only interpret if() arguments as variables or keywords when unquoted.
-set_policy(CMP0042 NEW) # ENABLE CMP0042: MACOSX_RPATH is enabled by default.
-set_policy(CMP0063 NEW) # ENABLE CMP0063: Honor visibility properties for all target types.
+set_policy(CMP0054 NEW) #  ENABLE CMP0054: Only interpret if() arguments as variables or keywords when unquoted.
+set_policy(CMP0042 NEW) #  ENABLE CMP0042: MACOSX_RPATH is enabled by default.
+set_policy(CMP0063 NEW) #  ENABLE CMP0063: Honor visibility properties for all target types.
+set_policy(CMP0069 NEW) #  ENABLE CMP0069: INTERPROCEDURAL_OPTIMIZATION is enforced when enabled.
+set_policy(CMP0077 NEW) #  ENABLE CMP0077: option() honors normal variables.
+set_policy(CMP0120 OLD) # DISABLE CMP0120: The WriteCompilerDetectionHeader module is removed.
 
 # Include cmake modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(GenerateExportHeader)
-
-set(WriterCompilerDetectionHeaderFound NOTFOUND)
-# This module is only available with CMake >=3.1, so check whether it could be found
-# BUT in CMake 3.1 this module doesn't recognize AppleClang as compiler, so just use it as of CMake 3.2
-if (${CMAKE_VERSION} VERSION_GREATER "3.2")
-    include(WriteCompilerDetectionHeader OPTIONAL RESULT_VARIABLE WriterCompilerDetectionHeaderFound)
-endif()
+include(WriteCompilerDetectionHeader)
 
 # Include custom cmake modules
+include(cmake/Coverage.cmake)
+include(cmake/GenerateTemplateExportHeader.cmake)
 include(cmake/GetGitRevisionDescription.cmake)
 include(cmake/HealthCheck.cmake)
-include(cmake/GenerateTemplateExportHeader.cmake)
 
 
-#
-# Project description and (meta) information
-#
+# 
+# Project configuration options
+# 
+
+# Project options
+option(BUILD_SHARED_LIBS      "Build shared instead of static libraries."              ON)
+option(OPTION_SELF_CONTAINED  "Create a self-contained install with all dependencies." OFF)
+option(OPTION_BUILD_TESTS     "Build tests."                                           ON)
+option(OPTION_BUILD_DOCS      "Build documentation."                                   OFF)
+option(OPTION_BUILD_EXAMPLES  "Build examples."                                        OFF)
+option(OPTION_ENABLE_COVERAGE "Add coverage information."                              OFF)
 
 # Get git revision
-get_git_head_revision(GIT_REFSPEC GIT_SHA1)
-string(SUBSTRING "${GIT_SHA1}" 0 12 GIT_REV)
-if(NOT GIT_SHA1)
-    set(GIT_REV "0")
+if (OPTION_USE_GIT_INFORMATION AND META_BUILD_AS_ROOT)
+  get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+  string(SUBSTRING "${GIT_SHA1}" 0 12 GIT_REV)
+  if(NOT GIT_SHA1)
+      set(GIT_REV "0")
+  endif()
+else()
+  set(GIT_SHA1 "")
+  set(GIT_REV "0")
 endif()
+
+
+# 
+# Project description and (meta) information
+# 
 
 # Meta information about the project
 set(META_PROJECT_NAME        "ikf_lib")
@@ -69,33 +93,28 @@ set(META_VERSION_REVISION    "${GIT_REV}")
 set(META_VERSION             "${META_VERSION_MAJOR}.${META_VERSION_MINOR}.${META_VERSION_PATCH}")
 set(META_NAME_VERSION        "${META_PROJECT_NAME} v${META_VERSION} (${META_VERSION_REVISION})")
 set(META_CMAKE_INIT_SHA      "${GIT_REV}")
+set(META_CMAKE_INIT_BRANCH   "cmake-3.20")
 
 string(MAKE_C_IDENTIFIER ${META_PROJECT_NAME} META_PROJECT_ID)
 string(TOUPPER ${META_PROJECT_ID} META_PROJECT_ID)
 
 
-#
-# Project configuration options
-#
-
-# Project options
-option(BUILD_SHARED_LIBS     "Build shared instead of static libraries."              ON)
-option(OPTION_SELF_CONTAINED "Create a self-contained install with all dependencies." ON)
-option(OPTION_BUILD_TESTS    "Build tests."                                           ON)
-option(OPTION_BUILD_DOCS     "Build documentation."                                   ON)
-option(OPTION_BUILD_EXAMPLES "Build examples."                                        ON)
-
-
-#
+# 
 # Declare project
-#
+# 
 
 # Generate folders for IDE targets (e.g., VisualStudio solutions)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(IDE_FOLDER "")
 
 # Declare project
-project(${META_PROJECT_NAME} C CXX)
+project(${META_PROJECT_NAME}
+    VERSION ${META_VERSION}
+    DESCRIPTION ${META_PROJECT_DESCRIPTION}
+)
+
+enable_language(C)
+enable_language(CXX)
 
 # Set output directories
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
@@ -107,27 +126,28 @@ file(WRITE "${PROJECT_BINARY_DIR}/VERSION" "${META_NAME_VERSION}")
 
 
 #
-# Compiler settings and options
-#
-
-include(cmake/CompileOptions.cmake)
-
-
-#
 # Project Health Check Setup
 #
 
 # Add cmake-init template check cmake targets
-add_check_template_target(${META_CMAKE_INIT_SHA})
+add_check_template_target(${META_CMAKE_INIT_SHA} ${META_CMAKE_INIT_BRANCH})
 
 # Configure health check tools
-enable_cppcheck(On)
-enable_clang_tidy(On)
+enable_cppcheck(ON)
+enable_clang_tidy(ON)
+enable_coverage(${OPTION_ENABLE_COVERAGE})
 
 
-#
+# 
+# Compiler settings and options
+# 
+
+include(cmake/CompileOptions.cmake)
+
+
+# 
 # Deployment/installation setup
-#
+# 
 
 # Get project name
 set(project ${META_PROJECT_NAME})
@@ -177,25 +197,27 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE) # Do NOT add path to dependencies f
 if(NOT SYSTEM_DIR_INSTALL)
     # Find libraries relative to binary
     if(APPLE)
-        set(CMAKE_INSTALL_RPATH "@loader_path/../../../${INSTALL_LIB}")
+        set(EXECUTABLE_INSTALL_RPATH "@loader_path/../../../${INSTALL_LIB}")
+        set(LIBRARY_INSTALL_RPATH    "@loader_path/../../../${INSTALL_LIB}")
     else()
-        set(CMAKE_INSTALL_RPATH "$ORIGIN/${INSTALL_LIB}")
+        set(EXECUTABLE_INSTALL_RPATH "$ORIGIN/${INSTALL_LIB}")
+        set(LIBRARY_INSTALL_RPATH    "$ORIGIN")
     endif()
 endif()
 
 
-#
+# 
 # Project modules
-#
+# 
 
 add_subdirectory(source)
 add_subdirectory(docs)
 add_subdirectory(deploy)
 
 
-#
+# 
 # Deployment (global project files)
-#
+# 
 
 # Install version file
 install(FILES "${PROJECT_BINARY_DIR}/VERSION" DESTINATION ${INSTALL_ROOT} COMPONENT runtime)

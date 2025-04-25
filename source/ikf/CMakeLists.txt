@@ -28,6 +28,7 @@ set(export_macro         "${target_id}_API")
 #
 # Sources
 #
+
 set(include_path "${CMAKE_CURRENT_SOURCE_DIR}/include/${target}")
 set(include_local_path "${CMAKE_CURRENT_SOURCE_DIR}/include_local/${target}")
 set(source_path  "${CMAKE_CURRENT_SOURCE_DIR}/source")
@@ -144,23 +145,13 @@ export(TARGETS ${target} NAMESPACE ${META_PROJECT_NAME}:: FILE ${PROJECT_BINARY_
 # Create feature detection header
 # Compilers: https://cmake.org/cmake/help/v3.1/variable/CMAKE_LANG_COMPILER_ID.html#variable:CMAKE_%3CLANG%3E_COMPILER_ID
 # Feature: https://cmake.org/cmake/help/v3.1/prop_gbl/CMAKE_CXX_KNOWN_FEATURES.html
-
-# Check for availability of module; use pre-generated version if not found
-if (WriterCompilerDetectionHeaderFound)
-    write_compiler_detection_header(
-        FILE ${feature_file}
-        PREFIX ${target_id}
-        COMPILERS AppleClang Clang GNU MSVC
-        FEATURES cxx_alignas cxx_alignof cxx_constexpr cxx_final cxx_noexcept cxx_nullptr cxx_sizeof_member cxx_thread_local
-        VERSION 3.2
-    )
-else()
-    file(
-        COPY ${PROJECT_SOURCE_DIR}/source/codegeneration/${target}_features.h
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/include/${target}
-        USE_SOURCE_PERMISSIONS
-    )
-endif()
+write_compiler_detection_header(
+    FILE ${feature_file}
+    PREFIX ${target_id}
+    COMPILERS AppleClang Clang GNU MSVC
+    FEATURES cxx_alignas cxx_alignof cxx_constexpr cxx_final cxx_noexcept cxx_nullptr cxx_sizeof_member cxx_thread_local
+    VERSION 3.20
+)
 
 # Create API export header
 generate_export_header(${target}
@@ -181,9 +172,10 @@ generate_template_export_header(${target}
 set_target_properties(${target}
     PROPERTIES
     ${DEFAULT_PROJECT_OPTIONS}
+    INSTALL_RPATH "${LIBRARY_INSTALL_RPATH}"
     FOLDER "${IDE_FOLDER}"
-    VERSION ${META_VERSION}
-    SOVERSION ${META_VERSION_MAJOR}
+    VERSION "${META_VERSION}"
+    SOVERSION "${META_VERSION_MAJOR}"
 )
 
 
@@ -219,11 +211,11 @@ target_link_libraries(${target}
     PUBLIC
     ${DEFAULT_LIBRARIES}
     Eigen
-    spdlog::spdlog
+    spdlog
 
     INTERFACE
     $<BUILD_INTERFACE:Eigen>
-    $<BUILD_INTERFACE:spdlog::spdlog>
+    $<BUILD_INTERFACE:spdlog>
 )
 
 
@@ -248,9 +240,9 @@ target_compile_definitions(${target}
 
 target_compile_options(${target}
     PRIVATE
-
+    ${DEFAULT_COMPILE_OPTIONS_PRIVATE}
     PUBLIC
-    ${DEFAULT_COMPILE_OPTIONS}
+    ${DEFAULT_COMPILE_OPTIONS_PUBLIC}
 
     INTERFACE
 )
@@ -260,7 +252,7 @@ target_compile_options(${target}
 # Linker options
 #
 
-target_link_libraries(${target}
+target_link_options(${target}
     PRIVATE
 
     PUBLIC
