@@ -122,7 +122,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" OR "${CMAKE_CXX_COMPILER_ID}" MATCH
         -Wswitch-default
         -Wuninitialized
         -Wmissing-field-initializers
-        -fPIC
+        #-fPIC should not be needed, see DEFAULT_PROJECT_OPTIONS
 
         $<$<CXX_COMPILER_ID:GNU>:
             -Wmaybe-uninitialized

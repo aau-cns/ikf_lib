@@ -28,7 +28,7 @@ then
     echo "#CMAKE_OPTIONS=\"\${CMAKE_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install\"" >> ".localconfig/default"
     echo "" >> ".localconfig/default"
     echo "# Build static libraries" >> ".localconfig/default"
-    echo "#CMAKE_OPTIONS=\"\${CMAKE_OPTIONS} -DBUILD_SHARED_LIBS:BOOL=OFF\"" >> ".localconfig/default"
+    echo "#CMAKE_OPTIONS=\"\${CMAKE_OPTIONS} -DBUILD_SHARED_LIBS:BOOL=ON\"" >> ".localconfig/default"
     echo "" >> ".localconfig/default"
     echo "# Enable examples" >> ".localconfig/default"
     echo "#CMAKE_OPTIONS=\"\${CMAKE_OPTIONS} -DOPTION_BUILD_EXAMPLES:BOOL=ON\"" >> ".localconfig/default"
@@ -37,7 +37,7 @@ then
     echo "#CMAKE_OPTIONS=\"\${CMAKE_OPTIONS} -DOPTION_BUILD_DOCS:BOOL=ON\"" >> ".localconfig/default"
     echo "" >> ".localconfig/default"
     echo "# Disable tests" >> ".localconfig/default"
-    echo "#CMAKE_OPTIONS=\"\${CMAKE_OPTIONS} -DOPTION_BUILD_TESTS:BOOL=OFF\"" >> ".localconfig/default"
+    echo "#CMAKE_OPTIONS=\"\${CMAKE_OPTIONS} -DOPTION_BUILD_TESTS:BOOL=ON\"" >> ".localconfig/default"
     echo "" >> ".localconfig/default"
     echo "" >> ".localconfig/default"
     echo "# CMake and environment variables (e.g., search paths for external libraries)" >> ".localconfig/default"
@@ -74,7 +74,7 @@ then
     echo "Please review and adjust the configuration, then run again"
     echo ""
     echo "  ./configure $@"
-    
+
     exit
 fi
 
