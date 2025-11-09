@@ -24,20 +24,25 @@ Timestamp::Timestamp(const double t_) { from_sec(t_); }
 
 Timestamp::Timestamp(const int64_t stamp_ns) { from_stamp_ns(stamp_ns); }
 
-Timestamp::~Timestamp() {}
 
 double Timestamp::to_sec() const { return (double)sec + 1e-9 * (double)nsec; }
 
 void Timestamp::from_sec(double const t) {
-  int64_t sec64 = (int64_t)std::floor(t);
-  if (sec64 <= __INT64_C(0x1FFFFFFFF)) {
-    sec = (int64_t)sec64;
-    nsec = (int32_t)std::round((t - sec) * 1e9);
-    // avoid rounding errors
-    sec += (nsec / 1000000000l);
-    nsec %= 1000000000l;
+  if(std::isfinite(t) && !std::isnan(t)) {
+    int64_t sec64 = (int64_t)std::floor(t);
+    if (sec64 <= __INT64_C(0x1FFFFFFFF)) {
+      sec = (int64_t)sec64;
+      nsec = (int32_t)std::round((t - sec) * 1e9);
+      // avoid rounding errors
+      sec += (nsec / 1000000000l);
+      nsec %= 1000000000l;
+    } else {
+      ikf::Logger::ikf_logger()->error(" Timestamp::from_sec(): Time is out of 33-bit range: " + std::to_string(t));
+      sec = 0;
+      nsec = 0;
+    }
   } else {
-    ikf::Logger::ikf_logger()->error(" Timestamp::from_sec(): Time is out of 33-bit range: " + std::to_string(t));
+    // silently set it to zero!
     sec = 0;
     nsec = 0;
   }

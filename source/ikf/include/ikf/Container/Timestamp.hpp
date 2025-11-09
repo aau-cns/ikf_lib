@@ -52,7 +52,7 @@ public:
   Timestamp(std::int64_t sec_, std::int32_t nsec_);
   Timestamp(double const t_);
   Timestamp(std::int64_t const stamp_ns);
-  virtual ~Timestamp();
+  virtual ~Timestamp() = default;
 
   double to_sec() const;
   void from_sec(double const t = 0.0);
