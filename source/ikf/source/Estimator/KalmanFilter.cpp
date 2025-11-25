@@ -41,7 +41,7 @@ KalmanFilter::CorrectionResult_t KalmanFilter::correction_step(const Eigen::Matr
   CorrectionResult_t res;
 
   if (check_dim(H, R, r, Sigma_apri)) {
-    size_t const dim = Sigma_apri.rows();
+    Eigen::Index const dim = Sigma_apri.rows();
     res.rejected = false;
 
     // innovation covariance:

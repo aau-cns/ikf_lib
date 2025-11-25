@@ -65,7 +65,7 @@ protected:
   void split_right_upper_covariance(Eigen::MatrixXd& Sigma, const std::map<size_t, pBelief_t>& dict_bel,
                                     Timestamp const& t);
 
-  void correct_beliefs_implace(Eigen::MatrixXd& Sigma_apos, Eigen::VectorXd& delta_mean,
+  virtual void correct_beliefs_implace(Eigen::MatrixXd& Sigma_apos, Eigen::VectorXd& delta_mean,
                                const std::map<size_t, pBelief_t>& dict_bel);
 
   virtual ApplyObsResult_t process_observation(const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t,

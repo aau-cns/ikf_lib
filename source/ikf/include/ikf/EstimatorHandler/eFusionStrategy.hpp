@@ -19,9 +19,10 @@ namespace ikf {
 enum class IKF_API eFusionStrategy {
   UNKNOWN = 0,
   IKF,
-  DP,
-  C_IKF,
-  DCI_IKF
+  DP,    // Distributed Propagation - Centralized Equvivalent
+  C_IKF, // Collaborative IKF
+  DCI_IKF, // Distributed Covariance Intersection-based IKF
+  SKF, // Smidt-Kalman Filter.
   //
 };
 

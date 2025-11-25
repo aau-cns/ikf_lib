@@ -154,6 +154,7 @@ Eigen::MatrixXd IsolatedKalmanFilterHandler::stack_Sigma(const std::map<size_t, 
     }  // e_i not fixed
   }
 
+  Sigma = utils::symmetrize_covariance(Sigma);
   return Sigma;
 }
 
@@ -203,6 +204,7 @@ void IsolatedKalmanFilterHandler::correct_beliefs_implace(Eigen::MatrixXd &Sigma
                                                           std::map<size_t, pBelief_t> const &dict_bel) {
   size_t row_start = 0;
   for (auto const &e_i : dict_bel) {
+
     if (!e_i.second->options().is_fixed) {
       size_t dim_I = e_i.second->es_dim();
 
@@ -232,6 +234,7 @@ Eigen::MatrixXd IsolatedKalmanFilterHandler::get_Sigma_IJ_at_t(const size_t ID_I
   }
   return Sigma_IJ;
 }
+
 bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H,
                                                     const Eigen::MatrixXd &R, const Eigen::VectorXd &r,
                                                     const Timestamp &t, const KalmanFilter::CorrectionCfg_t &cfg) {
@@ -261,7 +264,7 @@ bool IsolatedKalmanFilterHandler::apply_observation(const std::map<size_t, Eigen
       }
 
       // IMPORTANT: MAINTAIN ORDER STRICKTLY
-      // 1) add correction terms on all a aprior factorized cross-covariances!
+      // 1) add correction terms on all a apriori factorized cross-covariances!
       apply_corrections_at_t(res.Sigma_apos, dict_bel, t);
 
       // 2) afterwards, overwrite/set factorized a posterioiry cross-covariance (apply no corrections afterwards on

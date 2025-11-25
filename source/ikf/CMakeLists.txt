@@ -50,6 +50,7 @@ set(headers
 include/ikf/EstimatorHandler/eFusionStrategy.hpp
 
  include/ikf/EstimatorHandler/IsolatedKalmanFilterHandler.hpp
+ include/ikf/EstimatorHandler/SchmidtKalmanFilterHandler.hpp
  include/ikf/EstimatorHandler/DecoupledPropagationHandler.hpp
  include/ikf/EstimatorHandler/ICSE_IKF_Handler.hpp
  include/ikf/EstimatorHandler/DCI_IKF_Handler.hpp
@@ -110,6 +111,7 @@ set(sources
 
  source/EstimatorHandler/IDICOHandler.cpp
  source/EstimatorHandler/IsolatedKalmanFilterHandler.cpp
+ source/EstimatorHandler/SchmidtKalmanFilterHandler.cpp
  source/EstimatorHandler/DecoupledPropagationHandler.cpp
  source/EstimatorHandler/ICSE_IKF_Handler.cpp
  source/EstimatorHandler/C_IKF_Handler.cpp

@@ -28,8 +28,9 @@ namespace ikf {
 
 
 struct IKF_API BeliefOptions {
-  bool is_fixed = false;
+  bool is_fixed = false;     // treats the random variable as constant
   bool do_fej   = false;
+  bool is_essential = true; // for the Smidt-Kalman-Filter. "True": essential and "False": nuissance parameter
 };
 
 enum class IKF_API  eInitStrategies {
@@ -92,6 +93,7 @@ public:
     out << ", mean=" << std::setprecision(4) <<  m_mean.transpose();
     out << ", diag(Sigma)=" << std::setprecision(4) << m_Sigma.diagonal().transpose();
     out << ", fix=" << std::to_string((int)m_options.is_fixed);
+    out << ", essential=" << std::to_string((int)m_options.is_essential);
     out << std::internal;
   }
 

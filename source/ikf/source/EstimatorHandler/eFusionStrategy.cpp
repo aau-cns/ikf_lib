@@ -34,6 +34,8 @@ eFusionStrategy to_eFusionStrategy(const std::string &str) {
     return eFusionStrategy::IKF;
   } else if (str == "DP") {
     return eFusionStrategy::DP;
+  } else if (str == "SKF") {
+    return eFusionStrategy::SKF;
   } else if (str == "C_IKF" || str == "CSE_IKF") {
     return eFusionStrategy::C_IKF;
   } else if (str == "DCI_IKF") {
