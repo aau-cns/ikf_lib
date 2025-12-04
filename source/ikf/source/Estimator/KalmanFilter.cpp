@@ -68,6 +68,7 @@ KalmanFilter::CorrectionResult_t KalmanFilter::correction_step(const Eigen::Matr
     if (cfg.nummerical_stabilization) {
       res.Sigma_apos = utils::stabilize_covariance(res.Sigma_apos, cfg.eps);
     }
+    res.Sigma_apos = utils::symmetrize_covariance(res.Sigma_apos);
   }
   return res;
 }
