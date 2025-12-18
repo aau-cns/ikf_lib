@@ -285,110 +285,133 @@ ProcessMeasResult_vec_t IDICOHandler::process_measurement(const MeasData &m) {
 }
 
 ProcessMeasResult_t IDICOHandler::delegate_measurement(const MeasData &m) {
-  ProcessMeasResult_t res;
-  res.status = eMeasStatus::DISCARED;
-  if (exists(m.id_sensor)) {
-    if (id_dict[m.id_sensor]->enabled()) {
-      res = id_dict[m.id_sensor]->delegate_measurement(m);
+  ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
+  if (lock.try_lock()) {
+    ProcessMeasResult_t res;
+    res.status = eMeasStatus::DISCARED;
+    if (exists(m.id_sensor)) {
+      if (id_dict[m.id_sensor]->enabled()) {
+        res = id_dict[m.id_sensor]->delegate_measurement(m);
+      }
     }
+    res.t = m.t_m;
+    res.meas_type = m.meas_type;
+    return res;
+  } else {
+    ikf::Logger::ikf_logger()->error("IDICOHandler::delegate_measurement(): mutex FAILED");
+    return ProcessMeasResult_t();
   }
-  res.t = m.t_m;
-  res.meas_type = m.meas_type;
-  return res;
 }
 
 ProcessMeasResult_vec_t IDICOHandler::redo_updates_from_t(const Timestamp &t) {
-  remove_beliefs_from_t(t);
-  Hist_OOO_Flag.clear();
-  Timestamp t_last;
-  ProcessMeasResult_vec_t vec;
-  if (HistMeas.get_latest_t(t_last)) {
-    double delta_t = t_last.to_sec() - t.to_sec();
-    Logger::ikf_logger()->info("IDICOHandler::redo_updates_from_t(): t=" + t.str() + ", t_last=" + t_last.str()
-                               + ", dt=" + std::to_string(delta_t));
-    if (t == t_last) {
-      auto meas_arr = HistMeas.get_all_at_t(t);
-      for (MeasData &m : meas_arr) {
-        // NOTE: if we have already spotted an OOO measurement, then just contiue with PROGAGATION measrements:
-        if (Hist_OOO_Flag.empty() || m.obs_type == ikf::eObservationType::PROPAGATION) {
-          auto res = this->delegate_measurement(m);
-          vec.push_back(res);
-          if (res.status == ikf::eMeasStatus::OUTOFORDER) {
+  ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
+  if (lock.try_lock()) {
+    remove_beliefs_from_t(t);
+    Hist_OOO_Flag.clear();
+    Timestamp t_last;
+    ProcessMeasResult_vec_t vec;
+    if (HistMeas.get_latest_t(t_last)) {
+      double delta_t = t_last.to_sec() - t.to_sec();
+      Logger::ikf_logger()->info("IDICOHandler::redo_updates_from_t(): t=" + t.str() + ", t_last=" + t_last.str()
+                                 + ", dt=" + std::to_string(delta_t));
+      if (t == t_last) {
+        auto meas_arr = HistMeas.get_all_at_t(t);
+        for (MeasData &m : meas_arr) {
+          // NOTE: if we have already spotted an OOO measurement, then just contiue with PROGAGATION measrements:
+          if (Hist_OOO_Flag.empty() || m.obs_type == ikf::eObservationType::PROPAGATION) {
+            auto res = this->delegate_measurement(m);
+            vec.push_back(res);
+            if (res.status == ikf::eMeasStatus::OUTOFORDER) {
+              Hist_OOO_Flag.insert(true, m.t_m);
+            }
+          } else {
             Hist_OOO_Flag.insert(true, m.t_m);
           }
-        } else {
-          Hist_OOO_Flag.insert(true, m.t_m);
         }
+      } else {
+        HistMeas.foreach_between_t1_t2(t, t_last, [this, &vec](MeasData const &m) {
+          if (Hist_OOO_Flag.empty() || m.obs_type == ikf::eObservationType::PROPAGATION) {
+            auto res = this->delegate_measurement(m);
+            vec.push_back(res);
+            if (res.status == ikf::eMeasStatus::OUTOFORDER) {
+              Hist_OOO_Flag.insert(true, m.t_m);
+            }
+          } else {
+            Hist_OOO_Flag.insert(true, m.t_m);
+          }
+        });
       }
-    } else {
-      HistMeas.foreach_between_t1_t2(t, t_last, [this, &vec](MeasData const &m) {
-        if (Hist_OOO_Flag.empty() || m.obs_type == ikf::eObservationType::PROPAGATION) {
-          auto res = this->delegate_measurement(m);
-          vec.push_back(res);
-          if (res.status == ikf::eMeasStatus::OUTOFORDER) {
-            Hist_OOO_Flag.insert(true, m.t_m);
-          }
-        } else {
-          Hist_OOO_Flag.insert(true, m.t_m);
-        }
-      });
+      Logger::ikf_logger()->info("IDICOHandler::redo_updates_from_t(): (num={:d}, OOO={:d}) DONE!", vec.size(),
+                                 Hist_OOO_Flag.size());
     }
-    Logger::ikf_logger()->info("IDICOHandler::redo_updates_from_t(): (num={:d}, OOO={:d}) DONE!", vec.size(),
-                               Hist_OOO_Flag.size());
+    return vec;
+  } else {
+    ikf::Logger::ikf_logger()->error("IDICOHandler::redo_updates_from_t(): mutex FAILED");
+    return ProcessMeasResult_vec_t();
   }
-  return vec;
 }
 
 ProcessMeasResult_vec_t IDICOHandler::redo_updates_after_t(const Timestamp &t) {
-  remove_beliefs_after_t(t);
-  Hist_OOO_Flag.clear();
-  Timestamp t_after, t_last;
-  ProcessMeasResult_vec_t vec;
-  if (HistMeas.get_after_t(t, t_after) && HistMeas.get_latest_t(t_last)) {
-    double delta_t = t_last.to_sec() - t_after.to_sec();
-    Logger::ikf_logger()->info("IDICOHandler::redo_updates_after_t(): t_after=" + t_after.str()
-                               + ", t_last=" + t_last.str() + ", dt=" + std::to_string(delta_t));
+  ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
+  if (lock.try_lock()) {
+    remove_beliefs_after_t(t);
+    Hist_OOO_Flag.clear();
+    Timestamp t_after, t_last;
+    ProcessMeasResult_vec_t vec;
+    if (HistMeas.get_after_t(t, t_after) && HistMeas.get_latest_t(t_last)) {
+      double delta_t = t_last.to_sec() - t_after.to_sec();
+      Logger::ikf_logger()->info("IDICOHandler::redo_updates_after_t(): t_after=" + t_after.str()
+                                 + ", t_last=" + t_last.str() + ", dt=" + std::to_string(delta_t));
 
-    if (t_after == t_last) {
-      auto meas_arr = HistMeas.get_all_at_t(t_after);
-      for (MeasData &m : meas_arr) {
-        if (Hist_OOO_Flag.empty() || m.obs_type == ikf::eObservationType::PROPAGATION) {
-          auto res = this->delegate_measurement(m);
-          vec.push_back(res);
-          if (res.status == ikf::eMeasStatus::OUTOFORDER) {
+      if (t_after == t_last) {
+        auto meas_arr = HistMeas.get_all_at_t(t_after);
+        for (MeasData &m : meas_arr) {
+          if (Hist_OOO_Flag.empty() || m.obs_type == ikf::eObservationType::PROPAGATION) {
+            auto res = this->delegate_measurement(m);
+            vec.push_back(res);
+            if (res.status == ikf::eMeasStatus::OUTOFORDER) {
+              Hist_OOO_Flag.insert(true, m.t_m);
+            }
+          } else {
             Hist_OOO_Flag.insert(true, m.t_m);
           }
-        } else {
-          Hist_OOO_Flag.insert(true, m.t_m);
         }
+      } else {
+        HistMeas.foreach_between_t1_t2(t_after, t_last, [this, &vec](MeasData const &m) {
+          if (Hist_OOO_Flag.empty() || m.obs_type == ikf::eObservationType::PROPAGATION) {
+            auto res = this->delegate_measurement(m);
+            vec.push_back(res);
+            if (res.status == ikf::eMeasStatus::OUTOFORDER) {
+              Hist_OOO_Flag.insert(true, m.t_m);
+            }
+          } else {
+            Hist_OOO_Flag.insert(true, m.t_m);
+          }
+        });
       }
+      Logger::ikf_logger()->info("IDICOHandler::redo_updates_after_t(): (num={:d}, OOO={:d}) DONE!", vec.size(),
+                                 Hist_OOO_Flag.size());
     } else {
-      HistMeas.foreach_between_t1_t2(t_after, t_last, [this, &vec](MeasData const &m) {
-        if (Hist_OOO_Flag.empty() || m.obs_type == ikf::eObservationType::PROPAGATION) {
-          auto res = this->delegate_measurement(m);
-          vec.push_back(res);
-          if (res.status == ikf::eMeasStatus::OUTOFORDER) {
-            Hist_OOO_Flag.insert(true, m.t_m);
-          }
-        } else {
-          Hist_OOO_Flag.insert(true, m.t_m);
-        }
-      });
+      Logger::ikf_logger()->debug("IDICOHandler::redo_updates_after_t() t_after=" + t.str() + ": nothing to do...");
     }
-    Logger::ikf_logger()->info("IDICOHandler::redo_updates_after_t(): (num={:d}, OOO={:d}) DONE!", vec.size(),
-                               Hist_OOO_Flag.size());
+    return vec;
   } else {
-    Logger::ikf_logger()->debug("IDICOHandler::redo_updates_after_t() t_after=" + t.str() + ": nothing to do...");
+    ikf::Logger::ikf_logger()->error("IDICOHandler::redo_updates_after_t(): mutex FAILED");
+    return ProcessMeasResult_vec_t();
   }
-  return vec;
 }
 
 void IDICOHandler::remove_beliefs_after_t(const Timestamp &t) {
-  for (auto &elem : id_dict) {
-    // avoid deleting all beliefs from an instance
-    if (elem.second->exist_belief_at_t(t) || elem.second->exist_belief_before_t(t)) {
-      elem.second->remove_after_t(t);
+  ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
+  if (lock.try_lock()) {
+    for (auto &elem : id_dict) {
+      // avoid deleting all beliefs from an instance
+      if (elem.second->exist_belief_at_t(t) || elem.second->exist_belief_before_t(t)) {
+        elem.second->remove_after_t(t);
+      }
     }
+  } else {
+    ikf::Logger::ikf_logger()->error("IDICOHandler::remove_beliefs_after_t(): mutex FAILED");
   }
 }
 
@@ -432,12 +455,14 @@ size_t IDICOHandler::get_propagation_sensor_ID(const size_t ID) { return m_PropS
 void IDICOHandler::set_propagation_sensor_ID(const size_t ID) { m_PropSensor_ID = ID; }
 
 std::string IDICOHandler::get_type_by_ID(const size_t ID) {
-  std::shared_ptr<IIsolatedKalmanFilter> pInst = get(ID);
-  if (pInst) {
-    return pInst->m_type;
-  } else {
-    return "";
+  ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
+  if (lock.try_lock()) {
+    std::shared_ptr<IIsolatedKalmanFilter> pInst = get(ID);
+    if (pInst) {
+      return pInst->m_type;
+    }
   }
+  return "";
 }
 
 bool IDICOHandler::set_belief_at_t(const size_t ID, pBelief_t &bel, const Timestamp &t) {
@@ -461,6 +486,19 @@ bool IDICOHandler::get_belief_at_t(const size_t ID, const Timestamp &t, pBelief_
     }
   } else {
     ikf::Logger::ikf_logger()->error("IDICOHandler::get_belief_at_t(): mutex FAILED");
+  }
+  return false;
+}
+
+bool IDICOHandler::get_latest_belief(const size_t ID, pBelief_t &bel) {
+  ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
+  if (lock.try_lock()) {
+    if (exists(ID)) {
+      bel = get(ID)->current_belief();
+      return (bel != nullptr);
+    }
+  } else {
+    ikf::Logger::ikf_logger()->error("IDICOHandler::get_latest_belief(): mutex FAILED");
   }
   return false;
 }
@@ -497,7 +535,7 @@ Eigen::MatrixXd IDICOHandler::get_CrossCovFact_at_t(const size_t ID_I, const Tim
       return Eigen::MatrixXd();
     }
   } else {
-    ikf::Logger::ikf_logger()->error("IDICOHandler::get_beliefs_at_t(): mutex FAILED");
+    ikf::Logger::ikf_logger()->error("IDICOHandler::get_CrossCovFact_at_t(): mutex FAILED");
   }
   return Eigen::MatrixXd();
 }
@@ -529,29 +567,35 @@ bool IDICOHandler::apply_correction_at_t(const size_t ID, const Timestamp &t, co
 }
 
 bool IDICOHandler::is_order_violated(const MeasData &m) {
-  // if an measurement after the current one exists...
-  if(HistMeas.exist_after_t(m.t_m)) {
-    return true;
-  }
+  ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
+  if (lock.try_lock()) {
+    // if an measurement after the current one exists...
+    if(HistMeas.exist_after_t(m.t_m)) {
+      return true;
+    }
 
-  // if we have concurrent measurements, propagation before private; private before joint
-  if (m.obs_type != eObservationType::JOINT_OBSERVATION) {
-    auto meas_arr = HistMeas.get_all_at_t(m.t_m);
+    // if we have concurrent measurements, propagation before private; private before joint
+    if (m.obs_type != eObservationType::JOINT_OBSERVATION) {
+      auto meas_arr = HistMeas.get_all_at_t(m.t_m);
 
-    if (m.obs_type == eObservationType::PROPAGATION) {
-      for (MeasData &m_ : meas_arr) {
-        if (m_.obs_type == eObservationType::PRIVATE_OBSERVATION
-            || m_.obs_type == eObservationType::JOINT_OBSERVATION) {
-          return true;
+      if (m.obs_type == eObservationType::PROPAGATION) {
+        for (MeasData &m_ : meas_arr) {
+          if (m_.obs_type == eObservationType::PRIVATE_OBSERVATION
+              || m_.obs_type == eObservationType::JOINT_OBSERVATION) {
+            return true;
+          }
         }
-      }
-    } else if (m.obs_type == eObservationType::PRIVATE_OBSERVATION) {
-      for (MeasData &m_ : meas_arr) {
-        if (m_.obs_type == eObservationType::JOINT_OBSERVATION) {
-          return true;
+      } else if (m.obs_type == eObservationType::PRIVATE_OBSERVATION) {
+        for (MeasData &m_ : meas_arr) {
+          if (m_.obs_type == eObservationType::JOINT_OBSERVATION) {
+            return true;
+          }
         }
       }
     }
+    return false;
+  } else {
+    ikf::Logger::ikf_logger()->error("IDICOHandler::is_order_violated(): mutex FAILED");
   }
   return false;
 }

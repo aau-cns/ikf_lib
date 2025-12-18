@@ -61,7 +61,7 @@ public:
   virtual bool set_belief_at_t(size_t const ID, pBelief_t& bel, Timestamp const& t);
   virtual bool get_belief_at_t(size_t const ID, Timestamp const& t, pBelief_t& bel,
                                eGetBeliefStrategy const type = eGetBeliefStrategy::EXACT);
-
+  virtual bool get_latest_belief(size_t const ID, pBelief_t& bel);
   virtual bool get_beliefs_at_t(std::vector<size_t> const& IDs, std::vector<eGetBeliefStrategy> const& types,
                                 Timestamp const& t, std::map<size_t, pBelief_t>& beliefs);
   virtual Eigen::MatrixXd get_CrossCovFact_at_t(size_t const ID_I, Timestamp const& t, size_t const ID_J);
