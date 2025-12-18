@@ -209,6 +209,8 @@ Eigen::VectorXd IKF_API horcat_vec(const Eigen::VectorXd &v_II, const Eigen::Vec
 Eigen::VectorXd IKF_API horcat_vec(const Eigen::VectorXd &v_II, const Eigen::VectorXd &v_JJ,
                                    const Eigen::VectorXd &v_KK);
 
+Eigen::MatrixXd IKF_API blkdiag(const Eigen::MatrixXd& Sigma_II, const Eigen::MatrixXd& Sigma_JJ);
+
 Eigen::MatrixXd IKF_API stack_Sigma(const Eigen::MatrixXd& Sigma_II, const Eigen::MatrixXd& Sigma_JJ,
                                     const Eigen::MatrixXd& Sigma_IJ);
 

@@ -282,4 +282,13 @@ bool utils::correct_covariance(Eigen::MatrixXd &Sigma) {
   return true;
 }
 
+Eigen::MatrixXd utils::blkdiag(const Eigen::MatrixXd &Sigma_II, const Eigen::MatrixXd &Sigma_JJ) {
+  Eigen::MatrixXd C = Eigen::MatrixXd::Zero(Sigma_II.rows() + Sigma_JJ.rows(), Sigma_II.cols() + Sigma_JJ.cols());
+  C.block(0,0, Sigma_II.rows(), Sigma_JJ.cols()) = Sigma_II;
+  C.block(Sigma_II.rows(), Sigma_JJ.cols(), Sigma_JJ.rows(), Sigma_JJ.cols()) = Sigma_JJ;
+  //Eigen::MatrixXd Sigma_IJ = Eigen::MatrixXd::Zero(Sigma_II.rows(), Sigma_JJ.cols());
+  //C << Sigma_II, Sigma_IJ, Sigma_IJ.transpose(), Sigma_JJ;
+  return C;
+}
+
 }  // namespace ikf
