@@ -130,65 +130,87 @@ void C_IKF_Handler::set_Sigma_IJ_at_t(const size_t ID_I, const size_t ID_J, cons
 
 void C_IKF_Handler::apply_corrections_at_t(Eigen::MatrixXd &Sigma_apos, const std::map<size_t, pBelief_t> &dict_bel,
                                            const Timestamp &t, bool const only_local_beliefs) {
-  size_t row_start = 0;
-  for (auto const &e_i : dict_bel) {
-    size_t dim_I = e_i.second->es_dim();
+  ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
+  if (lock.try_lock()) {
+    size_t row_start = 0;
+    for (auto const &e_i : dict_bel) {
+      size_t dim_I = e_i.second->es_dim();
 
-    Eigen::MatrixXd Sigma_II_apos = Sigma_apos.block(row_start, row_start, dim_I, dim_I);
-    if (exists(e_i.first)) {
-      get(e_i.first)->apply_correction_at_t(t, e_i.second->Sigma(), Sigma_II_apos);
-    } else if (!only_local_beliefs) {
-      m_pAgentHandler->apply_correction_at_t(e_i.first, t, e_i.second->Sigma(), Sigma_II_apos);
+      Eigen::MatrixXd Sigma_II_apos = Sigma_apos.block(row_start, row_start, dim_I, dim_I);
+      if (exists(e_i.first)) {
+        get(e_i.first)->apply_correction_at_t(t, e_i.second->Sigma(), Sigma_II_apos);
+      } else if (!only_local_beliefs) {
+        m_pAgentHandler->apply_correction_at_t(e_i.first, t, e_i.second->Sigma(), Sigma_II_apos);
+      }
+      row_start += dim_I;
     }
-    row_start += dim_I;
+  } else {
+    ikf::Logger::ikf_logger()->error("C_IKF_Handler::apply_corrections_at_t(): mutex FAILED");
   }
 }
 
 std::set<size_t> C_IKF_Handler::get_correlated_IDs_after_t(const Timestamp &t) {
-  std::set<size_t> IDs_post_corr;
-  for (auto ID : this->get_instance_ids()) {
-    auto IDs = this->get(ID)->get_correlated_IDs_after_t(t);
-    IDs_post_corr.insert(IDs.begin(), IDs.end());
+  ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
+  if (lock.try_lock()) {
+    std::set<size_t> IDs_post_corr;
+    for (auto ID : this->get_instance_ids()) {
+      auto IDs = this->get(ID)->get_correlated_IDs_after_t(t);
+      IDs_post_corr.insert(IDs.begin(), IDs.end());
+    }
+    return IDs_post_corr;
+  } else {
+    ikf::Logger::ikf_logger()->error("C_IKF_Handler::get_correlated_IDs_after_t(): mutex FAILED");
+    return std::set<size_t>();
   }
-  return IDs_post_corr;
 }
 
 std::set<size_t> C_IKF_Handler::get_remote_correlated_IDs_after_t(const Timestamp &t) {
-  std::set<size_t> IDs_post_corr_remote;
-  for (auto ID : get_correlated_IDs_after_t(t)) {
-    if (!exists(ID)) {
-      IDs_post_corr_remote.insert(ID);
+  ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
+  if (lock.try_lock()) {
+    std::set<size_t> IDs_post_corr_remote;
+    for (auto ID : get_correlated_IDs_after_t(t)) {
+      if (!exists(ID)) {
+        IDs_post_corr_remote.insert(ID);
+      }
     }
+    return IDs_post_corr_remote;
+  } else {
+    ikf::Logger::ikf_logger()->error("C_IKF_Handler::get_remote_correlated_IDs_after_t(): mutex FAILED");
+    return std::set<size_t>();
   }
-  return IDs_post_corr_remote;
 }
 
 bool C_IKF_Handler::is_order_violated(const MeasData &m) {
-  switch (mOrderStrategy) {
-  case eOrderStrategy::STRICT: {
-    return IDICOHandler::is_order_violated(m);
-  }
-  case eOrderStrategy::RELAXED: {
-    // if an measurement after the current one exists...
-    if (HistMeas.exist_after_t(m.t_m)) {
-      return true;
+  ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
+  if (lock.try_lock()) {
+    switch (mOrderStrategy) {
+    case eOrderStrategy::STRICT: {
+      return IDICOHandler::is_order_violated(m);
     }
+    case eOrderStrategy::RELAXED: {
+      // if an measurement after the current one exists...
+      if (HistMeas.exist_after_t(m.t_m)) {
+        return true;
+      }
 
-    // if we have concurrent measurements, propagation before private or joint
-    if (m.obs_type == eObservationType::PROPAGATION) {
-      auto meas_arr = HistMeas.get_all_at_t(m.t_m);
-      for (MeasData &m_ : meas_arr) {
-        if (m_.obs_type == eObservationType::PRIVATE_OBSERVATION
-            || m_.obs_type == eObservationType::JOINT_OBSERVATION) {
-          return true;
+      // if we have concurrent measurements, propagation before private or joint
+      if (m.obs_type == eObservationType::PROPAGATION) {
+        auto meas_arr = HistMeas.get_all_at_t(m.t_m);
+        for (MeasData &m_ : meas_arr) {
+          if (m_.obs_type == eObservationType::PRIVATE_OBSERVATION
+              || m_.obs_type == eObservationType::JOINT_OBSERVATION) {
+            return true;
+          }
         }
       }
+      return false;
     }
-    return false;
-    break;
-  }
-  default:
+    default:
     ikf::Logger::ikf_logger()->error("C_IKF_Handler::is_order_violated::apply_observation(): strategy not supported");
+    return false;
+    }
+  } else {
+    ikf::Logger::ikf_logger()->error("CollaborativeIKFHandler::is_order_violated(): mutex FAILED");
     return false;
   }
 }
@@ -362,54 +384,72 @@ bool C_IKF_Handler::apply_observation(const std::map<size_t, Eigen::MatrixXd> &d
 }
 
 ProcessMeasResult_vec_t C_IKF_Handler::redo_updates_after_t(const Timestamp &t) {
-  // trigger remote agent asynchonrously to redo updates as well...
-  // -> hopefully, we are done before remote ones need our beliefs again...
-  if (mRedoStrategy == eRedoUpdateStrategy::POSTCORRELATED) {
-    auto ID_agents = IDs_to_Agent_IDs(get_remote_correlated_IDs_after_t(t));
-    for (auto const &id : ID_agents) {
-      if (!m_pAgentHandler->redo_updates_after_t(id, t)) {
-        ikf::Logger::ikf_logger()->warn("CollaborativeIKFHandler::redo_updates_after_t(agent={:d}): FAILED", id);
+  ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
+  if (lock.try_lock()) {
+    // trigger remote agent asynchonrously to redo updates as well...
+    // -> hopefully, we are done before remote ones need our beliefs again...
+    if (mRedoStrategy == eRedoUpdateStrategy::POSTCORRELATED) {
+      auto ID_agents = IDs_to_Agent_IDs(get_remote_correlated_IDs_after_t(t));
+      for (auto const &id : ID_agents) {
+        if (!m_pAgentHandler->redo_updates_after_t(id, t)) {
+          ikf::Logger::ikf_logger()->warn("CollaborativeIKFHandler::redo_updates_after_t(agent={:d}): FAILED", id);
+        }
       }
     }
+    if (mRedoStrategy == eRedoUpdateStrategy::EXACT) {
+      ikf::Logger::ikf_logger()->error("CollaborativeIKFHandler::redo_updates_after_t(): EXACT NOT IMPLEMENTED!");
+    }
+    return IDICOHandler::redo_updates_after_t(t);
+  } else {
+    ikf::Logger::ikf_logger()->error("C_IKF_Handler::redo_updates_after_t(): mutex FAILED");
+    return ProcessMeasResult_vec_t();
   }
-  if (mRedoStrategy == eRedoUpdateStrategy::EXACT) {
-    ikf::Logger::ikf_logger()->error("CollaborativeIKFHandler::redo_updates_after_t(): EXACT NOT IMPLEMENTED!");
-  }
-  return IDICOHandler::redo_updates_after_t(t);
+
 }
 
 bool C_IKF_Handler::discard_measurement(const MeasData &m) {
-  if (mRedoStrategy == eRedoUpdateStrategy::DISCARD) {
-    // check if there are remote post-correlated instances after m.t_m, if so, order is NOT violated, and measurement
-    // has no effect. Reason: we are not triggering the other agent to redo it's updates after our delayed
-    // measurments, we just ignore our delayed measurement in that case.
-    std::set<size_t> IDs = get_remote_correlated_IDs_after_t(m.t_m);
-    if (!IDs.empty()) {
-      ikf::Logger::ikf_logger()->debug(
-        "CollaborativeIKFHandler::discard_measurement(): found post-correlated estimators num="
-        + std::to_string(IDs.size()));
-      // remote ID is post-correlated
-      return true;
+  ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
+  if (lock.try_lock()) {
+    if (mRedoStrategy == eRedoUpdateStrategy::DISCARD) {
+      // check if there are remote post-correlated instances after m.t_m, if so, order is NOT violated, and measurement
+      // has no effect. Reason: we are not triggering the other agent to redo it's updates after our delayed
+      // measurments, we just ignore our delayed measurement in that case.
+      std::set<size_t> IDs = get_remote_correlated_IDs_after_t(m.t_m);
+      if (!IDs.empty()) {
+        ikf::Logger::ikf_logger()->debug(
+              "CollaborativeIKFHandler::discard_measurement(): found post-correlated estimators num="
+              + std::to_string(IDs.size()));
+        // remote ID is post-correlated
+        return true;
+      }
     }
+  } else {
+    ikf::Logger::ikf_logger()->error("C_IKF_Handler::discard_measurement(): mutex FAILED");
   }
   return false;
 }
 
 ProcessMeasResult_vec_t C_IKF_Handler::redo_updates_from_t(const Timestamp &t) {
-  // trigger remote agent asynchonrously to redo updates as well...
-  // -> hopefully, we are done before remote ones need our beliefs again...
-  if (mRedoStrategy == eRedoUpdateStrategy::POSTCORRELATED) {
-    auto ID_agents = IDs_to_Agent_IDs(get_remote_correlated_IDs_after_t(t));
-    for (auto const &id : ID_agents) {
-      if (!m_pAgentHandler->redo_updates_from_t(id, t)) {
-        ikf::Logger::ikf_logger()->warn("CollaborativeIKFHandler::redo_updates_from_t(agent={:d}): FAILED", id);
+  ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
+  if (lock.try_lock()) {
+    // trigger remote agent asynchonrously to redo updates as well...
+    // -> hopefully, we are done before remote ones need our beliefs again...
+    if (mRedoStrategy == eRedoUpdateStrategy::POSTCORRELATED) {
+      auto ID_agents = IDs_to_Agent_IDs(get_remote_correlated_IDs_after_t(t));
+      for (auto const &id : ID_agents) {
+        if (!m_pAgentHandler->redo_updates_from_t(id, t)) {
+          ikf::Logger::ikf_logger()->warn("CollaborativeIKFHandler::redo_updates_from_t(agent={:d}): FAILED", id);
+        }
       }
     }
+    if (mRedoStrategy == eRedoUpdateStrategy::EXACT) {
+      ikf::Logger::ikf_logger()->error("CollaborativeIKFHandler::redo_updates_from_t(): EXACT NOT IMPLEMENTED!");
+    }
+    return IDICOHandler::redo_updates_from_t(t);
+  } else {
+    ikf::Logger::ikf_logger()->error("C_IKF_Handler::redo_updates_from_t(): mutex FAILED");
+    return ProcessMeasResult_vec_t();
   }
-  if (mRedoStrategy == eRedoUpdateStrategy::EXACT) {
-    ikf::Logger::ikf_logger()->error("CollaborativeIKFHandler::redo_updates_from_t(): EXACT NOT IMPLEMENTED!");
-  }
-  return IDICOHandler::redo_updates_from_t(t);
 }
 
 bool C_IKF_Handler::apply_inter_agent_observation(const std::map<size_t, Eigen::MatrixXd> &dict_H,
