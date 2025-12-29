@@ -27,10 +27,10 @@ public:
   virtual std::string get_type_by_ID(size_t const ID = 0) override final;
 
   virtual bool get_belief_at_t(size_t const ID, Timestamp const& t, pBelief_t& bel,
-                               eGetBeliefStrategy const type = eGetBeliefStrategy::EXACT) override final;
+                               eGetBeliefStrategy const type = eGetBeliefStrategy::EXACT, bool const clone=false) override final;
 
   virtual bool get_beliefs_at_t(std::vector<size_t> const& IDs, std::vector<eGetBeliefStrategy> const& types,
-                                Timestamp const& t, std::map<size_t, pBelief_t>& beliefs) override final;
+                                Timestamp const& t, std::map<size_t, pBelief_t>& beliefs, bool const clone=false) override final;
 
   using IsolatedKalmanFilterHandler::apply_observation;  // bring all overloads into the scope
   virtual ApplyObsResult_t apply_observation(const Eigen::MatrixXd& R, const Eigen::VectorXd& z, const Timestamp& t,

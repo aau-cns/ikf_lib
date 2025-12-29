@@ -51,15 +51,22 @@ std::string ICSE_IKF_Handler::get_type_by_ID(const size_t ID) {
 }
 
 bool ICSE_IKF_Handler::get_belief_at_t(const size_t ID, const Timestamp &t, pBelief_t &bel,
-                                       const eGetBeliefStrategy type) {
+                                       const eGetBeliefStrategy type, bool const clone) {
   ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
   if (lock.try_lock()) {
     if (exists(ID)) {
-      return get(ID)->get_belief_at_t(t, bel, type);
+      pBelief_t bel_;
+      bool success = get(ID)->get_belief_at_t(t, bel_, type);
+      if(clone) {
+        bel = bel_->clone();
+      } else {
+       bel = bel_;
+      }
+      return success;
     } else {
       ikf::Logger::ikf_logger()->warn("ICSE_IKF_Handler::get_belief_at_t() from non-local estimator ["
                                       + std::to_string(ID) + "] using the agent handler");
-      bool res = m_pAgentHandler->get_belief_at_t(ID, t, bel, type);
+      bool res = m_pAgentHandler->get_belief_at_t(ID, t, bel, type); // it will always be a clone!
       if (!res) {
         ikf::Logger::ikf_logger()->error("ICSE_IKF_Handler::get_belief_at_t() from non-local estimator ["
                                          + std::to_string(ID) + "] failed");
@@ -73,7 +80,7 @@ bool ICSE_IKF_Handler::get_belief_at_t(const size_t ID, const Timestamp &t, pBel
 }
 
 bool ICSE_IKF_Handler::get_beliefs_at_t(const std::vector<size_t> &IDs, const std::vector<eGetBeliefStrategy> &types,
-                                        const Timestamp &t, std::map<size_t, pBelief_t> &beliefs) {
+                                        const Timestamp &t, std::map<size_t, pBelief_t> &beliefs, bool const clone) {
   ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
   if (lock.try_lock()) {
     std::vector<size_t> local_IDs, remote_IDs;
@@ -92,10 +99,10 @@ bool ICSE_IKF_Handler::get_beliefs_at_t(const std::vector<size_t> &IDs, const st
 
     bool res = true;
     if (local_IDs.size()) {
-      res &= IDICOHandler::get_beliefs_at_t(local_IDs, local_types, t, local_beliefs);
+      res &= IDICOHandler::get_beliefs_at_t(local_IDs, local_types, t, local_beliefs, clone);
     }
     if (remote_IDs.size()) {
-      if (!m_pAgentHandler->get_beliefs_at_t(remote_IDs, remote_types, t, remote_beliefs)) {
+      if (!m_pAgentHandler->get_beliefs_at_t(remote_IDs, remote_types, t, remote_beliefs)) { // it will always be a clone!
         res = false;
         ikf::Logger::ikf_logger()->error("ICSE_IKF_Handler::get_beliefs_at_t() from non-local estimators failed");
       }

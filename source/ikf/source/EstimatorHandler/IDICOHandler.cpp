@@ -478,11 +478,18 @@ bool IDICOHandler::set_belief_at_t(const size_t ID, pBelief_t &bel, const Timest
   return false;
 }
 
-bool IDICOHandler::get_belief_at_t(const size_t ID, const Timestamp &t, pBelief_t &bel, const eGetBeliefStrategy type) {
+bool IDICOHandler::get_belief_at_t(const size_t ID, const Timestamp &t, pBelief_t &bel, const eGetBeliefStrategy type, const bool clone) {
   ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
   if (lock.try_lock()) {
     if (exists(ID)) {
-      return get(ID)->get_belief_at_t(t, bel, type);
+       pBelief_t bel_;
+      bool success = get(ID)->get_belief_at_t(t, bel_, type);
+      if(clone) {
+        bel = bel_->clone();
+      } else {
+        bel = bel_;
+      }
+      return success;
     }
   } else {
     ikf::Logger::ikf_logger()->error("IDICOHandler::get_belief_at_t(): mutex FAILED");
@@ -490,11 +497,15 @@ bool IDICOHandler::get_belief_at_t(const size_t ID, const Timestamp &t, pBelief_
   return false;
 }
 
-bool IDICOHandler::get_latest_belief(const size_t ID, pBelief_t &bel) {
+bool IDICOHandler::get_latest_belief(const size_t ID, pBelief_t &bel, const bool clone) {
   ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
   if (lock.try_lock()) {
     if (exists(ID)) {
-      bel = get(ID)->current_belief();
+      if(clone) {
+        bel = get(ID)->current_belief()->clone();
+      } else {
+        bel = get(ID)->current_belief();
+      }
       return (bel != nullptr);
     }
   } else {
@@ -504,7 +515,7 @@ bool IDICOHandler::get_latest_belief(const size_t ID, pBelief_t &bel) {
 }
 
 bool IDICOHandler::get_beliefs_at_t(const std::vector<size_t> &IDs, const std::vector<eGetBeliefStrategy> &types,
-                                    const Timestamp &t, std::map<size_t, pBelief_t> &beliefs) {
+                                    const Timestamp &t, std::map<size_t, pBelief_t> &beliefs, const bool clone) {
   ikf::lock_guard_timed<std::recursive_timed_mutex> lock(m_mtx, mtx_timeout_ms);
   if (lock.try_lock()) {
     bool res = true;
@@ -513,7 +524,7 @@ bool IDICOHandler::get_beliefs_at_t(const std::vector<size_t> &IDs, const std::v
       size_t ID = IDs.at(idx);
       auto type = types.at(idx);
       pBelief_t bel;
-      bool success = get_belief_at_t(ID, t, bel, type);
+      bool success = get_belief_at_t(ID, t, bel, type, clone);
       if (success) {
         beliefs.insert({ID, bel});
       }
