@@ -24,6 +24,7 @@ namespace ikf {
 class IKF_API CSVTool
 {
 public:
+ typedef std::map<std::string, double> CsvRowDataType;
  typedef std::map<std::string, std::vector<double>> CsvDataType;
  typedef std::unordered_map<std::string, std::vector<double>> CsvDataUnorderedType;
 
@@ -31,6 +32,7 @@ public:
 
  static bool read_csv(CsvDataType& csv_data, const std::string& file_path, char delim = ',');
 
+ static bool write_csv(CsvRowDataType const& csv_data, const std::string& filename, char delim = ',');
  static bool write_csv(CsvDataType const& csv_data, const std::string& filename, char delim = ',');
  static bool write_csv(CsvDataUnorderedType const& csv_data, const std::string& filename, char delim = ',');
 

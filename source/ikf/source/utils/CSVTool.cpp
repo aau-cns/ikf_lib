@@ -111,6 +111,14 @@ namespace ikf {
     return true;
   }
 
+  bool CSVTool::write_csv(const CSVTool::CsvRowDataType &csv_data, const std::string &filename, char delim) {
+    CsvDataType csv_data_;
+    for (auto const& elem : csv_data) {
+      csv_data_.insert({elem.first, std::vector<double>({elem.second})});
+    }
+    return write_csv(csv_data_, filename, delim);
+  }
+
   bool CSVTool::write_csv(const CsvDataType &csv_data, const std::string &filename, char delim)
   {
     std::fstream file_;
